@@ -1,0 +1,17 @@
+datetime: 2026-07-22_22-13-15
+tag: acro2-regression-vert
+reason: Acro2 regression check on vertical fig-8
+git_commit: 0430efd
+config:
+  controllers:
+  - datt_acro:results/2026-07-22_19-41-43_datt-train/datt_ppo_final.zip
+  speeds:
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

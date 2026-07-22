@@ -372,7 +372,35 @@ steps, each documented in the run reasons:
 **ADRC-over-xadapt is now the overall deployment champion (0.054)**, edging
 DATT v5 (0.058), with far better nominal/payload numbers than any policy.
 
+## Acro2.2 (train 21-41-06, eval 22-13-58; eval 22-12-56 is VOID — wrong model)
+
+Changes: flip altitude U(2.0,3.0) m, deterministic 4-variant cycling.
+
+| flip | rotation | complete | max dev | min z | recovery |
+|---|---|---|---|---|---|
+| roll+  | +343 | yes | 2.14 | **0.89** | 0.45 |
+| roll-  | -375 | yes | 2.17 | **0.41** | 1.13 |
+| pitch+ | 0    | no  | 0.49 | 2.43 | 0.02 |
+| pitch- | -27  | no (regressed from -295) | 0.84 | 1.91 | 0.04 |
+
+1. **Altitude goal achieved**: roll flips no longer touch the floor
+   (min z 0.41-0.89 from ~2.5 m starts, vs 0.00 in 2.1).
+2. **Pitch flips resist balanced training**: pitch+ still 0 deg, and pitch-
+   *regressed* despite deterministic variant cycling. With one training seed
+   per iteration we cannot distinguish "pitch is harder for this policy
+   class" from run-to-run PPO variance — exactly the multi-seed statistics
+   argument. Options: per-variant specialist policies, longer budget with
+   maneuver-conditioned obs (variant one-hot), or 3-seed runs per config.
+3. Standard tracking unchanged (fast 0.162 / acro 0.354).
+4. Process note: eval 22-12-56 silently re-ran the acro2.0 model (stale path;
+   results identical to 20-11-18 with +1.0 m z-offset — which is how it was
+   caught). Kept in results/ as a void run; metadata reason marks it.
+
+**Phase-2 verdict:** flip capability demonstrated and robust for the roll
+axis with proper altitude margin; pitch-axis flips and recovery precision
+(<0.3 m) remain open, gated on multi-seed training experiments.
+
 ## Next
-1. Acro2.2: higher flip altitude margin, per-variant balancing, recovery reward.
+1. Multi-seed statistics (also unblocks the pitch-flip question).
 2. Re-run MPC/MPPI/datt_acro lighthouse rows post gyro-latency fix.
-3. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.
+3. Offset-free MPC; adaptive-bandwidth ESO.

@@ -1,0 +1,8 @@
+datetime: 2026-07-22_22-13-58
+tag: flip-eval
+reason: Acro2.2 flip eval (CORRECT model 21-41-06; prior eval 22-12-56 accidentally
+  re-ran the acro2.0 model)
+git_commit: 0430efd
+config:
+  model: results/2026-07-22_21-41-06_datt-train/datt_ppo_final.zip
+  hover_z: 1.5
