@@ -1,0 +1,8 @@
+datetime: 2026-07-22_20-43-01
+tag: flip-eval
+reason: 'Acro phase 2 flip eval: 4 flip variants (roll/pitch x +/-), first flip-trained
+  policy'
+git_commit: 78010eb
+config:
+  model: results/2026-07-22_20-12-43_datt-train/datt_ppo_final.zip
+  hover_z: 1.5

@@ -1,50 +1,56 @@
 # crazy_track
 
-Replicating the **DATT** (Deep Adaptive Trajectory Tracking) benchmark — Figure 5 of
-[Huang et al., 2023 (arXiv:2311.13081)](https://arxiv.org/pdf/2311.13081) — on the
-[crazyflow](https://github.com/utiasDSL/crazyflow) Crazyflie simulator.
+Trajectory-tracking benchmark for the **Crazyflie 2.1 brushless** on the
+[crazyflow](https://github.com/utiasDSL/crazyflow) simulator, replicating the
+Figure-5 / Table-III Lissajous benchmark of
+["Learning to Fly in Seconds" (arXiv:2311.13081)](https://arxiv.org/abs/2311.13081)
+with a controller pool that includes a DATT-style learned policy
+([arXiv:2310.09053](https://arxiv.org/abs/2310.09053)).
 
-## Goal
+## Benchmark
 
-Reproduce the Figure 5 benchmarking scenario: tracking error of a learned policy
-vs. classical baselines on two families of reference trajectories:
+Figure-eight Lissajous `p(t) = [cos(2*pi*t/T), sin(4*pi*t/T)/2, z]` at
+slow (T=15 s), normal (5.5 s), fast (3.5 s), plus an acro tier (2.2 s, at the
+platform's feasibility limit) and a vertical-plane variant. Metric: RMSE 3D /
+xy (1 s warmup excluded). Sim ground truth: `cf21B_500` (43.4 g, TWR 1.88),
+first-principles dynamics + firmware-replica Mellinger attitude loop at 500 Hz.
 
-1. **Smooth trajectories** — randomized chained polynomials (dynamically feasible).
-2. **Infeasible trajectories** — random zigzags (piecewise-linear position with
-   velocity discontinuities).
+## Current results (2026-07-22)
 
-Compared controllers (as in the paper):
+Nominal, RMSE 3D (m):
 
-| Controller | Status |
-|---|---|
-| DATT (PPO policy + L1 adaptation + feedforward ref encoding) | planned |
-| Nonlinear MPC | planned |
-| L1-MPC (MPC + L1 adaptive compensation) | planned |
-| PID / geometric baseline | planned |
+| controller | slow | normal | fast |
+|---|---|---|---|
+| PID (acc feedforward) | **0.012** | **0.022** | 0.088 |
+| ADRC (velocity-ESO, w=7) | 0.012 | 0.034 | 0.089 |
+| MPPI+L1 (tuned: N=512, AR(1) noise) | 0.023 | 0.035 | **0.068** |
+| MPC (CasADi/ipopt, so_rpy model) | 0.018 | 0.063 | 0.083 |
+| DATT v3 (PPO + L1 obs + perturb training) | 0.021 | 0.048 | 0.099 |
 
-## Why crazyflow (not CrazySim)
+Disturbances (normal speed) and Lighthouse-sensor results: see
+`reports/2026-07-22_*.md`. Highlights:
+- **ADRC** wins all force-disturbance scenarios with clean sensing (wind
+  0.025-0.032 vs PID 0.109) but is the most sensor-noise-sensitive.
+- **DATT v5** (asymmetric actor-critic + noise domain randomization) is the
+  best policy under the realistic deployment condition (Lighthouse + wind:
+  0.058).
+- **DATT-acro** (CTBR body-rate policy) wins both acro-tier trajectories and
+  degrades gracefully where attitude-mode controllers diverge; **acro2.1**
+  additionally performs 360-degree roll flips (reward shaping was decisive —
+  see reports for the 0-degree-flip failure analysis).
+- Idealized-sim absolute numbers are ~5-10x better than the papers' real-world
+  values for well-understood reasons (no drag/noise/latency); the Lighthouse
+  sensor model (34+-18 Hz, 2-4 cm bias, per arXiv:2104.11523) closes most of
+  the gap.
 
-- Pip-installable, CPU-friendly JAX + MuJoCo sim of the Crazyflie 2.x — no
-  CUDA, Gazebo, or ROS 2 required (this machine has no NVIDIA GPU).
-- Batched/vectorized rollouts make PPO training feasible on CPU.
-- Same simulator family used by
-  [lsy_drone_racing](https://github.com/learnsyslab/lsy_drone_racing), which we
-  use as a structural reference alongside
-  [learning-to-fly](https://github.com/arplaboratory/learning-to-fly) and the
-  original [DATT code](https://github.com/KevinHuang8/DATT).
-
-## Setup (WSL2 Ubuntu recommended on Windows)
-
-crazyflow officially targets Linux. On Windows, use WSL2:
+## Setup (Windows: WSL2 Ubuntu required for the simulator)
 
 ```powershell
-# In an elevated PowerShell (one-time):
-wsl --install -d Ubuntu-24.04
+wsl --install -d Ubuntu-24.04      # elevated PowerShell, one-time
 ```
 
-If the repo lives on the Windows drive (`/mnt/c/...`), enable permission
-metadata once inside Ubuntu (editable pip installs fail without it), then
-restart the distro:
+Inside Ubuntu — if the repo lives on `/mnt/c`, enable metadata mounts once
+(editable pip installs fail without it):
 
 ```bash
 sudo tee -a /etc/wsl.conf >/dev/null <<'EOF'
@@ -55,37 +61,78 @@ EOF
 # then from Windows: wsl --terminate Ubuntu-24.04
 ```
 
-Then inside Ubuntu:
+Then:
 
 ```bash
-./scripts/setup_env.sh              # venv at ~/venvs/crazy_track, installs crazyflow + this package
+./scripts/setup_env.sh                       # venv at ~/venvs/crazy_track
 source ~/venvs/crazy_track/bin/activate
-python -m pytest tests/             # sanity check
+python -m pytest tests/                      # sanity check
 ```
 
-The trajectory-generation and analysis code is pure numpy and also runs on
-native Windows; only the simulator (JAX/MuJoCo) prefers Linux.
+## Running benchmarks
+
+Every run writes a timestamped directory under `results/` with
+`metadata.yaml` (date-time, **reason**, git commit, config), per-rollout
+`.npz`, `summary.csv`, and tracking plots. `--reason` is mandatory by design.
+
+```bash
+# classical pool, 3 speeds
+python -m crazy_track.eval.lissajous_benchmark \
+  --controllers pid adrc mppi_l1 mpc --reason "..."
+
+# learned policy (attitude-mode) / acro policy (CTBR)
+python -m crazy_track.eval.lissajous_benchmark \
+  --controllers datt:results/<train-run>/datt_ppo_final.zip --reason "..."
+
+# disturbances: wind_const | wind_gust | ground | payload
+# sensor model:  --sensor lighthouse     vertical fig-8:  --vertical
+python -m crazy_track.eval.lissajous_benchmark \
+  --controllers adrc --disturbance wind_const --sensor lighthouse --reason "..."
+
+# flip maneuvers (CTBR policy)
+python -m crazy_track.eval.flip_eval --model results/<run>/datt_ppo_final.zip --reason "..."
+```
+
+## Training DATT policies
+
+```bash
+python -m crazy_track.training.ppo_train --timesteps 3000000 --reason "..." [flags]
+#  (no flag)      v3: L1 obs + force-perturbation training      (43-dim obs)
+#  --noisy-sensor v4: + Lighthouse noise on observations
+#  --v5           v5: + asymmetric actor-critic + noise DR      (56-dim obs)
+#  --v6           v6a: + 4-frame stacked actor obs              (185-dim obs)
+#  --ctbr         acro: body-rate actions, refs to the TWR limit
+#  --acro2        acro phase 2: + flip primitives               (46-dim obs)
+```
 
 ## Repository layout
 
 ```
 src/crazy_track/
-  trajectories/    # DATT-style reference generators (chained poly, zigzag)
-  envs/            # crazyflow gymnasium wrapper for trajectory tracking
-  controllers/     # PID, MPC, L1, DATT policy (common interface)
-  training/        # PPO training entrypoint
-  eval/            # Figure-5 benchmark runner + plots
-configs/           # experiment configs
-scripts/           # environment setup, run helpers
-tests/             # unit tests (pure-numpy parts)
+  trajectories/    # Lissajous (+vertical/acro), chained-poly, zigzag, flip
+  envs/            # crazyflow rollout harness + vectorized RL training env
+  controllers/     # PID, ADRC, MPPI+L1, MPC, DATT eval controllers, L1, CTBR utils
+  training/        # PPO entrypoint + asymmetric actor-critic policy
+  eval/            # benchmark runners, flip eval, run logging
+  disturbances.py  # wind / gust / ground-effect / payload models
+  sensors.py       # Lighthouse LH2 measurement model (arXiv:2104.11523)
+configs/  reports/  results/  scripts/  tests/
 ```
 
 ## Roadmap
 
-- [x] Repo scaffold, trajectory generators (smooth + zigzag)
-- [ ] crazyflow tracking env (obs = state + windowed future ref, act = CTBR)
-- [ ] PID baseline closed-loop in sim
-- [ ] PPO training of DATT policy (feedforward ref encoding)
-- [ ] L1 adaptation module
-- [ ] MPC / L1-MPC baselines
-- [ ] Figure 5 replication: tracking-error statistics + box plots
+- [x] Fig-5 replication: 5 controllers x 3 speeds; disturbance + sensor matrices
+- [x] DATT v3-v6a study (perturbations, noise, asymmetric AC, frame stacking)
+- [x] DATT-acro: CTBR interface, acro-tier + vertical fig-8, flip primitives
+- [ ] Flip robustness: higher hover margin, pitch-flip asymmetry, recovery precision
+- [ ] [xadapt_ctrl](https://github.com/muellerlab/xadapt_ctrl) (Mueller lab
+      universal adaptive controller) added to the pool
+- [ ] Offset-free MPC; adaptive-bandwidth ESO; multi-seed statistics
+
+## References
+
+- Eschmann, Albani, Loianno — Learning to Fly in Seconds (arXiv:2311.13081)
+- Huang et al. — DATT: Deep Adaptive Trajectory Tracking (arXiv:2310.09053)
+- Taffanel et al. — Lighthouse Positioning System dataset (arXiv:2104.11523)
+- [lsy_drone_racing](https://github.com/learnsyslab/lsy_drone_racing),
+  [learning-to-fly](https://github.com/arplaboratory/learning-to-fly)

@@ -256,7 +256,38 @@ references, like DATT's infeasible-trajectory scenario.
    attitude-reference tracking in the obs/reward, not just position refs.
    The CTBR interface built here is the prerequisite and is now validated.
 
+## Acro phase 2: flip primitives (runs 19-41-43, 20-11-18, 20-12-43, 20-43-01)
+
+Setup: FlipTrajectory (hover -> smooth 360-deg roll/pitch over 0.4-0.7 s at
+z=1.5 -> recover), obs + attitude-error rotvec (46-dim), 50/50 flip/aggressive
+episode mix, CTBR actions.
+
+**acro2.0 — reward mis-specification, measured:** all four flip variants gave
+~0-deg rotation with excellent hover (recovery 0.023 m). With the +0.6
+attitude bonus, a perfect flip earns ~0.6/step while losing ~0.87/step of
+position reward during the ~1 m drop — hovering was reward-optimal, and PPO
+found exactly that.
+
+**acro2.1 — attitude term dominates during the maneuver window
+(2.0*exp(-2*att) + 0.25*exp(-2*pos)):**
+
+| flip | rotation (deg) | complete | max dev (m) | min z (m) | recovery (m) |
+|---|---|---|---|---|---|
+| roll+  | +377.6 | yes | 1.52 | -0.00 | 0.54 |
+| roll-  | -354.8 | yes | 1.64 | 0.03 | 0.99 |
+| pitch+ | -0.0   | no  | 0.21 | 1.44 | 0.03 |
+| pitch- | -294.8 | ~5/6 | 1.59 | -0.00 | 0.87 |
+
+Reward shaping was decisive: 3 of 4 variants now attempt the flip, 2 complete
+full rotations. Open issues for acro2.2: (a) altitude loss eats the entire
+1.5 m margin (floor touches) -> train at z>=2.5 with entry thrust; (b) pitch+
+never learned (axis/direction asymmetry in the training mix); (c) recovery
+error 0.5-1 m. Standard-tracking regression from the flip mix is mild
+(fast 0.170-0.173 vs 0.123 for acro v1).
+
 ## Next
-1. Acro phase 2: attitude-reference primitives (flip/roll maneuvers).
-2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
-3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.
+1. Acro2.2: higher flip altitude margin, per-variant balancing, recovery reward.
+2. Queue: benchmark muellerlab/xadapt_ctrl (universal adaptive controller)
+   against the pool.
+3. MPC: reuse previous solution on solver failure; seed-averaged lighthouse
+   runs; adaptive-bandwidth ESO.
