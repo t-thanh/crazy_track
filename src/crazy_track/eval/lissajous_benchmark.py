@@ -48,13 +48,22 @@ def main() -> None:
     parser.add_argument("--speeds", nargs="+", default=["slow", "normal", "fast"])
     parser.add_argument("--reason", required=True, help="why this run is being made (logged)")
     parser.add_argument("--tag", default="lissajous")
+    parser.add_argument("--disturbance", default="none",
+                        choices=["none", "wind_const", "wind_gust", "ground", "payload"])
     args = parser.parse_args()
+
+    from crazy_track.disturbances import SCENARIOS
+    disturbance = SCENARIOS[args.disturbance]() if args.disturbance != "none" else None
+    traj_z = 0.08 if args.disturbance == "ground" else 1.0  # IGE needs low altitude
+    if args.tag == "lissajous" and args.disturbance != "none":
+        args.tag = f"lissajous-{args.disturbance}"
 
     log = RunLogger(
         tag=args.tag, reason=args.reason,
         config={"controllers": args.controllers, "speeds": args.speeds,
                 "n_cycles": N_CYCLES, "control_freq": CONTROL_FREQ,
-                "drone": "cf21B_500", "dynamics": "first_principles"},
+                "drone": "cf21B_500", "dynamics": "first_principles",
+                "disturbance": args.disturbance, "traj_z": traj_z},
     )
     print(f"Logging to {log.dir}")
     sim = make_sim()
@@ -65,10 +74,11 @@ def main() -> None:
     for ci, cspec in enumerate(args.controllers):
         cname = cspec.split(":")[0]  # file/label-safe name (model paths follow the colon)
         for si, speed in enumerate(args.speeds):
-            traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES)
+            traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES, z=traj_z)
             ctrl = make_controller(cspec)
             t0 = time.time()
-            data = rollout(ctrl, traj, control_freq=CONTROL_FREQ, sim=sim)
+            data = rollout(ctrl, traj, control_freq=CONTROL_FREQ, sim=sim,
+                           disturbance=disturbance)
             wall = time.time() - t0
             metrics = tracking_metrics(data["pos"], data["ref_pos"], data["t"])
             metrics["wall_time_s"] = round(wall, 1)

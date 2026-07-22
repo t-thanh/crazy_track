@@ -1,0 +1,17 @@
+datetime: 2026-07-22_15-28-08
+tag: lissajous-wind_const
+reason: 'Validate disturbance injection: constant wind 0.11N x-dir, expect PID steady
+  offset vs ADRC rejection'
+git_commit: 63e2ffe
+config:
+  controllers:
+  - pid
+  - adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  traj_z: 1.0

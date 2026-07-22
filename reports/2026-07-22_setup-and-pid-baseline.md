@@ -108,8 +108,55 @@ reference aggressiveness.
 **v2 launched** (run 15-2x_datt-train): randomized per-trajectory difficulty
 (vel 0.5-3.5 m/s, acc 1-10 m/s^2, seg 1-2.5 s), 3M steps.
 
+## Are our numbers too good to be true? (comparison with both papers)
+
+Reference numbers pulled from the papers:
+
+**arXiv:2311.13081 Table III (REAL WORLD, Crazyflie):** PID 0.23/0.72/0.88 m
+(slow/normal/fast), Geometric 0.06/0.16/0.36, INDI 0.21/1.13/1.04, learned RL
+0.08/0.17/0.24, Nonlinear crashed at fast.
+
+**arXiv:2310.09053 DATT (SIMULATION, no disturbance):** DATT 0.049±0.017 m
+(smooth) / 0.083±0.023 (infeasible); L1-MPC 0.088/0.181; MPC 0.104/0.183.
+Real world w/ wind+drag plate: DATT 0.095/0.161, L1-MPC 0.181/0.243. Their
+CF2.1 is 40 g, TWR just under 2 (ours: 43.4 g, TWR 1.88 — well matched).
+
+**Verdict: our nominal numbers (PID 0.012-0.088) are optimistic by roughly
+5-10x vs real hardware, and that gap is explained, not mysterious:**
+1. Perfect state feedback — no mocap noise/latency/dropout, no estimator lag.
+   The papers' real flights carry all of these.
+2. No aerodynamic drag in `first_principles` (crazyflow's drag matrix only
+   exists in the `so_rpy_rotor_drag` dynamics), no motor asymmetry, no
+   battery sag.
+3. Zero external disturbance in the nominal runs.
+4. Our PID has full acceleration feedforward; the papers' baseline PIDs
+   likely track with feedback only (their real PID: 0.23 m even at slow).
+5. Our warmup exclusion (1 s) removes the entry transient.
+
+Sanity anchors that DO line up: (a) our DATT-sim ordering matches the DATT
+paper's sim table (learned > L1-MPC > MPC); (b) our fast-speed degradation
+ordering matches Fig. 5 (classical overshoot at the lobes); (c) our DATT v1
+fast failure at 0.947 m is the same OOD mechanism the DATT paper designs
+against. Conclusion: relative comparisons are meaningful; absolute values
+should only be quoted as "idealized-sim" numbers. Adding noise/latency and
+drag is the path to realistic absolutes (now on the roadmap).
+
+## Disturbance scenarios (new, src/crazy_track/disturbances.py)
+World-frame CoM forces injected via crazyflow `states.force` each control step:
+- **wind_const**: steady 0.11 N (~2.5 m/s^2, 60% of DATT's max perturbation).
+- **wind_gust**: mean + 0.7 Hz sinusoidal gust + Ornstein-Uhlenbeck turbulence
+  (mimics DATT's fan array).
+- **ground**: Cheeseman-Bennett in-ground-effect thrust gain 1/(1-(R/4z)^2),
+  benchmarked on a low-altitude (z=0.08 m) Lissajous.
+- **payload**: +10 g constant downward force (23% of weight).
+
+**Validation run 15-28-08 (wind_const, normal speed): PID 0.109 m (5x worse
+than nominal 0.022) vs ADRC 0.032 m (unchanged)** — the ESO estimates and
+cancels the wind while PID's clipped integrator (max 1 m/s^2) cannot. First
+clear separation of the disturbance-rejection controllers, as theory predicts.
+
 ## Next
-1. Eval DATT v2 zero-shot; consolidated 5-controller Figure-5 table + plots.
-2. Disturbance scenarios (wind, payload) where ADRC/L1/DATT should separate
-   from PID/MPC.
+1. Eval DATT v2 zero-shot (training in progress); consolidated 5-controller
+   Figure-5 table + plots, nominal + all 4 disturbance scenarios.
+2. Sensor noise + control latency for realistic absolute numbers.
 3. MPPI tuning; consider acados for real-time-feasible MPC timings.

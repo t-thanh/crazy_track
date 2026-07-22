@@ -43,14 +43,22 @@ def get_state(sim) -> np.ndarray:
     ]).astype(np.float64)
 
 
+def apply_force(sim, f: np.ndarray) -> None:
+    """Set the world-frame external force on the CoM (crazyflow states.force)."""
+    force = jnp.asarray(f, dtype=jnp.float32).reshape(1, 1, 3)
+    sim.data = sim.data.replace(states=sim.data.states.replace(force=force))
+
+
 def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
-            sim=None, start_at_rest: bool = True) -> dict[str, np.ndarray]:
+            sim=None, start_at_rest: bool = True, disturbance=None) -> dict[str, np.ndarray]:
     """Run one closed-loop episode. Returns time series arrays."""
     sim = sim or make_sim()
     sim.reset()
     if start_at_rest:
         set_drone_state(sim, traj.pos(0.0))
     controller.reset(traj)
+    if disturbance is not None:
+        disturbance.reset()
 
     n_substeps = sim.freq // control_freq
     n_steps = int(traj.duration * control_freq)
@@ -67,6 +75,8 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
         log["ref_pos"].append(traj.pos(t))
         log["ref_vel"].append(traj.vel(t))
         log["action"].append(action)
+        if disturbance is not None:
+            apply_force(sim, disturbance.force(t, state))
         sim.attitude_control(action.reshape(1, 1, 4))
         sim.step(n_substeps)
     return {k: np.asarray(v) for k, v in log.items()}
