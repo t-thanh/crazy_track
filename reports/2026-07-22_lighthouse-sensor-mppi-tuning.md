@@ -222,9 +222,41 @@ inference. Options if revisited: GRU + longer training, bigger window with
 strided frames, or explicit innovation-variance features. Not pursued now —
 **v5 stands as the deployment policy, v3 as the clean-sensing policy.**
 
+## DATT-acro v1 (train run 18-58-56, evals 19-24-47 .. 19-25-32)
+
+CTBR body-rate policy vs best attitude-mode controllers. RMSE 3D (m):
+
+| trajectory | datt_acro | MPPI+L1 (tuned) | DATT v3 |
+|---|---|---|---|
+| horizontal fast (T=3.5) | 0.123 | **0.068** | 0.099 |
+| horizontal acro (T=2.2) | **0.322** | 0.341 | 0.367 |
+| vertical normal (T=5.5) | 0.122 | **0.033** | 0.084 |
+| vertical fast (T=3.5) | 0.196 | 0.423 | **0.162** |
+| vertical acro (T=2.2) | **0.349** | 0.372 | 1.324 (diverged) |
+
+### Physics context (why acro-tier errors are large for everyone)
+T=2.2 s demands y-accel 4w^2*B = 16.3 m/s^2 — *beyond* the cf21B's lateral
+limit of ~15.2 m/s^2 (TWR 1.88). The vertical acro fig-8 demands -16.3 m/s^2
+vertical, i.e. **negative thrust** — untrackable without inverted flight.
+The acro tier therefore measures graceful degradation on (near-)infeasible
+references, like DATT's infeasible-trajectory scenario.
+
+### Findings
+1. **The CTBR policy wins both acro-tier trajectories** and, critically,
+   degrades gracefully where the attitude-mode learned policy diverges
+   (vertical acro: 0.349 vs v3's 1.324). The body-rate interface + to-the-
+   limit training distribution buys robustness at the aggression envelope.
+2. **At feasible speeds specialists still win** (MPPI at normal tiers, v3 at
+   vertical fast). CTBR + torque-level learning costs precision in the easy
+   regime — same tradeoff pattern as v4/v5.
+3. MPPI's hover-fitted so_rpy model visibly breaks at vertical fast (0.423,
+   worse than both learned policies) — confirming the internal-model limit
+   predicted in the controller-ranking analysis.
+4. True aerobatics (flips, inverted segments) remain future work: they need
+   attitude-reference tracking in the obs/reward, not just position refs.
+   The CTBR interface built here is the prerequisite and is now validated.
+
 ## Next
-1. DATT-acro (in training, run ~18:5x): CTBR body-rate action space,
-   aggressive distribution to the TWR limit; eval on vertical + T=2.2 s
-   Lissajous vs attitude-mode controllers.
+1. Acro phase 2: attitude-reference primitives (flip/roll maneuvers).
 2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
 3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.

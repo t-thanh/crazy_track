@@ -1,0 +1,19 @@
+datetime: 2026-07-22_19-25-32
+tag: attitude-on-vertical
+reason: 'Attitude-mode ceiling test: tuned MPPI + DATT v3 on vertical fig-8'
+git_commit: 589e8f7
+config:
+  controllers:
+  - mppi_l1
+  - datt:results/2026-07-22_16-35-10_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0
