@@ -1,0 +1,19 @@
+datetime: 2026-07-22_15-49-29
+tag: lissajous-wind_gust
+reason: 'Disturbance sweep (wind_gust): all 5 controllers, normal speed, DATT v2'
+git_commit: 0b35d82
+config:
+  controllers:
+  - pid
+  - adrc
+  - mppi_l1
+  - mpc
+  - datt:results/2026-07-22_15-22-18_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  traj_z: 1.0

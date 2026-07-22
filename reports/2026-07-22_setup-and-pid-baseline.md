@@ -155,8 +155,57 @@ than nominal 0.022) vs ADRC 0.032 m (unchanged)** — the ESO estimates and
 cancels the wind while PID's clipped integrator (max 1 m/s^2) cannot. First
 clear separation of the disturbance-rejection controllers, as theory predicts.
 
+## DATT v2 + consolidated Figure-5 results (runs 15-45-21, 15-46-05)
+
+DATT v2 (3M steps, randomized difficulty): **fast fixed, 0.947 -> 0.090 m**,
+at the cost of slow/normal precision (0.021/0.048 vs v1's 0.005/0.020) — the
+difficulty-diversity tradeoff. v2 normal (0.048) matches the DATT paper's own
+sim result for smooth trajectories (0.049±0.017) almost exactly.
+
+**Nominal, RMSE 3D (m), slow/normal/fast (run 15-46-05_fig5-final):**
+
+| controller | slow  | normal | fast  |
+|------------|-------|--------|-------|
+| PID        | 0.012 | 0.022  | 0.088 |
+| ADRC       | 0.012 | 0.034  | 0.089 |
+| MPPI+L1    | 0.042 | 0.045  | 0.089 |
+| MPC        | 0.018 | 0.063  | **0.083** |
+| DATT v2    | 0.021 | 0.048  | 0.090 |
+
+## Disturbance sweep (normal speed, runs 15-48-42 .. 15-50-49)
+
+RMSE 3D (m):
+
+| controller | nominal | wind_const | wind_gust | payload | ground |
+|------------|---------|-----------|-----------|---------|--------|
+| PID        | 0.022   | 0.109     | 0.117     | 0.093   | **0.023** |
+| ADRC       | 0.034   | **0.032** | **0.080** | **0.036** | 0.066 |
+| MPPI+L1    | 0.045   | 0.067     | 0.093     | 0.055   | 0.044 |
+| MPC        | 0.063   | 0.196     | 0.142     | 0.137   | 0.055 |
+| DATT v2    | 0.048   | 0.154     | 0.122     | 0.063   | 0.047 |
+
+### Findings
+1. **ADRC dominates every force-disturbance scenario** (wind, gust, payload)
+   — the ESO estimates and cancels the disturbance within its bandwidth.
+   Its nominal-case parity with PID plus disturbance-case dominance is the
+   textbook ADRC value proposition, now demonstrated end-to-end.
+2. **MPC is the most disturbance-fragile** (0.196 under constant wind): the
+   prediction model has no disturbance state and the controller no integral
+   action. An offset-free MPC variant (disturbance observer + model
+   augmentation) is the standard fix.
+3. **DATT v2 degrades under wind (0.154)** — expected and important: unlike
+   the DATT paper, our training had *no force perturbations* and no L1
+   estimate in the observation. This isolates exactly why the paper combines
+   domain randomization + L1 adaptation; DATT v3 should add both.
+4. **PID under payload:** xy stays clean (0.021) but z sags ~90 cm RMSE
+   contribution — its clipped integrator (1 m/s^2) cannot lift 2.3 m/s^2 of
+   payload. ADRC handles the same payload at 0.036.
+5. **Ground effect is mild at z=8 cm** (max ~14% thrust gain): PID barely
+   notices; ADRC slightly overreacts (ESO attributes IGE lift to disturbance
+   with a lag at 0.7 Hz crossing).
+
 ## Next
-1. Eval DATT v2 zero-shot (training in progress); consolidated 5-controller
-   Figure-5 table + plots, nominal + all 4 disturbance scenarios.
+1. DATT v3: force-perturbation domain randomization + L1 estimate in obs
+   (the paper's full recipe) to close the wind gap.
 2. Sensor noise + control latency for realistic absolute numbers.
-3. MPPI tuning; consider acados for real-time-feasible MPC timings.
+3. Offset-free MPC; MPPI tuning; acados for real-time-feasible timings.

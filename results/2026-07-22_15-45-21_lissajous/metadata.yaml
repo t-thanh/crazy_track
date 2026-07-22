@@ -1,0 +1,18 @@
+datetime: 2026-07-22_15-45-21
+tag: lissajous
+reason: Zero-shot eval of DATT PPO v2 (3M steps, randomized-difficulty refs vel 0.5-3.5
+  acc 1-10)
+git_commit: 0b35d82
+config:
+  controllers:
+  - datt:results/2026-07-22_15-22-18_datt-train/datt_ppo_final.zip
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  traj_z: 1.0
