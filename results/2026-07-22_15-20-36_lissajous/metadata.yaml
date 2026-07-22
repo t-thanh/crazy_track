@@ -1,0 +1,15 @@
+datetime: 2026-07-22_15-20-36
+tag: lissajous
+reason: First zero-shot eval of DATT PPO (2M steps, run 15-04-23) on Lissajous
+git_commit: 3a7c937
+config:
+  controllers:
+  - datt:results/2026-07-22_15-04-23_datt-train/datt_ppo_final.zip
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles

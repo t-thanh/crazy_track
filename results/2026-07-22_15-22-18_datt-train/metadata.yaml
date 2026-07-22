@@ -1,0 +1,13 @@
+datetime: 2026-07-22_15-22-18
+tag: datt-train
+reason: 'DATT PPO v2: randomized-difficulty refs (vel 0.5-3.5 m/s, acc 1-10 m/s2,
+  seg 1-2.5s) to cover fast-Lissajous envelope; v1 (vel<=1, acc<=2) failed fast at
+  RMSE 0.947m'
+git_commit: 3a7c937
+config:
+  timesteps: 3000000
+  n_envs: 16
+  reason: 'DATT PPO v2: randomized-difficulty refs (vel 0.5-3.5 m/s, acc 1-10 m/s2,
+    seg 1-2.5s) to cover fast-Lissajous envelope; v1 (vel<=1, acc<=2) failed fast
+    at RMSE 0.947m'
+  seed: 0

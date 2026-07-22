@@ -51,9 +51,15 @@ class DATTTrackingEnv:
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
 
     def _sample_traj(self, i: int) -> None:
+        # Randomized difficulty per trajectory: covers the full Lissajous benchmark
+        # envelope (fast reaches ~3 m/s and ~9 m/s^2; policies trained only on
+        # gentle refs fail on it — RMSE 0.95 m observed with vel<=1, acc<=2).
+        vel_range = float(self.rng.uniform(0.5, 3.5))
+        acc_range = float(self.rng.uniform(1.0, 10.0))
         self._traj[i] = ChainedPolyTrajectory.random(
             self.rng, duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
-            seg_duration=2.0, pos_range=1.0, vel_range=1.0, acc_range=2.0, start_pos=START,
+            seg_duration=self.rng.uniform(1.0, 2.5), pos_range=1.0,
+            vel_range=vel_range, acc_range=acc_range, start_pos=START,
         )
 
     def _set_states(self, mask: np.ndarray) -> None:

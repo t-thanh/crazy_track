@@ -97,9 +97,19 @@ RMSE 3D (m), 2 cycles, 1 s warmup excluded, cf21B_500 first_principles:
 - All classical controllers show the same fast-lobe overshoot signature as
   the paper's classical pool in Figure 5.
 
+## DATT PPO v1 (train run 15-04-23, eval run 15-21-18)
+2M steps / 16 envs trained in 16 min (2129 fps, JAX-vectorized CPU sim).
+Zero-shot Lissajous: **slow 0.005, normal 0.020 — best in the pool** — but
+**fast 0.947 m (failure)**. Root cause: training distribution capped at
+vel<=1 m/s, acc<=2 m/s^2; fast Lissajous reaches 3 m/s / ~9 m/s^2 — fully
+out-of-distribution. This mirrors the DATT paper's emphasis on training-time
+reference aggressiveness.
+
+**v2 launched** (run 15-2x_datt-train): randomized per-trajectory difficulty
+(vel 0.5-3.5 m/s, acc 1-10 m/s^2, seg 1-2.5 s), 3M steps.
+
 ## Next
-1. DATT-PPO: training launched (run 2026-07-22_15-04-23_datt-train, 2M steps,
-   16 envs, random chained-poly refs). Eval zero-shot on Lissajous when done.
+1. Eval DATT v2 zero-shot; consolidated 5-controller Figure-5 table + plots.
 2. Disturbance scenarios (wind, payload) where ADRC/L1/DATT should separate
    from PID/MPC.
 3. MPPI tuning; consider acados for real-time-feasible MPC timings.
