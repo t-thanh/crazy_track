@@ -19,7 +19,7 @@ class MPCController(Controller):
     """
 
     def __init__(self, horizon: int = 20, dt_plan: float = 0.04, control_freq: int = 100,
-                 offset_free: bool = False):
+                 offset_free: bool = False, eso_w: float = 7.0):
         import casadi as cs
 
         self.H, self.dtp = horizon, dt_plan
@@ -27,9 +27,12 @@ class MPCController(Controller):
         # state, estimated by a velocity ESO, enters the prediction model so the
         # optimizer plans against it. Plain MPC re-predicts the same biased
         # trajectory under steady wind (measured: 0.196 m RMSE).
+        # Unlike ADRC, the ESO here is not in a high-gain feedback path — it only
+        # biases the prediction model — so its bandwidth can sit well below the
+        # tracking bandwidth (noise robustness) and still cancel quasi-static wind.
         self.offset_free = offset_free
         self.dt = 1.0 / control_freq
-        self._w = 7.0  # ESO bandwidth for the disturbance estimate
+        self._w = eso_w  # ESO bandwidth for the disturbance estimate
         p = _load_so_rpy_params()
         self.p = p
         self.hover = float((p["mass"] * 9.81 - p["acc_coef"]) / p["cmd_f_coef"])

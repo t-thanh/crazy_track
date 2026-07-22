@@ -36,9 +36,14 @@ def make_controller(name: str, seed: int = 0):
     if name == "adrc_adaptive":
         from crazy_track.controllers.adrc import ADRCController
         return ADRCController(control_freq=CONTROL_FREQ, estimator="adaptive")
-    if name == "mpc_offsetfree":
+    if name.startswith("mpc_offsetfree"):  # optional _w<N> suffix: ESO bandwidth
+        import re
         from crazy_track.controllers.mpc import MPCController
-        return MPCController(control_freq=CONTROL_FREQ, offset_free=True)
+        m = re.fullmatch(r"mpc_offsetfree(?:_w(\d+))?", name)
+        if m is None:
+            raise ValueError(f"Unknown controller: {name}")
+        return MPCController(control_freq=CONTROL_FREQ, offset_free=True,
+                             eso_w=float(m.group(1)) if m.group(1) else 7.0)
     if name == "mpc":
         from crazy_track.controllers.mpc import MPCController
         return MPCController(control_freq=CONTROL_FREQ)

@@ -27,8 +27,15 @@ class RunLogger:
                  results_root: Path | None = None):
         stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         root = results_root or REPO_ROOT / "results"
-        self.dir = root / f"{stamp}_{tag}"
-        self.dir.mkdir(parents=True, exist_ok=False)
+        # concurrent runs can land in the same second: suffix instead of crash
+        for suffix in ("", "-b", "-c", "-d"):
+            self.dir = root / f"{stamp}{suffix}_{tag}"
+            try:
+                self.dir.mkdir(parents=True, exist_ok=False)
+                break
+            except FileExistsError:
+                if suffix == "-d":
+                    raise
         self.summary_rows: list[dict] = []
         meta = {
             "datetime": stamp,
