@@ -1,0 +1,16 @@
+datetime: 2026-07-22_22-29-37
+tag: ms-lhwind-s1
+reason: 'Multi-seed (seed 1): deployment claim datt v5 lh+wind'
+git_commit: 2256ab3
+config:
+  controllers:
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0

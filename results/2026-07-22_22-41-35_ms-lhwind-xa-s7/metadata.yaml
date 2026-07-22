@@ -1,0 +1,16 @@
+datetime: 2026-07-22_22-41-35
+tag: ms-lhwind-xa-s7
+reason: 'Multi-seed (seed 7): deployment claim xadapt_adrc lh+wind'
+git_commit: 2256ab3
+config:
+  controllers:
+  - xadapt_adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0

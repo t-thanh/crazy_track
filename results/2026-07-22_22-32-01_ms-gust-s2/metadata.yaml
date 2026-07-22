@@ -1,0 +1,18 @@
+datetime: 2026-07-22_22-32-01
+tag: ms-gust-s2
+reason: 'Multi-seed (seed 2): gust realizations'
+git_commit: 2256ab3
+config:
+  controllers:
+  - adrc
+  - datt:results/2026-07-22_16-35-10_datt-train/datt_ppo_final.zip
+  - mppi_l1
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  sensor: none
+  traj_z: 1.0

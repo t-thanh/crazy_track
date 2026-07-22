@@ -400,7 +400,41 @@ Changes: flip altitude U(2.0,3.0) m, deterministic 4-variant cycling.
 axis with proper altitude margin; pitch-axis flips and recovery precision
 (<0.3 m) remain open, gated on multi-seed training experiments.
 
+## Publication-grade items (runs 22-22-28 .. 22-26+, sweep ms-*)
+
+### Offset-free MPC — CONFIRMED, exceeds hypothesis
+DIST-augmented so_rpy model + velocity ESO (w=7): wind 0.196 -> **0.039**
+(predicted ~0.04), and nominal improved everywhere — slow **0.006**, fast
+**0.053** are new pool records. The disturbance state absorbs the standing
+so_rpy-vs-first-principles model bias, not just wind. Limitation found in
+the seed sweep: under Lighthouse the ESO feeds position-ZOH noise into the
+prediction (normal: 0.178+-0.076, high variance) — needs a noise-scheduled
+ESO input, same lesson as ADRC.
+
+### Adaptive-bandwidth ESO — PARTIALLY REFUTED, mechanism identified
+Innovation-mean/std-scheduled w in [3,12]: wins its target gust cells
+(0.071 vs best-fixed 0.080) but degrades all calm cells (nominal 0.060 vs
+0.023) — the statistic cannot distinguish external disturbances from the
+ESO's own attitude-lag residual during aggressive tracking, so it
+false-positives into high bandwidth. Fixed w=7 remains default; kept as a
+documented negative result (v2 idea: reference-aware residual whitening).
+
+### Multi-seed statistics (10 eval seeds; aggregate_seeds.py)
+
+| claim | single-seed | 10-seed mean+-std | verdict |
+|---|---|---|---|
+| v5 >> v3 under lighthouse-fast | 0.130 vs 0.369 | 0.126+-0.007 vs 0.323+-0.106 | **CONFIRMED** (non-overlapping; v3 range 0.155-0.505) |
+| DATT v3 pool-best under gust | 0.066 | 0.061+-0.002 vs ADRC 0.081+-0.007, MPPI 0.076+-0.019 | **CONFIRMED** |
+| xadapt_adrc beats DATT v5 at lh+wind | 0.054 vs 0.058 | 0.060+-0.009 vs 0.065+-0.010 | **TOO CLOSE TO CALL** (overlap; means favor xadapt_adrc) |
+| MPPI 0.068 vs xadapt 0.067 fast | delta 0.001 | MPPI 0.068+-0.014 | noise, as suspected |
+| lighthouse absolutes (seed-0 bias was small) | PID 0.043/0.146 | 0.053+-0.010 / 0.155+-0.007 | single-seed ~1 sigma optimistic |
+
+Key statistical insight: **v3's noise fragility is a variance phenomenon**
+(std 0.106 at lighthouse-fast — some seeds fine, some near-crash), while
+v5's robustness is a variance collapse (std 0.007). Mean-only tables would
+have understated the difference.
+
 ## Next
-1. Multi-seed statistics (also unblocks the pitch-flip question).
-2. Re-run MPC/MPPI/datt_acro lighthouse rows post gyro-latency fix.
-3. Offset-free MPC; adaptive-bandwidth ESO.
+1. mpc_offsetfree noise-robust ESO input; lighthouse re-runs post gyro fix.
+2. Multi-seed *training* runs (3+ seeds) for policy-level claims and the
+   pitch-flip question.

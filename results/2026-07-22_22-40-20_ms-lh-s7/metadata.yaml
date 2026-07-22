@@ -1,0 +1,21 @@
+datetime: 2026-07-22_22-40-20
+tag: ms-lh-s7
+reason: 'Multi-seed sweep (seed 7): lighthouse normal+fast, 5 controllers'
+git_commit: 2256ab3
+config:
+  controllers:
+  - pid
+  - adrc
+  - mpc_offsetfree
+  - datt:results/2026-07-22_16-35-10_datt-train/datt_ppo_final.zip
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

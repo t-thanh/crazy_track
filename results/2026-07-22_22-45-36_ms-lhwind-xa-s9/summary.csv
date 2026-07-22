@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,wall_time_s
+xadapt_adrc,normal,0.06848174609417225,0.06007082571598417,0.14167042427258186,1.0,6.6
