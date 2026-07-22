@@ -1,0 +1,15 @@
+datetime: 2026-07-22_17-32-52
+tag: datt-train
+reason: 'DATT v5: asymmetric actor-critic (actor 43-dim noisy obs, critic +13 privileged
+  true-state/perturb dims) + sensor-noise domain randomization scale U(0,1.5) per
+  episode; goal: recover v3-level disturbance rejection while keeping v4 noise robustness'
+git_commit: e236677
+config:
+  timesteps: 4000000
+  n_envs: 16
+  reason: 'DATT v5: asymmetric actor-critic (actor 43-dim noisy obs, critic +13 privileged
+    true-state/perturb dims) + sensor-noise domain randomization scale U(0,1.5) per
+    episode; goal: recover v3-level disturbance rejection while keeping v4 noise robustness'
+  seed: 0
+  noisy_sensor: false
+  v5: true

@@ -166,7 +166,43 @@ For a Lighthouse-equipped CF2.1 brushless: **DATT v4** for agile tracking,
 **MPPI+L1 (tuned)** as the strongest classical all-rounder in clean-sensing
 conditions.
 
+## DATT v5: asymmetric AC + noise DR (train run 17-32-52, evals 18-01-32 .. 18-02-36)
+
+RMSE 3D (m), three-generation comparison:
+
+| scenario | v3 | v4 | v5 |
+|---|---|---|---|
+| nominal slow/normal/fast | **0.032/0.048/0.099** | 0.022/0.076/0.154 | 0.055/0.089/0.163 |
+| lighthouse slow/normal/fast | 0.034/0.073/0.369 | **0.020**/0.063/0.130 | 0.041/0.063/**0.124** |
+| wind_const (clean sensor) | **0.050** | 0.093 | 0.076 |
+| wind_gust (clean) | **0.066** | 0.093 | 0.091 |
+| payload (clean) | **0.053** | 0.108 | 0.102 |
+| **lighthouse + wind (deployment)** | 0.067 | 0.083 | **0.058** |
+
+### Findings
+1. **v5 wins the deployment condition** — lighthouse+wind 0.058 is the best
+   any policy (or any controller except ADRC-clean) has posted there, and it
+   holds v4's lighthouse-fast robustness (0.124). The asymmetric critic +
+   privileged disturbance signal measurably improved noisy-regime learning.
+2. **The "trust calibration" hypothesis partially failed, for an
+   identifiable architectural reason**: a memoryless MLP cannot infer the
+   episode's noise level from a single observation frame — noise level is
+   only observable across time. So instead of calibrating per episode, the
+   policy still averages across the DR range, which is why clean-sensor
+   numbers regressed further (nominal 0.055/0.089/0.163). Fix for a future
+   v6: recurrent policy (GRU) or frame-stacking so noise level becomes
+   observable; alternatively accept per-regime policies.
+3. Wind rejection recovered partially (v4 0.093 -> v5 0.076, vs v3 0.050):
+   the privileged critic helps PPO see through the noise during training,
+   but the actor's information bottleneck remains.
+
+### Policy selection guide (final for today)
+- Clean/mocap sensing: **DATT v3** (or MPPI+L1 tuned as classical choice).
+- Lighthouse deployment: **DATT v5** — best in the realistic combined
+  condition (noise + wind), 0.058.
+
 ## Next
-1. DATT v5: asymmetric actor-critic + sensor-noise domain randomization.
+1. DATT v6 candidate: recurrent policy (GRU) or obs stacking for noise-level
+   observability; alternatively CTBR action space for acrobatic envelope.
 2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
 3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.
