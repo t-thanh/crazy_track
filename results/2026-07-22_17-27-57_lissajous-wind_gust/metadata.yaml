@@ -1,0 +1,16 @@
+datetime: 2026-07-22_17-27-57
+tag: lissajous-wind_gust
+reason: 'DATT v4 disturbance eval: wind_gust'
+git_commit: 015ea44
+config:
+  controllers:
+  - datt:results/2026-07-22_17-07-10_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  sensor: none
+  traj_z: 1.0

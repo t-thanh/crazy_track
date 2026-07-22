@@ -1,0 +1,19 @@
+datetime: 2026-07-22_17-27-30
+tag: lissajous-lighthouse
+reason: 'DATT v4 with Lighthouse sensor: the target scenario (v3 regressed to 0.369
+  fast)'
+git_commit: 015ea44
+config:
+  controllers:
+  - datt:results/2026-07-22_17-07-10_datt-train/datt_ppo_final.zip
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

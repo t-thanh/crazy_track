@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,wall_time_s
+datt,normal,0.09278038059541154,0.08536663152319847,0.1703021893977045,1.0,3.0

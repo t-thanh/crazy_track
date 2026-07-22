@@ -79,8 +79,12 @@ def main() -> None:
     fig, axes = plt.subplots(len(args.controllers), len(args.speeds),
                              figsize=(5 * len(args.speeds), 4.4 * len(args.controllers)),
                              squeeze=False)
+    seen: dict[str, int] = {}
     for ci, cspec in enumerate(args.controllers):
         cname = cspec.split(":")[0]  # file/label-safe name (model paths follow the colon)
+        seen[cname] = seen.get(cname, 0) + 1
+        if seen[cname] > 1:  # avoid npz/row collisions when comparing same-type models
+            cname = f"{cname}{seen[cname]}"
         for si, speed in enumerate(args.speeds):
             traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES, z=traj_z)
             ctrl = make_controller(cspec)

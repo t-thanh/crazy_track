@@ -128,7 +128,45 @@ RMSE 3D (m), v2 -> v3:
    sensor model in the loop (noisy obs), which is exactly what the
    learning-to-fly paper does with its asymmetric actor-critic.
 
+## DATT v4: noisy-sensor training (train run 17-07-10, evals 17-27-11 .. 17-28-43)
+
+v3 recipe trained on Lighthouse-noisy observations (noisy obs AND noisy L1
+input, 20 ms latency, per-episode bias resampling). RMSE 3D (m):
+
+| scenario | DATT v3 | DATT v4 |
+|---|---|---|
+| nominal slow/normal/fast | 0.032/**0.048**/**0.099** | **0.022**/0.076/0.154 |
+| lighthouse slow/normal/fast | 0.034/0.073/0.369 | **0.020**/**0.063**/**0.130** |
+| wind_const / gust / payload (clean sensor) | **0.050/0.066/0.053** | 0.093/0.093/0.108 |
+| lighthouse + wind_const (normal) | **0.067** | 0.083 |
+
+### Findings
+1. **Goal achieved: the lighthouse+fast failure is fixed (0.369 -> 0.130,
+   2.8x)**, and v4 dominates v3 across all speeds under Lighthouse sensing —
+   it even tracks *better with the sensor it was trained on than v3 does with
+   clean state at slow speed*.
+2. **The cost is clean-state performance and disturbance rejection**
+   (wind 0.050 -> 0.093): noise in the L1 channel during training taught the
+   policy to partially discount that signal — robustness bought by lowering
+   the effective feedback gain. The classic robustness-performance tradeoff,
+   now measured.
+3. Under the *deployment condition* (lighthouse) v4 is the better policy
+   everywhere except wind rejection at normal speed (v3 0.067 vs v4 0.083)
+   — v3 still extracts more from the L1 signal it trusts.
+4. **Path to best-of-both (DATT v5):** asymmetric actor-critic (critic on
+   true state, actor on noisy obs — the learning-to-fly approach), noise-level
+   domain randomization (episodes sampled from clean to noisy so the policy
+   learns to calibrate its trust in the L1 channel), and/or a longer training
+   budget — value-function learning is notably harder with noisy obs
+   (explained_variance stayed low).
+
+## Deployment recommendation (as of 2026-07-22)
+For a Lighthouse-equipped CF2.1 brushless: **DATT v4** for agile tracking,
+**ADRC (w=7)** when sustained wind rejection matters more than agility,
+**MPPI+L1 (tuned)** as the strongest classical all-rounder in clean-sensing
+conditions.
+
 ## Next
-1. DATT v4: train with Lighthouse sensor noise in the observation loop.
+1. DATT v5: asymmetric actor-critic + sensor-noise domain randomization.
 2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
 3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.
