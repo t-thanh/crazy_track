@@ -64,12 +64,15 @@ def main() -> None:
     parser.add_argument("--n-envs", type=int, default=16)
     parser.add_argument("--reason", required=True)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--noisy-sensor", action="store_true",
+                        help="v4: train on Lighthouse-noisy observations")
     args = parser.parse_args()
 
     log = RunLogger(tag="datt-train", reason=args.reason, config=vars(args))
     print(f"Logging to {log.dir}", flush=True)
 
-    env = SB3Adapter(DATTTrackingEnv(num_envs=args.n_envs, seed=args.seed))
+    env = SB3Adapter(DATTTrackingEnv(num_envs=args.n_envs, seed=args.seed,
+                                     noisy_sensor=args.noisy_sensor))
     model = PPO(
         "MlpPolicy", env, verbose=1, seed=args.seed,
         n_steps=256, batch_size=1024, learning_rate=3e-4, gamma=0.98,

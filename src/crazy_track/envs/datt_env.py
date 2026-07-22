@@ -30,13 +30,18 @@ class DATTTrackingEnv:
 
     def __init__(self, num_envs: int = 16, freq: int = 50, episode_time: float = 6.0,
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
-                 seed: int = 0, v3: bool = True):
+                 seed: int = 0, v3: bool = True, noisy_sensor: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
         self.v3 = v3
+        self.noisy_sensor = noisy_sensor  # v4: policy sees Lighthouse-noisy obs
+        if noisy_sensor:
+            from crazy_track.sensors import LighthouseSensorBatch
+
+            self.sensor = LighthouseSensorBatch(num_envs, control_freq=freq, seed=seed + 1)
         self.max_steps = int(episode_time * freq)
         self.sim = Sim(n_worlds=num_envs, n_drones=1, drone=drone,
                        dynamics=Dynamics(dynamics), control="attitude", freq=500, device="cpu")
@@ -99,11 +104,24 @@ class DATTTrackingEnv:
         if self.v3:
             self.l1.reset()
             self._sample_perturb(all_mask)
+        if self.noisy_sensor:
+            self.sensor.reset()
+        self._meas = self._measured_arrays()
         return self._obs(), {}
 
     def _state_arrays(self):
         s = self.sim.data.states
         return (np.asarray(s.pos[:, 0]), np.asarray(s.vel[:, 0]), np.asarray(s.quat[:, 0]))
+
+    def _measured_arrays(self):
+        """What the policy/L1 see: noisy+delayed under v4, true state otherwise."""
+        pos, vel, quat = self._state_arrays()
+        if not self.noisy_sensor:
+            return pos, vel, quat
+        omega = np.asarray(self.sim.data.states.ang_vel[:, 0])
+        t = self.steps / self.freq
+        pos_m, vel_m, quat_m, _ = self.sensor.measure(t, pos, vel, quat, omega)
+        return pos_m, vel_m, quat_m
 
     def _refs(self, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Current ref pos (N,3) and window (N, WINDOW, 3)."""
@@ -112,7 +130,7 @@ class DATTTrackingEnv:
         return ref, win
 
     def _obs(self) -> np.ndarray:
-        pos, vel, quat = self._state_arrays()
+        pos, vel, quat = self._meas  # measured (v4: noisy/delayed) state
         t = self.steps / self.freq
         ref, win = self._refs(t)
         rel_win = (win - pos[:, None, :]).reshape(self.num_envs, -1)
@@ -148,9 +166,10 @@ class DATTTrackingEnv:
         self.sim.attitude_control(cmd)
         self.sim.step(self.n_substeps)
         self.steps += 1
+        self._meas = self._measured_arrays()
         if self.v3:
-            _, vel_now, quat_now = self._state_arrays()
-            self.l1.update(vel_now, quat_now, cmd[:, 0, 3])
+            _, vel_m, quat_m = self._meas  # L1 runs on measured state, as onboard
+            self.l1.update(vel_m, quat_m, cmd[:, 0, 3])
 
         pos, vel, quat = self._state_arrays()
         t = self.steps / self.freq
@@ -179,5 +198,8 @@ class DATTTrackingEnv:
                 self.l1.v_hat[done_mask] = 0.0
                 self.l1.sigma_hat[done_mask] = 0.0
                 self.l1.sigma_f[done_mask] = 0.0
+            if self.noisy_sensor:
+                self.sensor.reset_rows(done_mask)
+            self._meas = self._measured_arrays()
 
         return self._obs(), reward, crashed, truncated, info

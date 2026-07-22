@@ -1,0 +1,14 @@
+datetime: 2026-07-22_17-07-10
+tag: datt-train
+reason: 'DATT v4: v3 recipe (randomized refs + force perturbations + L1 obs) trained
+  on Lighthouse-noisy observations (34+-18Hz ZOH pos, 1.5cm bias, vel/att noise, 20ms
+  latency); goal: fix v3 lighthouse+fast regression (0.369)'
+git_commit: 0593d51
+config:
+  timesteps: 3000000
+  n_envs: 16
+  reason: 'DATT v4: v3 recipe (randomized refs + force perturbations + L1 obs) trained
+    on Lighthouse-noisy observations (34+-18Hz ZOH pos, 1.5cm bias, vel/att noise,
+    20ms latency); goal: fix v3 lighthouse+fast regression (0.369)'
+  seed: 0
+  noisy_sensor: true

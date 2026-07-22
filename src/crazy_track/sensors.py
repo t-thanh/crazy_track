@@ -64,4 +64,57 @@ class LighthouseSensor:
         return self.buffer[0]
 
 
+class LighthouseSensorBatch:
+    """Vectorized Lighthouse model for the training env (N worlds).
+
+    Same parameters as LighthouseSensor; latency is one env step (20 ms at
+    50 Hz training freq — slightly harsher than the 10 ms eval model).
+    """
+
+    def __init__(self, n: int, control_freq: int = 50, update_hz: float = 34.0,
+                 update_hz_std: float = 18.0, jitter_std: float = 0.0007,
+                 bias_std: float = 0.015, vel_std: float = 0.03,
+                 att_std_deg: float = 0.5, gyro_std: float = 0.02, seed: int = 0):
+        self.n = n
+        self.dt = 1.0 / control_freq
+        self.update_hz, self.update_hz_std = update_hz, update_hz_std
+        self.jitter_std, self.bias_std = jitter_std, bias_std
+        self.vel_std, self.att_std, self.gyro_std = vel_std, np.radians(att_std_deg), gyro_std
+        self.rng = np.random.default_rng(seed)
+        self.reset()
+
+    def reset(self) -> None:
+        self.reset_rows(np.ones(self.n, dtype=bool))
+        self._delayed = None
+
+    def reset_rows(self, mask: np.ndarray) -> None:
+        if not hasattr(self, "bias"):
+            self.bias = np.zeros((self.n, 3))
+            self.next_update = np.zeros(self.n)
+            self.last_pos = np.full((self.n, 3), np.nan)
+        k = int(mask.sum())
+        self.bias[mask] = self.rng.normal(0.0, self.bias_std, size=(k, 3))
+        self.next_update[mask] = 0.0
+        self.last_pos[mask] = np.nan
+
+    def measure(self, t: np.ndarray, pos: np.ndarray, vel: np.ndarray, quat: np.ndarray,
+                omega: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """t (N,), pos/vel/omega (N,3), quat (N,4). Returns noisy delayed copies."""
+        due = (t >= self.next_update) | np.isnan(self.last_pos[:, 0])
+        k = int(due.sum())
+        if k:
+            self.last_pos[due] = (pos[due] + self.bias[due]
+                                  + self.rng.normal(0, self.jitter_std, (k, 3)))
+            hz = np.clip(self.rng.normal(self.update_hz, self.update_hz_std, k), 8.0, 100.0)
+            self.next_update[due] = t[due] + 1.0 / hz
+        vel_m = vel + self.rng.normal(0, self.vel_std, vel.shape)
+        rot_err = R.from_rotvec(self.rng.normal(0, self.att_std, (self.n, 3)))
+        quat_m = (rot_err * R.from_quat(quat)).as_quat()
+        omega_m = omega + self.rng.normal(0, self.gyro_std, omega.shape)
+        meas = (self.last_pos.copy(), vel_m, quat_m, omega_m)
+        out = self._delayed if self._delayed is not None else meas  # 1-step latency
+        self._delayed = meas
+        return out
+
+
 SENSORS = {"none": None, "lighthouse": LighthouseSensor}
