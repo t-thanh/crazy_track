@@ -1,0 +1,11 @@
+datetime: 2026-07-22_15-04-23
+tag: datt-train
+reason: 'First DATT PPO training: 2M steps, 16 envs, chained-poly refs, cf21B first_principles,
+  reward exp(-2*err) - 0.02*|rpy|'
+git_commit: no-commit
+config:
+  timesteps: 2000000
+  n_envs: 16
+  reason: 'First DATT PPO training: 2M steps, 16 envs, chained-poly refs, cf21B first_principles,
+    reward exp(-2*err) - 0.02*|rpy|'
+  seed: 0

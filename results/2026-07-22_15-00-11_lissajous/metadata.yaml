@@ -1,0 +1,16 @@
+datetime: 2026-07-22_15-00-11
+tag: lissajous
+reason: 'ADRC fix attempt: reduced-order velocity ESO w_obs=10, sigma clipped to 3
+  m/s2 (full-order position ESO at w_obs=25 diverged)'
+git_commit: no-commit
+config:
+  controllers:
+  - adrc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles

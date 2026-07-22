@@ -1,0 +1,16 @@
+datetime: 2026-07-22_14-55-23
+tag: lissajous
+reason: First PID baseline validation on Lissajous fig-8, initial untuned gains kp=16
+  kd=8 ki=2
+git_commit: no-commit
+config:
+  controllers:
+  - pid
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles

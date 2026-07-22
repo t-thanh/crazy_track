@@ -1,0 +1,18 @@
+datetime: 2026-07-22_14-58-25
+tag: lissajous
+reason: 'First full classical pool: PID vs ADRC (w_obs=25) vs MPPI+L1 (H=25 N=256
+  so_rpy model), all on cf21B first_principles'
+git_commit: no-commit
+config:
+  controllers:
+  - pid
+  - adrc
+  - mppi_l1
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles

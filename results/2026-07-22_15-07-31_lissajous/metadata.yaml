@@ -1,0 +1,15 @@
+datetime: 2026-07-22_15-07-31
+tag: lissajous
+reason: 'MPC tune 2: velocity-ref term w=0.05, dU weight 0.5->0.1, input costs 0.02'
+git_commit: no-commit
+config:
+  controllers:
+  - mpc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles

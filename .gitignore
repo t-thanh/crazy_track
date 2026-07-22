@@ -1,0 +1,119 @@
+# === Claude Code ===
+.claude/
+CLAUDE.local.md
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv*/
+venv/
+env/
+ENV/
+.pixi/
+.uv/
+
+# Testing / coverage / type checking
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_convert/
+
+# === C / C++ ===
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+*.d
+*.gch
+*.pch
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile.bak
+_deps/
+
+# === ML / RL experiment artifacts ===
+wandb/
+mlruns/
+tensorboard/
+runs/
+logs/
+outputs/
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+*.onnx
+# (comment out the above model-weight lines if you want to commit trained policies)
+
+# === Simulation artifacts ===
+*.mp4
+*.gif
+*.avi
+sim_output/
+recordings/
+
+# === Docker ===
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+
+# === IDE / editors ===
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === Misc ===
+*.log
+*.tmp
+tmp/
+scratch/

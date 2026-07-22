@@ -1,0 +1,16 @@
+datetime: 2026-07-22_15-05-17
+tag: lissajous
+reason: 'First MPC run: CasADi/ipopt multiple shooting H=20 dt=0.04 on so_rpy model,
+  warm-started'
+git_commit: no-commit
+config:
+  controllers:
+  - mpc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
