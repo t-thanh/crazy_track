@@ -64,7 +64,46 @@ estimate appended to the observation (43-dim). The eval controller runs its
 own identical L1 estimator (controllers/l1.py, shared implementation).
 Expectation: close the wind gap (v2: 0.154 under wind_const vs ADRC 0.032).
 
+## ADRC noise-sensitivity study: L1 layer vs L1 replacement vs bandwidth
+
+Question investigated: can an L1 layer compensate for (or replace) the ESO's
+noise sensitivity? Normal-speed Lissajous, RMSE 3D (m), 6 conditions:
+
+| variant             | nominal | lighthouse | wind  | lh+wind | gust  | lh+gust |
+|---------------------|---------|-----------|-------|---------|-------|---------|
+| ESO w=10 (old)      | 0.034   | 0.096     | 0.032 | 0.071   | **0.080** | **0.105** |
+| ESO w=7             | 0.023   | 0.056     | 0.025 | 0.053   | 0.082 | 0.113   |
+| ESO w=5             | 0.019   | 0.054     | 0.021 | 0.052   | 0.097 | 0.126   |
+| ESO w=3             | **0.019** | **0.052** | **0.020** | **0.050** | 0.110 | 0.139 |
+| ESO w=10 + LPF 2 Hz | 0.029   | 0.076     | 0.032 | 0.063   | -     | -       |
+| ESO w=5 + LPF 2 Hz  | 0.020   | 0.055     | 0.022 | 0.053   | -     | -       |
+| L1 replace (2 Hz)   | 0.032   | 0.070     | 0.033 | 0.069   | -     | -       |
+| L1 replace (1 Hz)   | 0.031   | 0.069     | 0.033 | 0.068   | -     | -       |
+
+### Conclusions
+1. **The dominant lever is the ESO bandwidth itself, not the estimator
+   architecture.** w=10 was simply mistuned: it sat right at the attitude-loop
+   lag frequency, so even in nominal conditions the ESO amplified actuation
+   lag into command jitter (nominal 0.034 -> 0.019 by lowering w).
+2. **"L1 layer on the ESO" (post-filter on sigma) helps but is second-best**:
+   at w=10 it recovers about half the noise penalty (0.096 -> 0.076). The
+   noise enters through the ESO's high-gain integration; filtering afterwards
+   adds phase lag that costs about as much as it saves. Equivalent effect is
+   achieved more cleanly by lowering w.
+3. **Full L1 replacement works but does not beat a well-tuned ESO** (0.069 vs
+   0.052 under lighthouse). Both are lumped-disturbance estimators; L1's
+   decoupling (fast adaptation + explicit LPF) is elegant but its effective
+   bandwidth is still one knob, and the ESO uses the model structure (u_prev
+   feedthrough) slightly better here.
+4. **The real tradeoff is static-vs-dynamic disturbance**: low w (3-5) wins
+   under noise and constant wind; high w (10) wins under 0.7 Hz gusts, even
+   WITH lighthouse noise. No single bandwidth dominates.
+5. **Default set to w=7** (within ~15% of the best in every condition).
+   Principled next step: gain-scheduled / adaptive observer bandwidth
+   (e.g. scale w with innovation whiteness), or a dual-rate ESO — fast channel
+   for gusts, slow channel with the LPF for bias-like disturbances.
+
 ## Next
 1. Eval DATT v3: nominal + disturbance sweep + lighthouse.
-2. ADRC noise-robust retune (lower w_obs under lighthouse).
-3. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
+2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
+3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.
