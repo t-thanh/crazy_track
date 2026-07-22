@@ -36,6 +36,9 @@ def make_controller(name: str):
     if name == "mpc":
         from crazy_track.controllers.mpc import MPCController
         return MPCController(control_freq=CONTROL_FREQ)
+    if name == "xadapt":
+        from crazy_track.controllers.xadapt import XAdaptPIDController
+        return XAdaptPIDController(control_freq=500)
     if name.startswith("datt_acro:"):
         from crazy_track.controllers.datt_acro import DATTAcroController
         return DATTAcroController(name.split(":", 1)[1], control_freq=CONTROL_FREQ)
@@ -80,10 +83,13 @@ def main() -> None:
     )
     print(f"Logging to {log.dir}")
     acro = [c.startswith("datt_acro") for c in args.controllers]
-    if any(acro) and not all(acro):
-        raise SystemExit("datt_acro (force_torque sim) cannot be mixed with attitude-mode "
-                         "controllers in one run — invoke separately.")
-    sim = make_sim(control="force_torque" if any(acro) else "attitude")
+    xadapt = [c == "xadapt" for c in args.controllers]
+    if (any(acro) and not all(acro)) or (any(xadapt) and not all(xadapt)):
+        raise SystemExit("datt_acro (force_torque) / xadapt (rotor_vel) cannot be mixed "
+                         "with attitude-mode controllers in one run — invoke separately.")
+    mode = "force_torque" if any(acro) else "rotor_vel" if any(xadapt) else "attitude"
+    ctrl_freq = 500 if any(xadapt) else CONTROL_FREQ  # xadapt runs at its training rate
+    sim = make_sim(control=mode)
 
     fig, axes = plt.subplots(len(args.controllers), len(args.speeds),
                              figsize=(5 * len(args.speeds), 4.4 * len(args.controllers)),
@@ -99,7 +105,7 @@ def main() -> None:
                                                   vertical=args.vertical)
             ctrl = make_controller(cspec)
             t0 = time.time()
-            data = rollout(ctrl, traj, control_freq=CONTROL_FREQ, sim=sim,
+            data = rollout(ctrl, traj, control_freq=ctrl_freq, sim=sim,
                            disturbance=disturbance, sensor=sensor)
             wall = time.time() - t0
             metrics = tracking_metrics(data["pos"], data["ref_pos"], data["t"])

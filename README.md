@@ -26,6 +26,7 @@ Nominal, RMSE 3D (m):
 | MPPI+L1 (tuned: N=512, AR(1) noise) | 0.023 | 0.035 | **0.068** |
 | MPC (CasADi/ipopt, so_rpy model) | 0.018 | 0.063 | 0.083 |
 | DATT v3 (PPO + L1 obs + perturb training) | 0.021 | 0.048 | 0.099 |
+| PID + [xadapt](https://github.com/muellerlab/xadapt_ctrl) low-level (pretrained, unseen airframe) | 0.025 | 0.038 | **0.067** |
 
 Disturbances (normal speed) and Lighthouse-sensor results: see
 `reports/2026-07-22_*.md`. Highlights:
@@ -125,8 +126,10 @@ configs/  reports/  results/  scripts/  tests/
 - [x] DATT v3-v6a study (perturbations, noise, asymmetric AC, frame stacking)
 - [x] DATT-acro: CTBR interface, acro-tier + vertical fig-8, flip primitives
 - [ ] Flip robustness: higher hover margin, pitch-flip asymmetry, recovery precision
-- [ ] [xadapt_ctrl](https://github.com/muellerlab/xadapt_ctrl) (Mueller lab
-      universal adaptive controller) added to the pool
+- [x] [xadapt_ctrl](https://github.com/muellerlab/xadapt_ctrl) in the pool:
+      payload robustness validated (0.038 vs 0.093 for PID+Mellinger), new
+      fast-nominal pool best; needs `git clone` of the repo + `pip install
+      onnx onnxruntime` (see `controllers/xadapt.py`)
 - [ ] Offset-free MPC; adaptive-bandwidth ESO; multi-seed statistics
 
 ## References

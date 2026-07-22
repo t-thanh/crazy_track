@@ -1,0 +1,19 @@
+datetime: 2026-07-22_21-02-21
+tag: xadapt-nominal
+reason: 'xadapt_ctrl benchmark: nominal 3 speeds, PID outer + pretrained xadapt low-level,
+  calibrated max_spd=3600'
+git_commit: bfa6c46
+config:
+  controllers:
+  - xadapt
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

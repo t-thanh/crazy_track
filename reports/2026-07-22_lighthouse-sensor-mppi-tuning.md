@@ -285,9 +285,39 @@ never learned (axis/direction asymmetry in the training mix); (c) recovery
 error 0.5-1 m. Standard-tracking regression from the flip mix is mild
 (fast 0.170-0.173 vs 0.123 for acro v1).
 
+## xadapt_ctrl port + benchmark (runs 21-02-21 .. 21-03-14)
+
+Port: our PID position loop -> attitude-P -> CTBR -> **pretrained**
+xadapt low-level (base_model.onnx + adap_module.onnx, 100-step history
+adaptation) -> motor RPMs via crazyflow rotor_vel mode, at 500 Hz. The model
+has *never seen the cf21B* — only calibration was the max motor speed
+(hover sweep: optimum 3600 rad/s, steady error 0.007 m) plus an outer
+integrator (ki=6).
+
+RMSE 3D (m), vs the equivalent PID + firmware-Mellinger stack:
+
+| scenario | PID+Mellinger | PID+xadapt | pool best |
+|---|---|---|---|
+| slow / normal / fast | 0.012/0.022/0.088 | 0.025/0.038/**0.067** | fast: **xadapt** (was MPPI 0.068) |
+| payload (normal) | 0.093 | **0.038** | ADRC 0.036 |
+| wind_const (normal) | 0.109 | 0.077 | ADRC 0.025 |
+
+### Findings
+1. **The extreme-adaptation claim holds on an unseen airframe**: under +23%
+   payload, PID+xadapt is essentially unaffected (0.038 = its nominal),
+   while the same outer loop over the firmware attitude stack degrades 4x
+   (0.093). It matches ADRC's payload rejection without any explicit
+   disturbance observer.
+2. **New pool best at fast nominal (0.067)** — the adaptive low-level tracks
+   rate commands tighter than the firmware Mellinger loop.
+3. Wind (external force, not an airframe change) is only partially absorbed
+   (0.077): xadapt adapts to vehicle dynamics; ADRC's explicit force
+   cancellation (0.025) remains the right tool there. The two mechanisms are
+   complementary — an ADRC outer loop over xadapt is an obvious follow-up.
+4. Runtime cost: 500 Hz + 2 ONNX inferences/step -> ~5-22 s per episode
+   (vs 1-7 s for attitude-mode controllers). Fine for benchmarking.
+
 ## Next
 1. Acro2.2: higher flip altitude margin, per-variant balancing, recovery reward.
-2. Queue: benchmark muellerlab/xadapt_ctrl (universal adaptive controller)
-   against the pool.
-3. MPC: reuse previous solution on solver failure; seed-averaged lighthouse
-   runs; adaptive-bandwidth ESO.
+2. ADRC outer loop over xadapt low-level (combine complementary mechanisms).
+3. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.

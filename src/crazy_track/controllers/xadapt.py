@@ -24,8 +24,9 @@ from crazy_track.controllers.utils import GRAVITY, MASS, RPY_MAX, acc2attitude
 from crazy_track.trajectories import Trajectory
 
 RAD_S_TO_RPM = 60.0 / (2 * np.pi)
-# cf21B: vmotor2rpm ~ [2938, 6001] (affine in V); ~4V full battery -> ~27k RPM
-MAX_MOTOR_RAD_S = 2800.0
+# Calibrated 2026-07-22 hover sweep: steady error 0.139/0.019/0.012/0.007/0.013 m
+# at 2400/2800/3200/3600/4000 rad/s — 3600 is the optimum for cf21B_500.
+MAX_MOTOR_RAD_S = 3600.0
 
 
 class _QuadState:
@@ -33,7 +34,7 @@ class _QuadState:
 
 
 class XAdaptPIDController(Controller):
-    def __init__(self, kp: float = 16.0, kd: float = 8.0, ki: float = 4.0,
+    def __init__(self, kp: float = 16.0, kd: float = 8.0, ki: float = 6.0,
                  kp_att: float = 8.0, control_freq: int = 500, motor_order=(0, 1, 2, 3)):
         self.ki, self.int_max = ki, 1.0
         self._int_err = np.zeros(3)

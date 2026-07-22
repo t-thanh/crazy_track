@@ -1,0 +1,16 @@
+datetime: 2026-07-22_21-03-14
+tag: xadapt-wind_const
+reason: 'xadapt_ctrl adaptation test: wind_const (vs PID+Mellinger 0.093/0.109)'
+git_commit: bfa6c46
+config:
+  controllers:
+  - xadapt
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: none
+  traj_z: 1.0
