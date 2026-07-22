@@ -1,0 +1,18 @@
+datetime: 2026-07-22_21-41-06
+tag: datt-train
+reason: 'Acro2.2: flip hover altitude U(2.0,3.0) m (2.1 grazed floor from 1.5m), deterministic
+  4-variant cycling (2.1 random sampling left pitch+ unlearned), same dominant-attitude
+  maneuver reward'
+git_commit: c9ca86e
+config:
+  timesteps: 5000000
+  n_envs: 16
+  reason: 'Acro2.2: flip hover altitude U(2.0,3.0) m (2.1 grazed floor from 1.5m),
+    deterministic 4-variant cycling (2.1 random sampling left pitch+ unlearned), same
+    dominant-attitude maneuver reward'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: true

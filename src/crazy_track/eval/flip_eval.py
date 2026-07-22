@@ -15,7 +15,7 @@ from crazy_track.envs.rollout import make_sim, rollout
 from crazy_track.eval.runlog import RunLogger
 from crazy_track.trajectories import FlipTrajectory
 
-HOVER = np.array([0.0, 0.0, 1.5])
+HOVER = np.array([0.0, 0.0, 2.5])  # acro2.2 training altitude range midpoint
 
 
 def flip_metrics(data: dict, traj: FlipTrajectory) -> dict:

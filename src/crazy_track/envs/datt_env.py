@@ -78,6 +78,7 @@ class DATTTrackingEnv:
         self.action_space = batch_space(self.single_action_space, num_envs)
 
         self.steps = np.zeros(num_envs, dtype=np.int64)
+        self._flip_counter = 0
         # Reference bank: sampled positions at window offsets for each control step.
         self._traj = [None] * num_envs
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
@@ -91,12 +92,17 @@ class DATTTrackingEnv:
         if self.acro2 and self.rng.random() < 0.5:
             from crazy_track.trajectories import FlipTrajectory
 
+            # acro2.2: deterministic variant cycling (random sampling left pitch+
+            # unlearned in acro2.1) and 2-3 m hover altitude (flips from 1.5 m
+            # grazed the floor: min_z ~ 0.0 measured).
+            variant = self._flip_counter % 4
+            self._flip_counter += 1
             self._traj[i] = FlipTrajectory(
-                hover=(0.0, 0.0, 1.5),
+                hover=(0.0, 0.0, float(self.rng.uniform(2.0, 3.0))),
                 t0=float(self.rng.uniform(1.5, 3.0)),
                 Tf=float(self.rng.uniform(0.4, 0.7)),
-                axis=int(self.rng.integers(0, 2)),
-                direction=int(self.rng.choice([-1, 1])),
+                axis=variant // 2,
+                direction=1 if variant % 2 == 0 else -1,
                 duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
             )
             return
