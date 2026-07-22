@@ -72,7 +72,7 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
     n_steps = int(traj.duration * control_freq)
     dt = 1.0 / control_freq
 
-    log = {k: [] for k in ("t", "pos", "vel", "ref_pos", "ref_vel", "action")}
+    log = {k: [] for k in ("t", "pos", "vel", "quat", "ref_pos", "ref_vel", "action")}
     for i in range(n_steps):
         t = i * dt
         state = get_state(sim)
@@ -81,6 +81,7 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
         log["t"].append(t)
         log["pos"].append(state[:3])
         log["vel"].append(state[3:6])
+        log["quat"].append(state[6:10])
         log["ref_pos"].append(traj.pos(t))
         log["ref_vel"].append(traj.vel(t))
         log["action"].append(action)

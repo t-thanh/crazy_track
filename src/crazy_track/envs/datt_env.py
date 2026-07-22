@@ -59,7 +59,7 @@ class DATTTrackingEnv:
         self.max_steps = int(episode_time * freq)
         self.sim = Sim(n_worlds=num_envs, n_drones=1, drone=drone,
                        dynamics=Dynamics(dynamics),
-                       control="force_torque" if ctbr else "attitude",
+                       control="force_torque" if self.ctbr else "attitude",
                        freq=500, device="cpu")
         self.n_substeps = self.sim.freq // freq
         self.rng = np.random.default_rng(seed)
