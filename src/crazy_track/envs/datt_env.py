@@ -262,9 +262,17 @@ class DATTTrackingEnv:
         crashed = (pos[:, 2] < 0.05) | (err > 2.0)
         truncated = self.steps >= self.max_steps
         reward = np.exp(-2.0 * err) - 0.02 * np.linalg.norm(action[:, 0:2], axis=1)
-        if self.acro2:  # attitude tracking matters as much as position for maneuvers
+        if self.acro2:
+            # During an active attitude maneuver the attitude term must DOMINATE,
+            # or hovering outscores flipping (measured: 0-degree "flips" with the
+            # earlier +0.6 bonus — level flight was reward-optimal).
             att_angle = np.linalg.norm(self._att_err(quat, t), axis=1)
-            reward = reward + 0.6 * np.exp(-3.0 * att_angle)
+            ref_rv = np.stack([self._traj[i].att_ref_rotvec(t[i])
+                               for i in range(self.num_envs)])
+            maneuver = np.linalg.norm(ref_rv, axis=1) > 0.1
+            maneuver_reward = 2.0 * np.exp(-2.0 * att_angle) + 0.25 * np.exp(-2.0 * err)
+            reward = np.where(maneuver, maneuver_reward,
+                              reward + 0.6 * np.exp(-3.0 * att_angle))
         reward = np.where(crashed, -5.0, reward).astype(np.float32)
 
         done_mask = crashed | truncated

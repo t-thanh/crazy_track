@@ -1,0 +1,18 @@
+datetime: 2026-07-22_20-12-43
+tag: datt-train
+reason: 'Acro2.1 reward fix: during maneuver window attitude term dominates (2.0*exp(-2*att)
+  + 0.25*exp(-2*pos)); v2.0 policy learned 0-degree flips because hovering was reward-optimal
+  (measured run 20-11-18)'
+git_commit: f85e7d1
+config:
+  timesteps: 5000000
+  n_envs: 16
+  reason: 'Acro2.1 reward fix: during maneuver window attitude term dominates (2.0*exp(-2*att)
+    + 0.25*exp(-2*pos)); v2.0 policy learned 0-degree flips because hovering was reward-optimal
+    (measured run 20-11-18)'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: true

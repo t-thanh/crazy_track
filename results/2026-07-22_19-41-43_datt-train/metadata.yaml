@@ -1,0 +1,18 @@
+datetime: 2026-07-22_19-41-43
+tag: datt-train
+reason: 'DATT-acro phase 2: flip primitives - 50% FlipTrajectory episodes (360deg
+  roll/pitch at z=1.5, Tf 0.4-0.7s) + 50% aggressive polys; obs 46-dim (+attitude-error
+  rotvec); reward + 0.6*exp(-3*att_angle); CTBR rate loop'
+git_commit: f85e7d1
+config:
+  timesteps: 5000000
+  n_envs: 16
+  reason: 'DATT-acro phase 2: flip primitives - 50% FlipTrajectory episodes (360deg
+    roll/pitch at z=1.5, Tf 0.4-0.7s) + 50% aggressive polys; obs 46-dim (+attitude-error
+    rotvec); reward + 0.6*exp(-3*att_angle); CTBR rate loop'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: true
