@@ -31,5 +31,14 @@ class Trajectory(ABC):
         times = t + dt * np.arange(horizon)
         return self.pos(times)
 
+    def att_ref_rotvec(self, t: np.ndarray | float) -> np.ndarray:
+        """Reference attitude as rotation vector (world<-body), shape (..., 3).
+
+        Default: identity (level flight). Overridden by acrobatic maneuver
+        trajectories (e.g. flips).
+        """
+        t = np.asarray(t, dtype=np.float64)
+        return np.zeros(t.shape + (3,))
+
     def _clamp(self, t: np.ndarray | float) -> np.ndarray:
         return np.clip(np.asarray(t, dtype=np.float64), 0.0, self.duration)

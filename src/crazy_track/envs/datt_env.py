@@ -25,6 +25,7 @@ PRIV_DIM = 3 + 3 + 4 + 3  # v5 privileged critic block: true err/vel/quat + pert
 OBS_DIM_V5 = OBS_DIM_V3 + PRIV_DIM
 STACK = 4  # v6a: actor frames stacked so sensor-noise level becomes observable
 OBS_DIM_V6 = OBS_DIM_V3 * STACK + PRIV_DIM
+OBS_DIM_ACRO2 = OBS_DIM_V3 + 3  # + attitude-error rotvec (flip maneuvers)
 MASS = 0.04338
 PERTURB_ACC_MAX = 3.5  # m/s^2 per axis, as in DATT (arXiv:2310.09053)
 
@@ -35,13 +36,15 @@ class DATTTrackingEnv:
     def __init__(self, num_envs: int = 16, freq: int = 50, episode_time: float = 6.0,
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
                  seed: int = 0, v3: bool = True, noisy_sensor: bool = False,
-                 v5: bool = False, v6: bool = False, ctbr: bool = False):
+                 v5: bool = False, v6: bool = False, ctbr: bool = False,
+                 acro2: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
-        self.ctbr = ctbr  # acro: action = [thrust, body rates], rate loop -> torques
+        self.acro2 = acro2  # flip primitives: attitude-ref obs + reward, mixed episodes
+        self.ctbr = ctbr or acro2  # action = [thrust, body rates], rate loop -> torques
         self.v3 = v3
         self.v6 = v6  # frame-stacked actor obs (implies v5)
         self.v5 = v5 or v6  # privileged critic obs + noise-level domain randomization
@@ -65,7 +68,7 @@ class DATTTrackingEnv:
 
             self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
             self.perturb_force = np.zeros((num_envs, 3))
-        obs_dim = (OBS_DIM_V6 if v6 else
+        obs_dim = (OBS_DIM_ACRO2 if acro2 else OBS_DIM_V6 if v6 else
                    OBS_DIM_V5 if self.v5 else (OBS_DIM_V3 if v3 else OBS_DIM))
 
         self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
@@ -84,6 +87,19 @@ class DATTTrackingEnv:
         # envelope (fast reaches ~3 m/s and ~9 m/s^2; policies trained only on
         # gentle refs fail on it — RMSE 0.95 m observed with vel<=1, acc<=2).
         # CTBR/acro mode extends to the platform limit (TWR 1.88 -> ~15 m/s^2 lateral).
+        # acro2 mixes in flip episodes (50%): hover -> 360-deg roll/pitch -> recover.
+        if self.acro2 and self.rng.random() < 0.5:
+            from crazy_track.trajectories import FlipTrajectory
+
+            self._traj[i] = FlipTrajectory(
+                hover=(0.0, 0.0, 1.5),
+                t0=float(self.rng.uniform(1.5, 3.0)),
+                Tf=float(self.rng.uniform(0.4, 0.7)),
+                axis=int(self.rng.integers(0, 2)),
+                direction=int(self.rng.choice([-1, 1])),
+                duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
+            )
+            return
         if self.ctbr:
             vel_range = float(self.rng.uniform(1.0, 5.0))
             acc_range = float(self.rng.uniform(3.0, 15.0))
@@ -105,7 +121,8 @@ class DATTTrackingEnv:
         pos = np.array(states.pos)  # copy: np.asarray of a JAX array is read-only
         vel = np.array(states.vel)
         noise = self.rng.uniform(-0.05, 0.05, size=(int(mask.sum()), 3))
-        pos[mask, 0] = START + noise
+        starts = np.stack([self._traj[i].pos(0.0) for i in np.flatnonzero(mask)])
+        pos[mask, 0] = starts + noise
         vel[mask, 0] = 0.0
         self.sim.data = self.sim.data.replace(
             states=states.replace(pos=jnp.asarray(pos), vel=jnp.asarray(vel))
@@ -160,7 +177,16 @@ class DATTTrackingEnv:
         parts = [ref - pos, vel, quat, rel_win]
         if self.v3:
             parts.append(self.l1.sigma_f.astype(np.float32))
+        if self.acro2:
+            parts.append(self._att_err(quat, t).astype(np.float32))
         return np.concatenate(parts, axis=1).astype(np.float32)
+
+    def _att_err(self, quat: np.ndarray, t: np.ndarray) -> np.ndarray:
+        """Rotation-vector error between reference attitude and current, (N, 3)."""
+        from scipy.spatial.transform import Rotation as R
+
+        ref_rv = np.stack([self._traj[i].att_ref_rotvec(t[i]) for i in range(self.num_envs)])
+        return (R.from_rotvec(ref_rv).inv() * R.from_quat(quat)).as_rotvec()
 
     def _push_stack(self, base: np.ndarray, refill_mask: np.ndarray | None = None) -> None:
         self._stack = np.roll(self._stack, -1, axis=1)
@@ -236,6 +262,9 @@ class DATTTrackingEnv:
         crashed = (pos[:, 2] < 0.05) | (err > 2.0)
         truncated = self.steps >= self.max_steps
         reward = np.exp(-2.0 * err) - 0.02 * np.linalg.norm(action[:, 0:2], axis=1)
+        if self.acro2:  # attitude tracking matters as much as position for maneuvers
+            att_angle = np.linalg.norm(self._att_err(quat, t), axis=1)
+            reward = reward + 0.6 * np.exp(-3.0 * att_angle)
         reward = np.where(crashed, -5.0, reward).astype(np.float32)
 
         done_mask = crashed | truncated
