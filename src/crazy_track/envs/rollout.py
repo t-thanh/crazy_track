@@ -89,6 +89,8 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
             apply_force(sim, disturbance.force(t, state))
         if sim.control == "force_torque":  # CTBR/acro controllers emit [fc, tx, ty, tz]
             sim.force_torque_control(action.reshape(1, 1, 4))
+        elif sim.control == "rotor_vel":  # motor-level controllers emit RPMs
+            sim.rotor_vel_control(action.reshape(1, 1, 4))
         else:
             sim.attitude_control(action.reshape(1, 1, 4))
         sim.step(n_substeps)
