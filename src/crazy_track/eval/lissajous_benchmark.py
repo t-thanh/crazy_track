@@ -109,16 +109,19 @@ def main() -> None:
                   f"rmse_xy={metrics['rmse_xy']:.3f} m max={metrics['max_err']:.3f} m "
                   f"({wall:.0f}s wall)")
 
+            # vertical fig-8s live in the x-z plane; horizontal ones in x-y
+            k, axis_name = (2, "z") if args.vertical else (1, "y")
             ax = axes[ci][si]
-            ax.plot(data["ref_pos"][:, 0], data["ref_pos"][:, 1], "k-", lw=1, label="reference")
-            ax.plot(data["pos"][:, 0], data["pos"][:, 1], lw=1, label=cname)
+            ax.plot(data["ref_pos"][:, 0], data["ref_pos"][:, k], "k-", lw=1, label="reference")
+            ax.plot(data["pos"][:, 0], data["pos"][:, k], lw=1, label=cname)
             ax.set(title=f"{cname} | {speed} (T={LissajousTrajectory.SPEEDS[speed]}s) "
                          f"RMSE={metrics['rmse_3d']:.3f}m",
-                   xlabel="x [m]", ylabel="y [m]", aspect="equal")
+                   xlabel="x [m]", ylabel=f"{axis_name} [m]", aspect="equal")
             ax.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig(log.dir / "tracking_xy.png", dpi=150)
-    print(f"Saved plot to {log.dir / 'tracking_xy.png'}")
+    plot_name = "tracking_xz.png" if args.vertical else "tracking_xy.png"
+    fig.savefig(log.dir / plot_name, dpi=150)
+    print(f"Saved plot to {log.dir / plot_name}")
 
 
 if __name__ == "__main__":
