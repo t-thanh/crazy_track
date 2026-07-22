@@ -39,6 +39,9 @@ def make_controller(name: str):
     if name == "xadapt":
         from crazy_track.controllers.xadapt import XAdaptPIDController
         return XAdaptPIDController(control_freq=500)
+    if name == "xadapt_adrc":
+        from crazy_track.controllers.xadapt import XAdaptADRCController
+        return XAdaptADRCController(control_freq=500)
     if name.startswith("datt_acro:"):
         from crazy_track.controllers.datt_acro import DATTAcroController
         return DATTAcroController(name.split(":", 1)[1], control_freq=CONTROL_FREQ)
@@ -83,7 +86,7 @@ def main() -> None:
     )
     print(f"Logging to {log.dir}")
     acro = [c.startswith("datt_acro") for c in args.controllers]
-    xadapt = [c == "xadapt" for c in args.controllers]
+    xadapt = [c.startswith("xadapt") for c in args.controllers]
     if (any(acro) and not all(acro)) or (any(xadapt) and not all(xadapt)):
         raise SystemExit("datt_acro (force_torque) / xadapt (rotor_vel) cannot be mixed "
                          "with attitude-mode controllers in one run — invoke separately.")

@@ -60,13 +60,16 @@ class XAdaptPIDController(Controller):
         self.ll = AdapLowLevelControl()  # fresh history buffers per episode
         self.ll.set_max_motor_spd(MAX_MOTOR_RAD_S)
 
-    def act(self, state: np.ndarray, t: float) -> np.ndarray:
-        pos, vel, quat, omega = state[:3], state[3:6], state[6:10], state[10:13]
-        # Outer PID -> desired acceleration -> thrust magnitude + attitude
+    def _outer_acc(self, pos: np.ndarray, vel: np.ndarray, t: float) -> np.ndarray:
+        """Outer position loop -> desired CoM acceleration. Overridable (ADRC variant)."""
         err = self._traj.pos(t) - pos
         self._int_err = np.clip(self._int_err + err * self.dt, -self.int_max, self.int_max)
-        a_cmd = (self._traj.acc(t) + self.kp * err + self.ki * self._int_err
-                 + self.kd * (self._traj.vel(t) - vel))
+        return (self._traj.acc(t) + self.kp * err + self.ki * self._int_err
+                + self.kd * (self._traj.vel(t) - vel))
+
+    def act(self, state: np.ndarray, t: float) -> np.ndarray:
+        pos, vel, quat, omega = state[:3], state[3:6], state[6:10], state[10:13]
+        a_cmd = self._outer_acc(pos, vel, t)
         rpyt = acc2attitude(a_cmd, quat)
         # Attitude P loop (body frame) -> commanded body rates
         rot = R.from_quat(quat)
@@ -89,3 +92,34 @@ class XAdaptPIDController(Controller):
         spd = self.ll.run(s)  # rad/s in xadapt motor order
         rpm = np.clip(spd * RAD_S_TO_RPM, 0.0, MAX_MOTOR_RAD_S * RAD_S_TO_RPM)
         return rpm[self.motor_order].astype(np.float32)
+
+
+class XAdaptADRCController(XAdaptPIDController):
+    """ADRC outer loop over the xadapt low-level: explicit external-force
+    cancellation (velocity ESO) stacked on airframe adaptation. The ESO also
+    absorbs the thrust-calibration offset, replacing the PID integrator.
+    """
+
+    def __init__(self, omega_obs: float = 7.0, sigma_max: float = 3.0, **kw):
+        super().__init__(**kw)
+        self.l1g, self.l2g = 2 * omega_obs, omega_obs**2
+        self.sigma_max = sigma_max
+        self._v_hat = np.zeros(3)
+        self._sigma = np.zeros(3)
+        self._u_prev = np.zeros(3)
+
+    def reset(self, trajectory: Trajectory) -> None:
+        super().reset(trajectory)
+        self._v_hat = np.zeros(3)
+        self._sigma = np.zeros(3)
+        self._u_prev = np.zeros(3)
+
+    def _outer_acc(self, pos: np.ndarray, vel: np.ndarray, t: float) -> np.ndarray:
+        e_v = vel - self._v_hat
+        self._v_hat += self.dt * (self._u_prev + self._sigma + self.l1g * e_v)
+        self._sigma = np.clip(self._sigma + self.dt * self.l2g * e_v,
+                              -self.sigma_max, self.sigma_max)
+        a_cmd = (self._traj.acc(t) + self.kp * (self._traj.pos(t) - pos)
+                 + self.kd * (self._traj.vel(t) - vel) - self._sigma)
+        self._u_prev = a_cmd
+        return a_cmd

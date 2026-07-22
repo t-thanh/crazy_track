@@ -317,7 +317,36 @@ RMSE 3D (m), vs the equivalent PID + firmware-Mellinger stack:
 4. Runtime cost: 500 Hz + 2 ONNX inferences/step -> ~5-22 s per episode
    (vs 1-7 s for attitude-mode controllers). Fine for benchmarking.
 
+## ADRC-over-xadapt (runs 21-18-30 .. 21-19-37)
+
+Stack: velocity-ESO ADRC outer loop (w=7, the ESO also absorbs the thrust
+calibration offset — no integrator needed) -> CTBR -> pretrained xadapt
+low-level. RMSE 3D (m):
+
+| scenario | PID+xadapt | **ADRC+xadapt** | previous pool best |
+|---|---|---|---|
+| slow    | 0.025 | 0.020 | PID 0.012 |
+| normal  | 0.038 | **0.018** | was PID 0.022 -> **new pool best** |
+| fast    | **0.067** | 0.084 | xadapt keeps fast best |
+| wind_const | 0.077 | 0.037 | ADRC+Mellinger 0.025 |
+| wind_gust  | -     | **0.063** | was DATT v3 0.066 -> **new pool best** |
+| payload    | 0.038 | **0.018** | was ADRC 0.036 -> **new pool best** |
+
+### Findings
+1. **The mechanisms compose almost perfectly**: payload tracking equals the
+   controller's own nominal (0.018 = 0.018) — the airframe change is fully
+   invisible. Gust rejection is now pool-best (0.063), and normal-speed
+   nominal is pool-best too.
+2. The stack works because the layers address disjoint error sources: the
+   ESO cancels *external forces* in the acceleration command; xadapt makes
+   the *rate-command realization* airframe-independent underneath it.
+3. Residual gaps: pure ADRC+Mellinger still edges constant wind (0.025 vs
+   0.037 — the ESO sees a cleaner plant through the firmware loop), and
+   PID+xadapt keeps fast nominal (ESO lag costs 0.017 at speed).
+4. **ADRC+xadapt is now the best overall classical stack** across the
+   scenario matrix; only specialized picks beat it in single cells.
+
 ## Next
 1. Acro2.2: higher flip altitude margin, per-variant balancing, recovery reward.
-2. ADRC outer loop over xadapt low-level (combine complementary mechanisms).
-3. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.
+2. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.
+3. Lighthouse-sensor runs for the xadapt stacks (500 Hz sensor model check).

@@ -1,0 +1,17 @@
+datetime: 2026-07-22_21-19-22
+tag: xadrc-wind_gust
+reason: 'ADRC-over-xadapt disturbance test: wind_gust (targets: wind beat 0.077, payload
+  hold 0.038)'
+git_commit: 0237b3c
+config:
+  controllers:
+  - xadapt_adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  sensor: none
+  traj_z: 1.0

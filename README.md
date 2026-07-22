@@ -27,6 +27,7 @@ Nominal, RMSE 3D (m):
 | MPC (CasADi/ipopt, so_rpy model) | 0.018 | 0.063 | 0.083 |
 | DATT v3 (PPO + L1 obs + perturb training) | 0.021 | 0.048 | 0.099 |
 | PID + [xadapt](https://github.com/muellerlab/xadapt_ctrl) low-level (pretrained, unseen airframe) | 0.025 | 0.038 | **0.067** |
+| ADRC + xadapt (best overall stack: payload 0.018, gust 0.063) | 0.020 | **0.018** | 0.084 |
 
 Disturbances (normal speed) and Lighthouse-sensor results: see
 `reports/2026-07-22_*.md`. Highlights:
