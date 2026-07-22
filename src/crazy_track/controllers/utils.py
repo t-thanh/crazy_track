@@ -13,6 +13,26 @@ MASS = 0.04338
 RPY_MAX = 1.0  # rad, safety clip for commanded roll/pitch
 
 
+# cf21B_500 inertia and CTBR rate-loop constants
+J_DIAG = np.array([25e-6, 28e-6, 49e-6])
+RATE_MAX = np.array([15.0, 15.0, 5.0])  # rad/s command limits (roll, pitch, yaw)
+TORQUE_MAX = np.array([0.008, 0.008, 0.002])  # N*m, from motor-force / arm limits
+KW_RATE = 25.0  # rate-loop P gain (1/s)
+
+
+def ctbr_to_force_torque(thrust: np.ndarray, w_des: np.ndarray,
+                         omega: np.ndarray) -> np.ndarray:
+    """Body-rate P loop -> [fc, tx, ty, tz] for crazyflow force_torque control.
+
+    torque = J*kw*(w_des - w) + w x (J w) (gyroscopic feedforward). Works on
+    batched inputs: thrust (...,), w_des/omega (..., 3) -> (..., 4).
+    """
+    Jw = J_DIAG * omega
+    torque = J_DIAG * KW_RATE * (w_des - omega) + np.cross(omega, Jw)
+    torque = np.clip(torque, -TORQUE_MAX, TORQUE_MAX)
+    return np.concatenate([np.asarray(thrust)[..., None], torque], axis=-1)
+
+
 def acc2attitude(a_des: np.ndarray, quat_xyzw: np.ndarray, mass: float = MASS,
                  yaw_des: float = 0.0) -> np.ndarray:
     """Convert desired CoM acceleration to [roll, pitch, yaw, thrust_N] (Mellinger-style).

@@ -16,13 +16,14 @@ from crazy_track.trajectories import Trajectory
 DRONE = "cf21B_500"
 
 
-def make_sim(dynamics: str = "first_principles", freq: int = 500):
+def make_sim(dynamics: str = "first_principles", freq: int = 500,
+             control: str = "attitude"):
     from crazyflow import Sim
     from crazyflow.dynamics import Dynamics
 
     return Sim(
         n_worlds=1, n_drones=1, drone=DRONE, dynamics=Dynamics(dynamics),
-        control="attitude", freq=freq, device="cpu",
+        control=control, freq=freq, device="cpu",
     )
 
 
@@ -85,6 +86,9 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
         log["action"].append(action)
         if disturbance is not None:
             apply_force(sim, disturbance.force(t, state))
-        sim.attitude_control(action.reshape(1, 1, 4))
+        if sim.control == "force_torque":  # CTBR/acro controllers emit [fc, tx, ty, tz]
+            sim.force_torque_control(action.reshape(1, 1, 4))
+        else:
+            sim.attitude_control(action.reshape(1, 1, 4))
         sim.step(n_substeps)
     return {k: np.asarray(v) for k, v in log.items()}

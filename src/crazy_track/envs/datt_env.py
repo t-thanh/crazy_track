@@ -23,6 +23,8 @@ OBS_DIM = 3 + 3 + 4 + 3 * WINDOW  # v2 (no L1)
 OBS_DIM_V3 = OBS_DIM + 3  # v3 appends the L1 disturbance estimate
 PRIV_DIM = 3 + 3 + 4 + 3  # v5 privileged critic block: true err/vel/quat + perturb acc
 OBS_DIM_V5 = OBS_DIM_V3 + PRIV_DIM
+STACK = 4  # v6a: actor frames stacked so sensor-noise level becomes observable
+OBS_DIM_V6 = OBS_DIM_V3 * STACK + PRIV_DIM
 MASS = 0.04338
 PERTURB_ACC_MAX = 3.5  # m/s^2 per axis, as in DATT (arXiv:2310.09053)
 
@@ -33,23 +35,29 @@ class DATTTrackingEnv:
     def __init__(self, num_envs: int = 16, freq: int = 50, episode_time: float = 6.0,
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
                  seed: int = 0, v3: bool = True, noisy_sensor: bool = False,
-                 v5: bool = False):
+                 v5: bool = False, v6: bool = False, ctbr: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
+        self.ctbr = ctbr  # acro: action = [thrust, body rates], rate loop -> torques
         self.v3 = v3
-        self.v5 = v5  # privileged critic obs + noise-level domain randomization
-        self.noisy_sensor = noisy_sensor or v5  # v4/v5: policy sees noisy obs
+        self.v6 = v6  # frame-stacked actor obs (implies v5)
+        self.v5 = v5 or v6  # privileged critic obs + noise-level domain randomization
+        self.noisy_sensor = noisy_sensor or self.v5  # v4/v5/v6: policy sees noisy obs
         if self.noisy_sensor:
             from crazy_track.sensors import LighthouseSensorBatch
 
             self.sensor = LighthouseSensorBatch(num_envs, control_freq=freq,
-                                                seed=seed + 1, noise_dr=v5)
+                                                seed=seed + 1, noise_dr=self.v5)
+        if v6:
+            self._stack = np.zeros((num_envs, STACK, OBS_DIM_V3), dtype=np.float32)
         self.max_steps = int(episode_time * freq)
         self.sim = Sim(n_worlds=num_envs, n_drones=1, drone=drone,
-                       dynamics=Dynamics(dynamics), control="attitude", freq=500, device="cpu")
+                       dynamics=Dynamics(dynamics),
+                       control="force_torque" if ctbr else "attitude",
+                       freq=500, device="cpu")
         self.n_substeps = self.sim.freq // freq
         self.rng = np.random.default_rng(seed)
         if v3:
@@ -57,7 +65,8 @@ class DATTTrackingEnv:
 
             self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
             self.perturb_force = np.zeros((num_envs, 3))
-        obs_dim = OBS_DIM_V5 if v5 else (OBS_DIM_V3 if v3 else OBS_DIM)
+        obs_dim = (OBS_DIM_V6 if v6 else
+                   OBS_DIM_V5 if self.v5 else (OBS_DIM_V3 if v3 else OBS_DIM))
 
         self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
                                                    dtype=np.float32)
@@ -74,8 +83,13 @@ class DATTTrackingEnv:
         # Randomized difficulty per trajectory: covers the full Lissajous benchmark
         # envelope (fast reaches ~3 m/s and ~9 m/s^2; policies trained only on
         # gentle refs fail on it — RMSE 0.95 m observed with vel<=1, acc<=2).
-        vel_range = float(self.rng.uniform(0.5, 3.5))
-        acc_range = float(self.rng.uniform(1.0, 10.0))
+        # CTBR/acro mode extends to the platform limit (TWR 1.88 -> ~15 m/s^2 lateral).
+        if self.ctbr:
+            vel_range = float(self.rng.uniform(1.0, 5.0))
+            acc_range = float(self.rng.uniform(3.0, 15.0))
+        else:
+            vel_range = float(self.rng.uniform(0.5, 3.5))
+            acc_range = float(self.rng.uniform(1.0, 10.0))
         self._traj[i] = ChainedPolyTrajectory.random(
             self.rng, duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
             seg_duration=self.rng.uniform(1.0, 2.5), pos_range=1.0,
@@ -112,6 +126,9 @@ class DATTTrackingEnv:
         if self.noisy_sensor:
             self.sensor.reset()
         self._meas = self._measured_arrays()
+        if self.v6:  # fill every stack slot with the initial frame
+            base = self._base_obs()
+            self._stack[:] = base[:, None, :]
         return self._obs(), {}
 
     def _state_arrays(self):
@@ -134,18 +151,36 @@ class DATTTrackingEnv:
         win = np.stack([self._traj[i].pos(t[i] + self._t_offsets) for i in range(self.num_envs)])
         return ref, win
 
-    def _obs(self) -> np.ndarray:
-        pos, vel, quat = self._meas  # measured (v4: noisy/delayed) state
+    def _base_obs(self) -> np.ndarray:
+        """The deployable (noisy-view) observation frame, (N, OBS_DIM_V3|OBS_DIM)."""
+        pos, vel, quat = self._meas  # measured (v4+: noisy/delayed) state
         t = self.steps / self.freq
         ref, win = self._refs(t)
         rel_win = (win - pos[:, None, :]).reshape(self.num_envs, -1)
         parts = [ref - pos, vel, quat, rel_win]
         if self.v3:
             parts.append(self.l1.sigma_f.astype(np.float32))
-        if self.v5:  # privileged tail, visible only to the critic
-            pos_t, vel_t, quat_t = self._state_arrays()
-            parts += [ref - pos_t, vel_t, quat_t, self.perturb_force / MASS]
         return np.concatenate(parts, axis=1).astype(np.float32)
+
+    def _push_stack(self, base: np.ndarray, refill_mask: np.ndarray | None = None) -> None:
+        self._stack = np.roll(self._stack, -1, axis=1)
+        self._stack[:, -1] = base
+        if refill_mask is not None and refill_mask.any():
+            self._stack[refill_mask] = base[refill_mask][:, None, :]
+
+    def _obs(self) -> np.ndarray:
+        base = self._base_obs()
+        actor = self._stack.reshape(self.num_envs, -1) if self.v6 else base
+        if not self.v5:
+            return actor
+        # privileged tail, visible only to the critic
+        t = self.steps / self.freq
+        ref = np.stack([self._traj[i].pos(t[i]) for i in range(self.num_envs)])
+        pos_t, vel_t, quat_t = self._state_arrays()
+        priv = np.concatenate(
+            [ref - pos_t, vel_t, quat_t, self.perturb_force / MASS], axis=1
+        )
+        return np.concatenate([actor, priv], axis=1).astype(np.float32)
 
     def _sample_perturb(self, mask: np.ndarray) -> None:
         """Per-episode random constant force perturbation (DATT recipe)."""
@@ -155,12 +190,25 @@ class DATTTrackingEnv:
         self.perturb_force[mask] = MASS * acc
 
     def _denorm_action(self, a: np.ndarray) -> np.ndarray:
+        if self.ctbr:
+            from crazy_track.controllers.utils import RATE_MAX, ctbr_to_force_torque
+
+            thrust = THRUST_MIN + (np.clip(a[:, 0], -1, 1) + 1) * 0.5 * (THRUST_MAX - THRUST_MIN)
+            w_des = np.clip(a[:, 1:4], -1, 1) * RATE_MAX
+            omega = np.asarray(self.sim.data.states.ang_vel[:, 0])
+            return ctbr_to_force_torque(thrust, w_des, omega)[:, None, :].astype(np.float32)
         cmd = np.zeros((self.num_envs, 1, 4), dtype=np.float32)
         cmd[:, 0, 0:2] = np.clip(a[:, 0:2], -1, 1) * RPY_MAX * 0.7
         cmd[:, 0, 2] = 0.0  # yaw fixed
         thrust = THRUST_MIN + (np.clip(a[:, 3], -1, 1) + 1) * 0.5 * (THRUST_MAX - THRUST_MIN)
         cmd[:, 0, 3] = thrust
         return cmd
+
+    def _apply_cmd(self, cmd: np.ndarray) -> None:
+        if self.ctbr:
+            self.sim.force_torque_control(cmd)
+        else:
+            self.sim.attitude_control(cmd)
 
     def step(self, action: np.ndarray):
         cmd = self._denorm_action(np.asarray(action))
@@ -171,13 +219,14 @@ class DATTTrackingEnv:
             self.sim.data = self.sim.data.replace(
                 states=self.sim.data.states.replace(force=force)
             )
-        self.sim.attitude_control(cmd)
+        self._apply_cmd(cmd)
         self.sim.step(self.n_substeps)
         self.steps += 1
         self._meas = self._measured_arrays()
         if self.v3:
             _, vel_m, quat_m = self._meas  # L1 runs on measured state, as onboard
-            self.l1.update(vel_m, quat_m, cmd[:, 0, 3])
+            thrust_cmd = cmd[:, 0, 0] if self.ctbr else cmd[:, 0, 3]
+            self.l1.update(vel_m, quat_m, thrust_cmd)
 
         pos, vel, quat = self._state_arrays()
         t = self.steps / self.freq
@@ -210,4 +259,7 @@ class DATTTrackingEnv:
                 self.sensor.reset_rows(done_mask)
             self._meas = self._measured_arrays()
 
+        if self.v6:
+            self._push_stack(self._base_obs(),
+                             refill_mask=done_mask if done_mask.any() else None)
         return self._obs(), reward, crashed, truncated, info

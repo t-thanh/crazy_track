@@ -36,6 +36,9 @@ def make_controller(name: str):
     if name == "mpc":
         from crazy_track.controllers.mpc import MPCController
         return MPCController(control_freq=CONTROL_FREQ)
+    if name.startswith("datt_acro:"):
+        from crazy_track.controllers.datt_acro import DATTAcroController
+        return DATTAcroController(name.split(":", 1)[1], control_freq=CONTROL_FREQ)
     if name.startswith("datt:"):
         from crazy_track.controllers.datt import DATTPolicyController
         return DATTPolicyController(name.split(":", 1)[1], control_freq=CONTROL_FREQ)
@@ -51,6 +54,8 @@ def main() -> None:
     parser.add_argument("--disturbance", default="none",
                         choices=["none", "wind_const", "wind_gust", "ground", "payload"])
     parser.add_argument("--sensor", default="none", choices=["none", "lighthouse"])
+    parser.add_argument("--vertical", action="store_true",
+                        help="figure-8 in the x-z plane (acro benchmark)")
     args = parser.parse_args()
 
     from crazy_track.disturbances import SCENARIOS
@@ -74,7 +79,11 @@ def main() -> None:
                 "disturbance": args.disturbance, "sensor": args.sensor, "traj_z": traj_z},
     )
     print(f"Logging to {log.dir}")
-    sim = make_sim()
+    acro = [c.startswith("datt_acro") for c in args.controllers]
+    if any(acro) and not all(acro):
+        raise SystemExit("datt_acro (force_torque sim) cannot be mixed with attitude-mode "
+                         "controllers in one run — invoke separately.")
+    sim = make_sim(control="force_torque" if any(acro) else "attitude")
 
     fig, axes = plt.subplots(len(args.controllers), len(args.speeds),
                              figsize=(5 * len(args.speeds), 4.4 * len(args.controllers)),
@@ -86,7 +95,8 @@ def main() -> None:
         if seen[cname] > 1:  # avoid npz/row collisions when comparing same-type models
             cname = f"{cname}{seen[cname]}"
         for si, speed in enumerate(args.speeds):
-            traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES, z=traj_z)
+            traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES, z=traj_z,
+                                                  vertical=args.vertical)
             ctrl = make_controller(cspec)
             t0 = time.time()
             data = rollout(ctrl, traj, control_freq=CONTROL_FREQ, sim=sim,

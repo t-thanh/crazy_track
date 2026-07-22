@@ -1,0 +1,16 @@
+datetime: 2026-07-22_18-11-05
+tag: datt-train
+reason: 'DATT v6a: v5 recipe + 4-frame stacked actor obs (80ms window) so per-episode
+  sensor-noise level becomes observable; goal: recover clean-state performance lost
+  in v4/v5 while keeping deployment robustness'
+git_commit: 3ae2760
+config:
+  timesteps: 4000000
+  n_envs: 16
+  reason: 'DATT v6a: v5 recipe + 4-frame stacked actor obs (80ms window) so per-episode
+    sensor-noise level becomes observable; goal: recover clean-state performance lost
+    in v4/v5 while keeping deployment robustness'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: true

@@ -17,12 +17,22 @@ class DATTPolicyController(Controller):
         self.model = PPO.load(model_path, device="cpu")
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
         self._traj: Trajectory | None = None
-        # v3/v4 models: 43-dim obs (L1 estimate appended). v5 models: 56-dim
-        # (asymmetric critic's privileged tail) — actor ignores it, so we pad zeros.
+        # Model detection by obs dim: v3/v4 = 43; v5 = 43 + 13 privileged (zero-
+        # padded at eval, actor ignores it); v6a = 43*K stacked frames + 13.
         obs_dim = int(np.prod(self.model.observation_space.shape))
         base_v3 = 3 + 3 + 4 + 3 * WINDOW + 3
-        self.v3 = obs_dim in (base_v3, base_v3 + 13)
-        self.pad = obs_dim - base_v3 if obs_dim > base_v3 else 0
+        if obs_dim in (base_v3, base_v3 + 13):
+            self.stack, self.pad = 1, obs_dim - base_v3
+        elif (obs_dim - 13) % base_v3 == 0:
+            self.stack, self.pad = (obs_dim - 13) // base_v3, 13
+        else:
+            raise ValueError(f"Unrecognized DATT model obs dim: {obs_dim}")
+        self.v3 = True
+        self._frames: list[np.ndarray] = []
+        # v6 models were trained with 50 Hz frames; at higher eval rates only
+        # push every `skip`-th frame so the stack spans the same time window.
+        self._skip = max(1, control_freq // 50)
+        self._calls = 0
         if self.v3:
             from crazy_track.controllers.l1 import L1Estimator
 
@@ -31,6 +41,7 @@ class DATTPolicyController(Controller):
 
     def reset(self, trajectory: Trajectory) -> None:
         self._traj = trajectory
+        self._frames = []
         if self.v3:
             self.l1.reset()
             self._last_thrust = 0.04338 * 9.81
@@ -42,9 +53,18 @@ class DATTPolicyController(Controller):
         if self.v3:
             sigma = self.l1.update(vel, quat, np.array([self._last_thrust]))
             parts.append(sigma[0])
-        if self.pad:
-            parts.append(np.zeros(self.pad))
-        obs = np.concatenate(parts).astype(np.float32)
+        frame = np.concatenate(parts).astype(np.float32)
+        if self.stack > 1:  # v6a: oldest-first frame stack, first call fills all slots
+            if not self._frames:
+                self._frames = [frame] * self.stack
+            elif self._calls % self._skip == 0:
+                self._frames = self._frames[1:] + [frame]
+            else:  # hold the stack but keep the newest slot current
+                self._frames[-1] = frame
+            self._calls += 1
+            frame = np.concatenate(self._frames)
+        obs = np.concatenate([frame, np.zeros(self.pad, dtype=np.float32)]) \
+            if self.pad else frame
         a, _ = self.model.predict(obs, deterministic=True)
         rpy = np.array([a[0] * RPY_MAX * 0.7, a[1] * RPY_MAX * 0.7, 0.0])
         thrust = THRUST_MIN + (np.clip(a[3], -1, 1) + 1) * 0.5 * (THRUST_MAX - THRUST_MIN)

@@ -13,9 +13,7 @@ import torch
 from stable_baselines3.common.policies import ActorCriticPolicy
 from torch import nn
 
-from crazy_track.envs.datt_env import OBS_DIM_V3
-
-ACTOR_DIM = OBS_DIM_V3  # 43: the deployable (noisy) observation
+from crazy_track.envs.datt_env import PRIV_DIM
 
 
 def _mlp(in_dim: int, hidden: list[int]) -> nn.Sequential:
@@ -29,7 +27,10 @@ def _mlp(in_dim: int, hidden: list[int]) -> nn.Sequential:
 class AsymmetricExtractor(nn.Module):
     def __init__(self, full_dim: int, hidden: list[int]):
         super().__init__()
-        self.policy_net = _mlp(ACTOR_DIM, hidden)
+        # Everything except the privileged tail is the deployable actor view
+        # (43 for v5; 43*STACK for v6a frame stacking).
+        self.actor_dim = full_dim - PRIV_DIM
+        self.policy_net = _mlp(self.actor_dim, hidden)
         self.value_net = _mlp(full_dim, hidden)
         self.latent_dim_pi = hidden[-1]
         self.latent_dim_vf = hidden[-1]
@@ -38,7 +39,7 @@ class AsymmetricExtractor(nn.Module):
         return self.forward_actor(features), self.forward_critic(features)
 
     def forward_actor(self, features: torch.Tensor) -> torch.Tensor:
-        return self.policy_net(features[..., :ACTOR_DIM])
+        return self.policy_net(features[..., :self.actor_dim])
 
     def forward_critic(self, features: torch.Tensor) -> torch.Tensor:
         return self.value_net(features)
