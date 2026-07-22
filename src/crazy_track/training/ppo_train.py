@@ -66,17 +66,25 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--noisy-sensor", action="store_true",
                         help="v4: train on Lighthouse-noisy observations")
+    parser.add_argument("--v5", action="store_true",
+                        help="v5: asymmetric actor-critic + sensor-noise domain randomization")
     args = parser.parse_args()
 
     log = RunLogger(tag="datt-train", reason=args.reason, config=vars(args))
     print(f"Logging to {log.dir}", flush=True)
 
     env = SB3Adapter(DATTTrackingEnv(num_envs=args.n_envs, seed=args.seed,
-                                     noisy_sensor=args.noisy_sensor))
+                                     noisy_sensor=args.noisy_sensor, v5=args.v5))
+    if args.v5:
+        from crazy_track.training.asymmetric import AsymmetricPolicy
+
+        policy, policy_kwargs = AsymmetricPolicy, {}
+    else:
+        policy, policy_kwargs = "MlpPolicy", dict(net_arch=[64, 64])
     model = PPO(
-        "MlpPolicy", env, verbose=1, seed=args.seed,
+        policy, env, verbose=1, seed=args.seed,
         n_steps=256, batch_size=1024, learning_rate=3e-4, gamma=0.98,
-        policy_kwargs=dict(net_arch=[64, 64]),
+        policy_kwargs=policy_kwargs,
         tensorboard_log=str(log.dir / "tb"),
     )
     model.learn(total_timesteps=args.timesteps, progress_bar=False)

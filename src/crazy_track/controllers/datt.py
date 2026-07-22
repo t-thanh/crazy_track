@@ -17,8 +17,12 @@ class DATTPolicyController(Controller):
         self.model = PPO.load(model_path, device="cpu")
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
         self._traj: Trajectory | None = None
-        # v3 models (43-dim obs) expect the L1 disturbance estimate appended.
-        self.v3 = int(np.prod(self.model.observation_space.shape)) == 3 + 3 + 4 + 3 * WINDOW + 3
+        # v3/v4 models: 43-dim obs (L1 estimate appended). v5 models: 56-dim
+        # (asymmetric critic's privileged tail) — actor ignores it, so we pad zeros.
+        obs_dim = int(np.prod(self.model.observation_space.shape))
+        base_v3 = 3 + 3 + 4 + 3 * WINDOW + 3
+        self.v3 = obs_dim in (base_v3, base_v3 + 13)
+        self.pad = obs_dim - base_v3 if obs_dim > base_v3 else 0
         if self.v3:
             from crazy_track.controllers.l1 import L1Estimator
 
@@ -38,6 +42,8 @@ class DATTPolicyController(Controller):
         if self.v3:
             sigma = self.l1.update(vel, quat, np.array([self._last_thrust]))
             parts.append(sigma[0])
+        if self.pad:
+            parts.append(np.zeros(self.pad))
         obs = np.concatenate(parts).astype(np.float32)
         a, _ = self.model.predict(obs, deterministic=True)
         rpy = np.array([a[0] * RPY_MAX * 0.7, a[1] * RPY_MAX * 0.7, 0.0])

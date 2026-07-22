@@ -74,12 +74,14 @@ class LighthouseSensorBatch:
     def __init__(self, n: int, control_freq: int = 50, update_hz: float = 34.0,
                  update_hz_std: float = 18.0, jitter_std: float = 0.0007,
                  bias_std: float = 0.015, vel_std: float = 0.03,
-                 att_std_deg: float = 0.5, gyro_std: float = 0.02, seed: int = 0):
+                 att_std_deg: float = 0.5, gyro_std: float = 0.02, seed: int = 0,
+                 noise_dr: bool = False):
         self.n = n
         self.dt = 1.0 / control_freq
         self.update_hz, self.update_hz_std = update_hz, update_hz_std
         self.jitter_std, self.bias_std = jitter_std, bias_std
         self.vel_std, self.att_std, self.gyro_std = vel_std, np.radians(att_std_deg), gyro_std
+        self.noise_dr = noise_dr  # per-episode noise scale in [0, 1.5] (v5 DR)
         self.rng = np.random.default_rng(seed)
         self.reset()
 
@@ -92,8 +94,12 @@ class LighthouseSensorBatch:
             self.bias = np.zeros((self.n, 3))
             self.next_update = np.zeros(self.n)
             self.last_pos = np.full((self.n, 3), np.nan)
+            self.scale = np.ones(self.n)
         k = int(mask.sum())
-        self.bias[mask] = self.rng.normal(0.0, self.bias_std, size=(k, 3))
+        if self.noise_dr:
+            self.scale[mask] = self.rng.uniform(0.0, 1.5, size=k)
+        self.bias[mask] = (self.rng.normal(0.0, self.bias_std, size=(k, 3))
+                           * self.scale[mask, None])
         self.next_update[mask] = 0.0
         self.last_pos[mask] = np.nan
 
@@ -107,10 +113,11 @@ class LighthouseSensorBatch:
                                   + self.rng.normal(0, self.jitter_std, (k, 3)))
             hz = np.clip(self.rng.normal(self.update_hz, self.update_hz_std, k), 8.0, 100.0)
             self.next_update[due] = t[due] + 1.0 / hz
-        vel_m = vel + self.rng.normal(0, self.vel_std, vel.shape)
-        rot_err = R.from_rotvec(self.rng.normal(0, self.att_std, (self.n, 3)))
+        s = self.scale[:, None]
+        vel_m = vel + self.rng.normal(0, self.vel_std, vel.shape) * s
+        rot_err = R.from_rotvec(self.rng.normal(0, self.att_std, (self.n, 3)) * s)
         quat_m = (rot_err * R.from_quat(quat)).as_quat()
-        omega_m = omega + self.rng.normal(0, self.gyro_std, omega.shape)
+        omega_m = omega + self.rng.normal(0, self.gyro_std, omega.shape) * s
         meas = (self.last_pos.copy(), vel_m, quat_m, omega_m)
         out = self._delayed if self._delayed is not None else meas  # 1-step latency
         self._delayed = meas

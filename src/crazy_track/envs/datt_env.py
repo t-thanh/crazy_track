@@ -21,6 +21,8 @@ WINDOW = 10  # future reference samples
 WINDOW_DT = 0.06  # s between samples (0.6 s lookahead)
 OBS_DIM = 3 + 3 + 4 + 3 * WINDOW  # v2 (no L1)
 OBS_DIM_V3 = OBS_DIM + 3  # v3 appends the L1 disturbance estimate
+PRIV_DIM = 3 + 3 + 4 + 3  # v5 privileged critic block: true err/vel/quat + perturb acc
+OBS_DIM_V5 = OBS_DIM_V3 + PRIV_DIM
 MASS = 0.04338
 PERTURB_ACC_MAX = 3.5  # m/s^2 per axis, as in DATT (arXiv:2310.09053)
 
@@ -30,18 +32,21 @@ class DATTTrackingEnv:
 
     def __init__(self, num_envs: int = 16, freq: int = 50, episode_time: float = 6.0,
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
-                 seed: int = 0, v3: bool = True, noisy_sensor: bool = False):
+                 seed: int = 0, v3: bool = True, noisy_sensor: bool = False,
+                 v5: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
         self.v3 = v3
-        self.noisy_sensor = noisy_sensor  # v4: policy sees Lighthouse-noisy obs
-        if noisy_sensor:
+        self.v5 = v5  # privileged critic obs + noise-level domain randomization
+        self.noisy_sensor = noisy_sensor or v5  # v4/v5: policy sees noisy obs
+        if self.noisy_sensor:
             from crazy_track.sensors import LighthouseSensorBatch
 
-            self.sensor = LighthouseSensorBatch(num_envs, control_freq=freq, seed=seed + 1)
+            self.sensor = LighthouseSensorBatch(num_envs, control_freq=freq,
+                                                seed=seed + 1, noise_dr=v5)
         self.max_steps = int(episode_time * freq)
         self.sim = Sim(n_worlds=num_envs, n_drones=1, drone=drone,
                        dynamics=Dynamics(dynamics), control="attitude", freq=500, device="cpu")
@@ -52,7 +57,7 @@ class DATTTrackingEnv:
 
             self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
             self.perturb_force = np.zeros((num_envs, 3))
-        obs_dim = OBS_DIM_V3 if v3 else OBS_DIM
+        obs_dim = OBS_DIM_V5 if v5 else (OBS_DIM_V3 if v3 else OBS_DIM)
 
         self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
                                                    dtype=np.float32)
@@ -137,6 +142,9 @@ class DATTTrackingEnv:
         parts = [ref - pos, vel, quat, rel_win]
         if self.v3:
             parts.append(self.l1.sigma_f.astype(np.float32))
+        if self.v5:  # privileged tail, visible only to the critic
+            pos_t, vel_t, quat_t = self._state_arrays()
+            parts += [ref - pos_t, vel_t, quat_t, self.perturb_force / MASS]
         return np.concatenate(parts, axis=1).astype(np.float32)
 
     def _sample_perturb(self, mask: np.ndarray) -> None:
