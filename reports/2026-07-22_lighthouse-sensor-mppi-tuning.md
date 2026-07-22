@@ -103,7 +103,32 @@ noise sensitivity? Normal-speed Lissajous, RMSE 3D (m), 6 conditions:
    (e.g. scale w with innovation whiteness), or a dual-rate ESO — fast channel
    for gusts, slow channel with the LPF for bias-like disturbances.
 
+## DATT v3 results (train run 16-35-10, eval runs 17-00-28 .. 17-01-25)
+
+RMSE 3D (m), v2 -> v3:
+
+| scenario | DATT v2 | DATT v3 | pool best (for reference) |
+|---|---|---|---|
+| nominal slow/normal/fast | 0.021/0.048/0.090 | 0.032/0.048/0.099 | MPPI-tuned 0.023/0.035/0.068 |
+| wind_const (normal) | 0.154 | **0.050** | ADRC w7 0.025 |
+| wind_gust (normal) | 0.122 | **0.066** | **DATT v3 is pool best** |
+| payload (normal) | 0.063 | 0.053 | ADRC 0.036 |
+| ground (normal) | 0.047 | 0.049 | PID 0.023 |
+| lighthouse slow/normal/fast | 0.030/0.072/0.106 | 0.034/0.073/**0.369** | PID/MPC |
+
+### Findings
+1. **The DATT recipe works as advertised: wind error dropped 3x (0.154 ->
+   0.050)** with only a small nominal cost (slow 0.021 -> 0.032). Under
+   *gusts* v3 is now the best controller in the pool (0.066) — the L1
+   estimate in the observation lets the policy react to the disturbance
+   state directly instead of waiting for position error to build.
+2. **New failure mode: lighthouse + fast = 0.369** (v2: 0.106). The L1
+   estimate is computed from noisy velocity/attitude, so at high agility the
+   policy chases phantom disturbances. The fix is DATT v4: train with the
+   sensor model in the loop (noisy obs), which is exactly what the
+   learning-to-fly paper does with its asymmetric actor-critic.
+
 ## Next
-1. Eval DATT v3: nominal + disturbance sweep + lighthouse.
+1. DATT v4: train with Lighthouse sensor noise in the observation loop.
 2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
 3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.

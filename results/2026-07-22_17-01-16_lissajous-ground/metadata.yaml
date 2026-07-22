@@ -1,0 +1,16 @@
+datetime: 2026-07-22_17-01-16
+tag: lissajous-ground
+reason: 'DATT v3 disturbance eval: ground'
+git_commit: f47b26a
+config:
+  controllers:
+  - datt:results/2026-07-22_16-35-10_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: ground
+  sensor: none
+  traj_z: 0.08
