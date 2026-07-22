@@ -1,0 +1,18 @@
+datetime: 2026-07-22_21-27-33
+tag: xadapt-lh2
+reason: Lighthouse retry for PID+xadapt after proper_acc fix
+git_commit: 6d79a55
+config:
+  controllers:
+  - xadapt
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

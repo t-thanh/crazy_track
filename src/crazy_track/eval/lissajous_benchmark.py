@@ -66,10 +66,6 @@ def main() -> None:
 
     from crazy_track.disturbances import SCENARIOS
     disturbance = SCENARIOS[args.disturbance]() if args.disturbance != "none" else None
-    sensor = None
-    if args.sensor == "lighthouse":
-        from crazy_track.sensors import LighthouseSensor
-        sensor = LighthouseSensor(control_freq=CONTROL_FREQ)
     traj_z = 0.08 if args.disturbance == "ground" else 1.0  # IGE needs low altitude
     if args.tag == "lissajous":
         if args.disturbance != "none":
@@ -92,6 +88,12 @@ def main() -> None:
                          "with attitude-mode controllers in one run — invoke separately.")
     mode = "force_torque" if any(acro) else "rotor_vel" if any(xadapt) else "attitude"
     ctrl_freq = 500 if any(xadapt) else CONTROL_FREQ  # xadapt runs at its training rate
+    sensor = None
+    if args.sensor == "lighthouse":
+        from crazy_track.sensors import LighthouseSensor
+        # keep latency time-consistent (~10 ms) across control rates
+        sensor = LighthouseSensor(control_freq=ctrl_freq,
+                                  latency_steps=max(1, ctrl_freq // 100))
     sim = make_sim(control=mode)
 
     fig, axes = plt.subplots(len(args.controllers), len(args.speeds),

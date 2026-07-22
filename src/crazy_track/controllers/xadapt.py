@@ -35,9 +35,19 @@ class _QuadState:
 
 class XAdaptPIDController(Controller):
     def __init__(self, kp: float = 16.0, kd: float = 8.0, ki: float = 6.0,
-                 kp_att: float = 8.0, control_freq: int = 500, motor_order=(0, 1, 2, 3)):
+                 kp_att: float = 8.0, control_freq: int = 500, motor_order=(0, 1, 2, 3),
+                 outer_decimation: int = 5):
+        # Outer position/attitude loop runs at control_freq/outer_decimation
+        # (100 Hz default) — running it at 500 Hz on white per-sample sensor
+        # noise amplifies vel-noise x kd and the 34 Hz Lighthouse position
+        # staircase into rate-command jitter (measured: RMSE 0.6-1.2 m).
         self.ki, self.int_max = ki, 1.0
         self._int_err = np.zeros(3)
+        self.decim = outer_decimation
+        self.outer_dt = outer_decimation / control_freq
+        self._calls = 0
+        self._rpyt = np.array([0.0, 0.0, 0.0, MASS * GRAVITY])
+        self._cmd_rates = np.zeros(3)
         path = os.environ.get("XADAPT_PATH", str(Path.home() / "xadapt_ctrl"))
         if path not in sys.path:
             sys.path.insert(0, path)
@@ -49,45 +59,52 @@ class XAdaptPIDController(Controller):
         self.dt = 1.0 / control_freq
         self.motor_order = list(motor_order)  # crazyflow motor index for each xadapt output
         self._traj: Trajectory | None = None
-        self._prev_vel = np.zeros(3)
+        self._prev_thrust = MASS * GRAVITY
 
     def reset(self, trajectory: Trajectory) -> None:
         from xadapt_controller.controller import AdapLowLevelControl
 
         self._traj = trajectory
-        self._prev_vel = np.zeros(3)
+        self._prev_thrust = MASS * GRAVITY
         self._int_err = np.zeros(3)
+        self._calls = 0
+        self._rpyt = np.array([0.0, 0.0, 0.0, MASS * GRAVITY])
+        self._cmd_rates = np.zeros(3)
         self.ll = AdapLowLevelControl()  # fresh history buffers per episode
         self.ll.set_max_motor_spd(MAX_MOTOR_RAD_S)
 
     def _outer_acc(self, pos: np.ndarray, vel: np.ndarray, t: float) -> np.ndarray:
         """Outer position loop -> desired CoM acceleration. Overridable (ADRC variant)."""
         err = self._traj.pos(t) - pos
-        self._int_err = np.clip(self._int_err + err * self.dt, -self.int_max, self.int_max)
+        self._int_err = np.clip(self._int_err + err * self.outer_dt, -self.int_max, self.int_max)
         return (self._traj.acc(t) + self.kp * err + self.ki * self._int_err
                 + self.kd * (self._traj.vel(t) - vel))
 
     def act(self, state: np.ndarray, t: float) -> np.ndarray:
         pos, vel, quat, omega = state[:3], state[3:6], state[6:10], state[10:13]
-        a_cmd = self._outer_acc(pos, vel, t)
-        rpyt = acc2attitude(a_cmd, quat)
-        # Attitude P loop (body frame) -> commanded body rates
-        rot = R.from_quat(quat)
-        rot_des = R.from_euler("xyz", [rpyt[0], rpyt[1], rpyt[2]])
-        e_rotvec = (rot.inv() * rot_des).as_rotvec()
-        cmd_rates = np.clip(self.kp_att * e_rotvec, -10.0, 10.0)
+        if self._calls % self.decim == 0:  # outer loop at control_freq/decim
+            a_cmd = self._outer_acc(pos, vel, t)
+            self._rpyt = acc2attitude(a_cmd, quat)
+            rot = R.from_quat(quat)
+            rot_des = R.from_euler("xyz", [self._rpyt[0], self._rpyt[1], self._rpyt[2]])
+            e_rotvec = (rot.inv() * rot_des).as_rotvec()
+            self._cmd_rates = np.clip(self.kp_att * e_rotvec, -10.0, 10.0)
+        self._calls += 1
+        rpyt, cmd_rates = self._rpyt, self._cmd_rates
 
-        # Proper acceleration (specific force) along body z, measured
-        acc = (vel - self._prev_vel) / self.dt
-        self._prev_vel = vel.copy()
-        proper = rot.inv().apply(acc + np.array([0.0, 0.0, GRAVITY]))
-
+        # Proper acceleration (specific force) along body z. On hardware this is
+        # the IMU accelerometer; differentiating (noisy) estimated velocity at
+        # 500 Hz instead amplifies sensor noise ~1000x and poisons the adaptation
+        # history (measured: RMSE 0.56-1.47 m under the Lighthouse model). The
+        # commanded collective thrust / mass is exact in sim absent actuator
+        # faults, and only the z-component is consumed by the model.
         s = _QuadState()
         s.att = quat
         s.omega = omega.astype(np.float32)
-        s.proper_acc = proper.astype(np.float32)
+        s.proper_acc = np.array([0.0, 0.0, self._prev_thrust / MASS], dtype=np.float32)
         s.cmd_bodyrates = cmd_rates.astype(np.float32)
         s.cmd_collective_thrust = np.float32(rpyt[3] / MASS)  # mass-normalized
+        self._prev_thrust = float(rpyt[3])
 
         spd = self.ll.run(s)  # rad/s in xadapt motor order
         rpm = np.clip(spd * RAD_S_TO_RPM, 0.0, MAX_MOTOR_RAD_S * RAD_S_TO_RPM)
@@ -116,8 +133,8 @@ class XAdaptADRCController(XAdaptPIDController):
 
     def _outer_acc(self, pos: np.ndarray, vel: np.ndarray, t: float) -> np.ndarray:
         e_v = vel - self._v_hat
-        self._v_hat += self.dt * (self._u_prev + self._sigma + self.l1g * e_v)
-        self._sigma = np.clip(self._sigma + self.dt * self.l2g * e_v,
+        self._v_hat += self.outer_dt * (self._u_prev + self._sigma + self.l1g * e_v)
+        self._sigma = np.clip(self._sigma + self.outer_dt * self.l2g * e_v,
                               -self.sigma_max, self.sigma_max)
         a_cmd = (self._traj.acc(t) + self.kp * (self._traj.pos(t) - pos)
                  + self.kd * (self._traj.vel(t) - vel) - self._sigma)

@@ -346,7 +346,33 @@ low-level. RMSE 3D (m):
 4. **ADRC+xadapt is now the best overall classical stack** across the
    scenario matrix; only specialized picks beat it in single cells.
 
+## Lighthouse runs for the xadapt stacks + sensor-model bug fix (runs 21-24 .. 21-35)
+
+First attempts were catastrophic (RMSE 0.56-1.47 m). Root-caused in three
+steps, each documented in the run reasons:
+1. proper_acc from differentiated noisy velocity at 500 Hz (~21 m/s^2 noise)
+   -> replaced with commanded-thrust specific force (IMU stand-in).
+2. Outer loop at 500 Hz on white per-sample noise -> decimated to 100 Hz.
+3. **The decisive one, found by channel ablation** (true_pos/vel/quat barely
+   helped; true_omega: 0.78 -> 0.048): the sensor model wrongly applied the
+   10 ms Lighthouse latency to the *gyro*. The gyro is an onboard IMU with no
+   transport delay, and xadapt's 500 Hz inner rate loop cannot tolerate
+   delayed rate feedback. Sensor model fixed: omega bypasses the latency
+   buffer (noise retained). NOTE: prior lighthouse numbers for omega-consuming
+   controllers (MPC, MPPI, datt_acro) predate this fix and would improve
+   slightly on re-run.
+
+**Final Lighthouse results, RMSE 3D (m):**
+
+| scenario | PID+Mellinger | PID+xadapt | ADRC+xadapt | DATT v5 |
+|---|---|---|---|---|
+| slow / normal / fast | 0.012/0.043/0.146 | 0.024/0.053/0.122 | 0.025/0.046/0.145 | 0.041/0.063/0.124 |
+| **lighthouse + wind (deployment)** | - | - | **0.054** | 0.058 |
+
+**ADRC-over-xadapt is now the overall deployment champion (0.054)**, edging
+DATT v5 (0.058), with far better nominal/payload numbers than any policy.
+
 ## Next
 1. Acro2.2: higher flip altitude margin, per-variant balancing, recovery reward.
-2. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.
-3. Lighthouse-sensor runs for the xadapt stacks (500 Hz sensor model check).
+2. Re-run MPC/MPPI/datt_acro lighthouse rows post gyro-latency fix.
+3. MPC solver-failure reuse; seed-averaged runs; adaptive-bandwidth ESO.

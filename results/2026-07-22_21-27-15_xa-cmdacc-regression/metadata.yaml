@@ -1,0 +1,18 @@
+datetime: 2026-07-22_21-27-15
+tag: xa-cmdacc-regression
+reason: 'Regression after proper_acc source change (cmd-thrust instead of differentiated
+  vel): clean-sensor normal should match 0.038/0.018'
+git_commit: 6d79a55
+config:
+  controllers:
+  - xadapt
+  - xadapt_adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0
