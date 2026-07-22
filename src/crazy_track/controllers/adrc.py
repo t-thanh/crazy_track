@@ -42,6 +42,15 @@ class ADRCController(Controller):
             from crazy_track.controllers.l1 import L1Estimator
 
             self._l1 = L1Estimator(MASS, n=1, a_s=a_s, cutoff_hz=l1_cutoff_hz, dt=self.dt)
+        if estimator == "adaptive":
+            # Innovation-scheduled bandwidth: a persistent disturbance biases the
+            # innovation mean; sensor noise is zero-mean. w = w_min..w_max scaled
+            # by |mean|/std of the innovation over a short window. Measured fixed-w
+            # tradeoff: w=3-5 wins noise/static cells, w=10 wins gusts; no fixed w
+            # wins everywhere (2026-07-22 sweep).
+            self.w_min, self.w_max = 3.0, 12.0
+            self.win = int(0.25 / self.dt)  # 0.25 s innovation window
+            self._innov: list[np.ndarray] = []
         self._traj: Trajectory | None = None
         self._reset_states()
 
@@ -57,6 +66,8 @@ class ADRCController(Controller):
         self._reset_states()
         if self.estimator == "l1":
             self._l1.reset()
+        if self.estimator == "adaptive":
+            self._innov = []
 
     def act(self, state: np.ndarray, t: float) -> np.ndarray:
         pos, vel, quat = state[:3], state[3:6], state[6:10]
@@ -65,6 +76,14 @@ class ADRCController(Controller):
             sigma = self._l1.update(vel, quat, np.array([self._last_thrust]))[0]
         else:
             e_v = vel - self._v_hat
+            if self.estimator == "adaptive":
+                self._innov.append(e_v.copy())
+                if len(self._innov) > self.win:
+                    self._innov.pop(0)
+                inn = np.asarray(self._innov)
+                ratio = float(np.max(np.abs(inn.mean(0)) / (inn.std(0) + 1e-4)))
+                w = self.w_min + (self.w_max - self.w_min) * min(ratio, 1.0)
+                self.l1_gain, self.l2_gain = 2 * w, w**2
             self._v_hat += self.dt * (self._u_prev + self._sigma + self.l1_gain * e_v)
             self._sigma = np.clip(self._sigma + self.dt * self.l2_gain * e_v,
                                   -self.sigma_max, self.sigma_max)

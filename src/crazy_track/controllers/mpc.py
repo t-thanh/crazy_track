@@ -18,11 +18,20 @@ class MPCController(Controller):
     from its parameters.
     """
 
-    def __init__(self, horizon: int = 20, dt_plan: float = 0.04, control_freq: int = 100):
+    def __init__(self, horizon: int = 20, dt_plan: float = 0.04, control_freq: int = 100,
+                 offset_free: bool = False):
         import casadi as cs
 
         self.H, self.dtp = horizon, dt_plan
+        # Offset-free MPC (Maeder/Morari style): a constant disturbance-acceleration
+        # state, estimated by a velocity ESO, enters the prediction model so the
+        # optimizer plans against it. Plain MPC re-predicts the same biased
+        # trajectory under steady wind (measured: 0.196 m RMSE).
+        self.offset_free = offset_free
+        self.dt = 1.0 / control_freq
+        self._w = 7.0  # ESO bandwidth for the disturbance estimate
         p = _load_so_rpy_params()
+        self.p = p
         self.hover = float((p["mass"] * 9.81 - p["acc_coef"]) / p["cmd_f_coef"])
 
         # so_rpy Euler dynamics: x = [pos(3), rpy(3), vel(3), drpy(3)], u = [rpy_cmd(3), f]
@@ -32,12 +41,13 @@ class MPCController(Controller):
         cp, sp = cs.cos(rpy[1]), cs.sin(rpy[1])
         cy, sy = cs.cos(rpy[2]), cs.sin(rpy[2])
         z_axis = cs.vertcat(cr * sp * cy + sr * sy, cr * sp * sy - sr * cy, cr * cp)
+        DIST = cs.MX.sym("dist", 3)
         thrust = p["acc_coef"] + p["cmd_f_coef"] * u[3]
-        acc = thrust * z_axis / p["mass"] + cs.DM(p["gravity_vec"])
+        acc = thrust * z_axis / p["mass"] + cs.DM(p["gravity_vec"]) + DIST
         ddrpy = (cs.DM(p["rpy_coef"]) * rpy + cs.DM(p["rpy_rates_coef"]) * drpy
                  + cs.DM(p["cmd_rpy_coef"]) * u[0:3])
         xdot = cs.vertcat(vel, drpy, acc, ddrpy)
-        f = cs.Function("f", [x, u], [x + self.dtp * (xdot + 0)])  # Euler; dt small vs dynamics
+        f = cs.Function("f", [x, u, DIST], [x + self.dtp * xdot])  # Euler
 
         # Multiple shooting NLP
         opti = cs.Opti()
@@ -46,10 +56,11 @@ class MPCController(Controller):
         X0 = opti.parameter(12)
         REF = opti.parameter(3, self.H)
         REFV = opti.parameter(3, self.H)
+        DISTP = opti.parameter(3)
         cost = 0
         opti.subject_to(X[:, 0] == X0)
         for k in range(self.H):
-            opti.subject_to(X[:, k + 1] == f(X[:, k], U[:, k]))
+            opti.subject_to(X[:, k + 1] == f(X[:, k], U[:, k], DISTP))
             cost += cs.sumsqr(X[0:3, k + 1] - REF[:, k])
             cost += 0.05 * cs.sumsqr(X[6:9, k + 1] - REFV[:, k])
             cost += 0.02 * cs.sumsqr(U[0:2, k]) + 0.02 * cs.sumsqr(U[3, k] - self.hover)
@@ -64,12 +75,20 @@ class MPCController(Controller):
                               "ipopt.max_iter": 60, "ipopt.tol": 1e-4,
                               "ipopt.warm_start_init_point": "yes"})
         self.opti, self.X, self.U, self.X0, self.REF, self.REFV = opti, X, U, X0, REF, REFV
+        self.DISTP = DISTP
         self._prev = None
         self._traj: Trajectory | None = None
+        self._eso_reset()
+
+    def _eso_reset(self) -> None:
+        self._v_hat = np.zeros(3)
+        self._sigma = np.zeros(3)
+        self._last_thrust = self.hover
 
     def reset(self, trajectory: Trajectory) -> None:
         self._traj = trajectory
         self._prev = None
+        self._eso_reset()
 
     def act(self, state: np.ndarray, t: float) -> np.ndarray:
         from scipy.spatial.transform import Rotation as R
@@ -80,6 +99,19 @@ class MPCController(Controller):
         cp, tp = np.cos(rpy[1]), np.tan(rpy[1])
         E_inv = np.array([[1, sr * tp, cr * tp], [0, cr, -sr], [0, sr / cp, cr / cp]])
         x0 = np.concatenate([pos, rpy, vel, E_inv @ omega])
+
+        if self.offset_free:
+            # velocity ESO on the model residual -> disturbance accel estimate
+            p = self.p
+            z_b = R.from_quat(quat).as_matrix()[:, 2]
+            a_model = ((p["acc_coef"] + p["cmd_f_coef"] * self._last_thrust) * z_b
+                       / p["mass"] + p["gravity_vec"])
+            e_v = vel - self._v_hat
+            self._v_hat += self.dt * (a_model + self._sigma + 2 * self._w * e_v)
+            self._sigma = np.clip(self._sigma + self.dt * self._w**2 * e_v, -3.0, 3.0)
+            self.opti.set_value(self.DISTP, self._sigma)
+        else:
+            self.opti.set_value(self.DISTP, np.zeros(3))
 
         times = t + self.dtp * np.arange(1, self.H + 1)
         self.opti.set_value(self.X0, x0)
@@ -100,4 +132,5 @@ class MPCController(Controller):
         Up = np.hstack([Us[:, 1:], Us[:, -1:]])
         self._prev = (Xp, Up)
         u0 = Us[:, 0]
-        return np.array([u0[0], u0[1], u0[2], np.clip(u0[3], THRUST_MIN, THRUST_MAX)])
+        self._last_thrust = float(np.clip(u0[3], THRUST_MIN, THRUST_MAX))
+        return np.array([u0[0], u0[1], u0[2], self._last_thrust])

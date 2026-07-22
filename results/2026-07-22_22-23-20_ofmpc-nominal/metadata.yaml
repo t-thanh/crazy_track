@@ -1,0 +1,18 @@
+datetime: 2026-07-22_22-23-20
+tag: ofmpc-nominal
+reason: 'Offset-free MPC nominal regression (plain: 0.018/0.063/0.083)'
+git_commit: 9ebd4c1
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

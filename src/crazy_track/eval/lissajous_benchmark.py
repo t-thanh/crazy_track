@@ -23,7 +23,7 @@ N_CYCLES = 2
 CONTROL_FREQ = 100
 
 
-def make_controller(name: str):
+def make_controller(name: str, seed: int = 0):
     if name == "pid":
         from crazy_track.controllers.pid import PIDController
         return PIDController(control_freq=CONTROL_FREQ)
@@ -32,7 +32,13 @@ def make_controller(name: str):
         return ADRCController(control_freq=CONTROL_FREQ)
     if name == "mppi_l1":
         from crazy_track.controllers.mppi_l1 import MPPIL1Controller
-        return MPPIL1Controller(control_freq=CONTROL_FREQ)
+        return MPPIL1Controller(control_freq=CONTROL_FREQ, seed=seed)
+    if name == "adrc_adaptive":
+        from crazy_track.controllers.adrc import ADRCController
+        return ADRCController(control_freq=CONTROL_FREQ, estimator="adaptive")
+    if name == "mpc_offsetfree":
+        from crazy_track.controllers.mpc import MPCController
+        return MPCController(control_freq=CONTROL_FREQ, offset_free=True)
     if name == "mpc":
         from crazy_track.controllers.mpc import MPCController
         return MPCController(control_freq=CONTROL_FREQ)
@@ -62,10 +68,15 @@ def main() -> None:
     parser.add_argument("--sensor", default="none", choices=["none", "lighthouse"])
     parser.add_argument("--vertical", action="store_true",
                         help="figure-8 in the x-z plane (acro benchmark)")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="seeds sensor bias, gust realization, MPPI sampling")
     args = parser.parse_args()
 
     from crazy_track.disturbances import SCENARIOS
-    disturbance = SCENARIOS[args.disturbance]() if args.disturbance != "none" else None
+    disturbance = None
+    if args.disturbance != "none":
+        cls = SCENARIOS[args.disturbance]
+        disturbance = cls(seed=args.seed) if args.disturbance == "wind_gust" else cls()
     traj_z = 0.08 if args.disturbance == "ground" else 1.0  # IGE needs low altitude
     if args.tag == "lissajous":
         if args.disturbance != "none":
@@ -93,7 +104,8 @@ def main() -> None:
         from crazy_track.sensors import LighthouseSensor
         # keep latency time-consistent (~10 ms) across control rates
         sensor = LighthouseSensor(control_freq=ctrl_freq,
-                                  latency_steps=max(1, ctrl_freq // 100))
+                                  latency_steps=max(1, ctrl_freq // 100),
+                                  seed=args.seed)
     sim = make_sim(control=mode)
 
     fig, axes = plt.subplots(len(args.controllers), len(args.speeds),
@@ -108,7 +120,7 @@ def main() -> None:
         for si, speed in enumerate(args.speeds):
             traj = LissajousTrajectory.from_speed(speed, n_cycles=N_CYCLES, z=traj_z,
                                                   vertical=args.vertical)
-            ctrl = make_controller(cspec)
+            ctrl = make_controller(cspec, seed=args.seed)
             t0 = time.time()
             data = rollout(ctrl, traj, control_freq=ctrl_freq, sim=sim,
                            disturbance=disturbance, sensor=sensor)

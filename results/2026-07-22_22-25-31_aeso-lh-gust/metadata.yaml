@@ -1,0 +1,17 @@
+datetime: 2026-07-22_22-25-31
+tag: aeso-lh-gust
+reason: 'Adaptive ESO: lh+gust'
+git_commit: 9ebd4c1
+config:
+  controllers:
+  - adrc_adaptive
+  - adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  sensor: lighthouse
+  traj_z: 1.0
