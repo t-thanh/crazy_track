@@ -19,7 +19,10 @@ from crazy_track.trajectories import ChainedPolyTrajectory
 START = np.array([0.0, 0.0, 1.2])
 WINDOW = 10  # future reference samples
 WINDOW_DT = 0.06  # s between samples (0.6 s lookahead)
-OBS_DIM = 3 + 3 + 4 + 3 * WINDOW
+OBS_DIM = 3 + 3 + 4 + 3 * WINDOW  # v2 (no L1)
+OBS_DIM_V3 = OBS_DIM + 3  # v3 appends the L1 disturbance estimate
+MASS = 0.04338
+PERTURB_ACC_MAX = 3.5  # m/s^2 per axis, as in DATT (arXiv:2310.09053)
 
 
 class DATTTrackingEnv:
@@ -27,19 +30,26 @@ class DATTTrackingEnv:
 
     def __init__(self, num_envs: int = 16, freq: int = 50, episode_time: float = 6.0,
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
-                 seed: int = 0):
+                 seed: int = 0, v3: bool = True):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
+        self.v3 = v3
         self.max_steps = int(episode_time * freq)
         self.sim = Sim(n_worlds=num_envs, n_drones=1, drone=drone,
                        dynamics=Dynamics(dynamics), control="attitude", freq=500, device="cpu")
         self.n_substeps = self.sim.freq // freq
         self.rng = np.random.default_rng(seed)
+        if v3:
+            from crazy_track.controllers.l1 import L1Estimator
 
-        self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(OBS_DIM,),
+            self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
+            self.perturb_force = np.zeros((num_envs, 3))
+        obs_dim = OBS_DIM_V3 if v3 else OBS_DIM
+
+        self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
                                                    dtype=np.float32)
         self.single_action_space = spaces.Box(-1.0, 1.0, shape=(4,), dtype=np.float32)
         self.observation_space = batch_space(self.single_observation_space, num_envs)
@@ -84,7 +94,11 @@ class DATTTrackingEnv:
         for i in range(self.num_envs):
             self._sample_traj(i)
         self.steps[:] = 0
-        self._set_states(np.ones(self.num_envs, dtype=bool))
+        all_mask = np.ones(self.num_envs, dtype=bool)
+        self._set_states(all_mask)
+        if self.v3:
+            self.l1.reset()
+            self._sample_perturb(all_mask)
         return self._obs(), {}
 
     def _state_arrays(self):
@@ -102,7 +116,17 @@ class DATTTrackingEnv:
         t = self.steps / self.freq
         ref, win = self._refs(t)
         rel_win = (win - pos[:, None, :]).reshape(self.num_envs, -1)
-        return np.concatenate([ref - pos, vel, quat, rel_win], axis=1).astype(np.float32)
+        parts = [ref - pos, vel, quat, rel_win]
+        if self.v3:
+            parts.append(self.l1.sigma_f.astype(np.float32))
+        return np.concatenate(parts, axis=1).astype(np.float32)
+
+    def _sample_perturb(self, mask: np.ndarray) -> None:
+        """Per-episode random constant force perturbation (DATT recipe)."""
+        n = int(mask.sum())
+        acc = self.rng.uniform(-PERTURB_ACC_MAX, PERTURB_ACC_MAX, size=(n, 3))
+        acc[:, 2] *= 0.5  # limit vertical component (TWR is only 1.88)
+        self.perturb_force[mask] = MASS * acc
 
     def _denorm_action(self, a: np.ndarray) -> np.ndarray:
         cmd = np.zeros((self.num_envs, 1, 4), dtype=np.float32)
@@ -113,9 +137,20 @@ class DATTTrackingEnv:
         return cmd
 
     def step(self, action: np.ndarray):
-        self.sim.attitude_control(self._denorm_action(np.asarray(action)))
+        cmd = self._denorm_action(np.asarray(action))
+        if self.v3:
+            import jax.numpy as jnp
+
+            force = jnp.asarray(self.perturb_force[:, None, :], dtype=jnp.float32)
+            self.sim.data = self.sim.data.replace(
+                states=self.sim.data.states.replace(force=force)
+            )
+        self.sim.attitude_control(cmd)
         self.sim.step(self.n_substeps)
         self.steps += 1
+        if self.v3:
+            _, vel_now, quat_now = self._state_arrays()
+            self.l1.update(vel_now, quat_now, cmd[:, 0, 3])
 
         pos, vel, quat = self._state_arrays()
         t = self.steps / self.freq
@@ -139,5 +174,10 @@ class DATTTrackingEnv:
                 self._sample_traj(int(i))
             self.steps[done_mask] = 0
             self._set_states(done_mask)
+            if self.v3:
+                self._sample_perturb(done_mask)
+                self.l1.v_hat[done_mask] = 0.0
+                self.l1.sigma_hat[done_mask] = 0.0
+                self.l1.sigma_f[done_mask] = 0.0
 
         return self._obs(), reward, crashed, truncated, info

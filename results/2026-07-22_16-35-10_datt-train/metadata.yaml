@@ -1,0 +1,12 @@
+datetime: 2026-07-22_16-35-10
+tag: datt-train
+reason: 'DATT v3: full DATT recipe = v2 randomized-difficulty refs + per-episode force
+  perturbations (+-3.5 m/s2, z halved) + L1 disturbance estimate appended to obs (43-dim)'
+git_commit: 43da966
+config:
+  timesteps: 3000000
+  n_envs: 16
+  reason: 'DATT v3: full DATT recipe = v2 randomized-difficulty refs + per-episode
+    force perturbations (+-3.5 m/s2, z halved) + L1 disturbance estimate appended
+    to obs (43-dim)'
+  seed: 0

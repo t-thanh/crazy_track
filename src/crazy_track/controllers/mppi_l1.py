@@ -28,12 +28,16 @@ class MPPIL1Controller(Controller):
     compensates for it (as in DATT's L1+MPC baselines, arXiv:2310.09053).
     """
 
-    def __init__(self, horizon: int = 25, n_samples: int = 256, dt_plan: float = 0.02,
-                 temperature: float = 0.05, control_freq: int = 100,
-                 noise_sigma: tuple = (0.12, 0.12, 0.03, 0.06),
+    def __init__(self, horizon: int = 25, n_samples: int = 512, dt_plan: float = 0.02,
+                 temperature: float = 0.02, control_freq: int = 100,
+                 noise_sigma: tuple = (0.08, 0.08, 0.02, 0.04), noise_beta: float = 0.7,
                  a_s: float = -5.0, l1_cutoff_hz: float = 4.0, seed: int = 0):
+        # Defaults = tuned config A (2026-07-22 sweep): 512 samples, lambda 0.02,
+        # AR(1) noise beta=0.7, reduced sigma. slow/normal/fast RMSE
+        # 0.042/0.045/0.089 -> 0.023/0.035/0.068 vs the original config.
         self.H, self.N, self.dtp = horizon, n_samples, dt_plan
         self.lam = temperature
+        self.beta = noise_beta  # AR(1) correlation of noise along the horizon
         self.dt = 1.0 / control_freq
         self.sigma = np.asarray(noise_sigma)
         self.a_s = a_s
@@ -104,6 +108,9 @@ class MPPIL1Controller(Controller):
         ref_v = self._traj.vel(t + self.dtp * np.arange(1, self.H + 1))
 
         eps = self.rng.normal(size=(self.N, self.H, 4)) * self.sigma
+        if self.beta > 0:  # temporally correlated (smooth) exploration noise
+            for k in range(1, self.H):
+                eps[:, k] = self.beta * eps[:, k - 1] + np.sqrt(1 - self.beta**2) * eps[:, k]
         u = np.clip(
             self.u_mean[None] + eps,
             [-1.0, -1.0, -0.5, THRUST_MIN], [1.0, 1.0, 0.5, THRUST_MAX],

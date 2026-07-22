@@ -50,8 +50,13 @@ def apply_force(sim, f: np.ndarray) -> None:
 
 
 def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
-            sim=None, start_at_rest: bool = True, disturbance=None) -> dict[str, np.ndarray]:
-    """Run one closed-loop episode. Returns time series arrays."""
+            sim=None, start_at_rest: bool = True, disturbance=None,
+            sensor=None) -> dict[str, np.ndarray]:
+    """Run one closed-loop episode. Returns time series arrays.
+
+    `sensor` (e.g. LighthouseSensor) filters what the controller sees; metrics
+    always use the true state.
+    """
     sim = sim or make_sim()
     sim.reset()
     if start_at_rest:
@@ -59,6 +64,8 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
     controller.reset(traj)
     if disturbance is not None:
         disturbance.reset()
+    if sensor is not None:
+        sensor.reset()
 
     n_substeps = sim.freq // control_freq
     n_steps = int(traj.duration * control_freq)
@@ -68,7 +75,8 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
     for i in range(n_steps):
         t = i * dt
         state = get_state(sim)
-        action = np.asarray(controller.act(state, t), dtype=np.float32)
+        state_meas = sensor.measure(t, state) if sensor is not None else state
+        action = np.asarray(controller.act(state_meas, t), dtype=np.float32)
         log["t"].append(t)
         log["pos"].append(state[:3])
         log["vel"].append(state[3:6])
