@@ -201,8 +201,30 @@ RMSE 3D (m), three-generation comparison:
 - Lighthouse deployment: **DATT v5** — best in the realistic combined
   condition (noise + wind), 0.058.
 
+## DATT v6a: frame stacking (train run 18-11-05, evals 18-57-05 .. 18-58-12)
+
+Hypothesis: 4-frame stacked actor obs (80 ms) makes per-episode sensor-noise
+level observable -> policy calibrates instead of averaging. **Result: not
+confirmed at this budget.** RMSE 3D (m):
+
+| scenario | v5 | v6a |
+|---|---|---|
+| nominal slow/normal/fast | 0.055/0.089/0.163 | 0.058/0.087/0.160 |
+| lighthouse slow/normal/fast | 0.041/0.063/0.124 | 0.048/0.078/0.131 |
+| wind / gust / payload (clean) | 0.076/0.091/0.102 | 0.078/0.109/0.098 |
+| lighthouse + wind | **0.058** | 0.074 |
+
+v6a is statistically v5-equivalent (slightly worse where it differs). Likely
+reasons: (a) 4x larger actor input with the same [64,64] network and 4M-step
+budget — harder optimization, no capacity increase; (b) the 80 ms window
+spans only ~2-3 Lighthouse position updates — thin evidence for noise-level
+inference. Options if revisited: GRU + longer training, bigger window with
+strided frames, or explicit innovation-variance features. Not pursued now —
+**v5 stands as the deployment policy, v3 as the clean-sensing policy.**
+
 ## Next
-1. DATT v6 candidate: recurrent policy (GRU) or obs stacking for noise-level
-   observability; alternatively CTBR action space for acrobatic envelope.
+1. DATT-acro (in training, run ~18:5x): CTBR body-rate action space,
+   aggressive distribution to the TWR limit; eval on vertical + T=2.2 s
+   Lissajous vs attitude-mode controllers.
 2. MPC: reuse previous solution on solver failure; seed-averaged lighthouse runs.
 3. Adaptive-bandwidth ESO (innovation-driven) as an ADRC v3.

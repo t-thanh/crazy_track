@@ -1,0 +1,17 @@
+datetime: 2026-07-22_18-58-56
+tag: datt-train
+reason: 'DATT-acro v1: CTBR body-rate action space (rate loop on force_torque), aggressive
+  ref distribution (vel 1-5 m/s, acc 3-15 m/s2 = TWR limit), v3 obs recipe (L1 + perturbations),
+  clean sensor; eval target: vertical + T=2.2s Lissajous'
+git_commit: 0f121d4
+config:
+  timesteps: 4000000
+  n_envs: 16
+  reason: 'DATT-acro v1: CTBR body-rate action space (rate loop on force_torque),
+    aggressive ref distribution (vel 1-5 m/s, acc 3-15 m/s2 = TWR limit), v3 obs recipe
+    (L1 + perturbations), clean sensor; eval target: vertical + T=2.2s Lissajous'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: true

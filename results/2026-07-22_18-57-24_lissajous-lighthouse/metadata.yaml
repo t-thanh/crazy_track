@@ -1,0 +1,18 @@
+datetime: 2026-07-22_18-57-24
+tag: lissajous-lighthouse
+reason: DATT v6a eval with Lighthouse sensor
+git_commit: 0f121d4
+config:
+  controllers:
+  - datt:results/2026-07-22_18-11-05_datt-train/datt_ppo_final.zip
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

@@ -1,0 +1,16 @@
+datetime: 2026-07-22_18-58-03
+tag: lissajous-payload
+reason: 'DATT v6a disturbance eval: payload'
+git_commit: 0f121d4
+config:
+  controllers:
+  - datt:results/2026-07-22_18-11-05_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: payload
+  sensor: none
+  traj_z: 1.0
