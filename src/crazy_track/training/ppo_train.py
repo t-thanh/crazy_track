@@ -74,6 +74,9 @@ def main() -> None:
                         help="acro: CTBR body-rate action space + aggressive ref distribution")
     parser.add_argument("--acro2", action="store_true",
                         help="acro phase 2: flip primitives (attitude-ref obs + reward)")
+    parser.add_argument("--acro3", action="store_true",
+                        help="acro phase 3: flips on the feasible ballistic reference "
+                             "(consistent pos+att refs, balanced reward)")
     args = parser.parse_args()
 
     log = RunLogger(tag="datt-train", reason=args.reason, config=vars(args))
@@ -81,7 +84,8 @@ def main() -> None:
 
     env = SB3Adapter(DATTTrackingEnv(num_envs=args.n_envs, seed=args.seed,
                                      noisy_sensor=args.noisy_sensor, v5=args.v5,
-                                     v6=args.v6, ctbr=args.ctbr, acro2=args.acro2))
+                                     v6=args.v6, ctbr=args.ctbr, acro2=args.acro2,
+                                     acro3=args.acro3))
     if args.v5 or args.v6:
         from crazy_track.training.asymmetric import AsymmetricPolicy
 

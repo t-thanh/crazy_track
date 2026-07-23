@@ -37,14 +37,19 @@ class DATTTrackingEnv:
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
                  seed: int = 0, v3: bool = True, noisy_sensor: bool = False,
                  v5: bool = False, v6: bool = False, ctbr: bool = False,
-                 acro2: bool = False):
+                 acro2: bool = False, acro3: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
         self.num_envs = num_envs
         self.freq = freq
         self.acro2 = acro2  # flip primitives: attitude-ref obs + reward, mixed episodes
-        self.ctbr = ctbr or acro2  # action = [thrust, body rates], rate loop -> torques
+        # acro3: flips on the dynamically FEASIBLE ballistic reference (paper 2).
+        # Position/attitude refs are consistent, so the reward needs no
+        # maneuver-window domination hack; obs layout identical to acro2.
+        self.acro3 = acro3
+        self.flip_obs = acro2 or acro3  # 46-dim obs with attitude-error rotvec
+        self.ctbr = ctbr or self.flip_obs  # action = [thrust, body rates] -> torques
         self.v3 = v3
         self.v6 = v6  # frame-stacked actor obs (implies v5)
         self.v5 = v5 or v6  # privileged critic obs + noise-level domain randomization
@@ -68,7 +73,7 @@ class DATTTrackingEnv:
 
             self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
             self.perturb_force = np.zeros((num_envs, 3))
-        obs_dim = (OBS_DIM_ACRO2 if acro2 else OBS_DIM_V6 if v6 else
+        obs_dim = (OBS_DIM_ACRO2 if self.flip_obs else OBS_DIM_V6 if v6 else
                    OBS_DIM_V5 if self.v5 else (OBS_DIM_V3 if v3 else OBS_DIM))
 
         self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
@@ -79,6 +84,7 @@ class DATTTrackingEnv:
 
         self.steps = np.zeros(num_envs, dtype=np.int64)
         self._flip_counter = 0
+        self._is_flip = np.zeros(num_envs, dtype=bool)  # per-env flip-episode mask
         # Reference bank: sampled positions at window offsets for each control step.
         self._traj = [None] * num_envs
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
@@ -89,6 +95,26 @@ class DATTTrackingEnv:
         # gentle refs fail on it — RMSE 0.95 m observed with vel<=1, acc<=2).
         # CTBR/acro mode extends to the platform limit (TWR 1.88 -> ~15 m/s^2 lateral).
         # acro2 mixes in flip episodes (50%): hover -> 360-deg roll/pitch -> recover.
+        self._is_flip[i] = False
+        if self.acro3 and self.rng.random() < 0.5:
+            from crazy_track.trajectories import BallisticFlipTrajectory
+
+            # Feasible ballistic flip (paper 2): boost/ballistic/brake, arc stays
+            # above the hover z, rotation only in the zero-thrust window. Tb range
+            # keeps the trapezoid peak rate <= 0.87*RATE_MAX (2pi/(0.8*Tb)).
+            variant = self._flip_counter % 4
+            self._flip_counter += 1
+            self._is_flip[i] = True
+            self._traj[i] = BallisticFlipTrajectory(
+                hover=(0.0, 0.0, float(self.rng.uniform(1.5, 2.5))),
+                t0=float(self.rng.uniform(1.5, 2.2)),
+                Tb=float(self.rng.uniform(0.6, 0.8)),
+                axis=variant // 2,
+                direction=1 if variant % 2 == 0 else -1,
+                a_boost=float(self.rng.uniform(6.0, 7.5)),
+                duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
+            )
+            return
         if self.acro2 and self.rng.random() < 0.5:
             from crazy_track.trajectories import FlipTrajectory
 
@@ -97,6 +123,7 @@ class DATTTrackingEnv:
             # grazed the floor: min_z ~ 0.0 measured).
             variant = self._flip_counter % 4
             self._flip_counter += 1
+            self._is_flip[i] = True
             self._traj[i] = FlipTrajectory(
                 hover=(0.0, 0.0, float(self.rng.uniform(2.0, 3.0))),
                 t0=float(self.rng.uniform(1.5, 3.0)),
@@ -183,7 +210,7 @@ class DATTTrackingEnv:
         parts = [ref - pos, vel, quat, rel_win]
         if self.v3:
             parts.append(self.l1.sigma_f.astype(np.float32))
-        if self.acro2:
+        if self.flip_obs:
             parts.append(self._att_err(quat, t).astype(np.float32))
         return np.concatenate(parts, axis=1).astype(np.float32)
 
@@ -268,7 +295,20 @@ class DATTTrackingEnv:
         crashed = (pos[:, 2] < 0.05) | (err > 2.0)
         truncated = self.steps >= self.max_steps
         reward = np.exp(-2.0 * err) - 0.02 * np.linalg.norm(action[:, 0:2], axis=1)
-        if self.acro2:
+        if self.acro3:
+            # Feasible reference -> position and attitude rewards AGREE during the
+            # maneuver: equal weights suffice (no acro2 domination hack). The
+            # attitude terms apply ONLY to flip episodes — acro2 leaked a
+            # level-flight bonus into aggressive poly episodes, penalizing the
+            # banking those references require.
+            att_angle = np.linalg.norm(self._att_err(quat, t), axis=1)
+            ref_rv = np.stack([self._traj[i].att_ref_rotvec(t[i])
+                               for i in range(self.num_envs)])
+            maneuver = self._is_flip & (np.linalg.norm(ref_rv, axis=1) > 0.1)
+            maneuver_reward = np.exp(-2.0 * err) + np.exp(-2.0 * att_angle)
+            level_bonus = np.where(self._is_flip, 0.6 * np.exp(-3.0 * att_angle), 0.0)
+            reward = np.where(maneuver, maneuver_reward, reward + level_bonus)
+        elif self.acro2:
             # During an active attitude maneuver the attitude term must DOMINATE,
             # or hovering outscores flipping (measured: 0-degree "flips" with the
             # earlier +0.6 bonus — level flight was reward-optimal).
