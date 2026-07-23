@@ -1,0 +1,20 @@
+datetime: 2026-07-23_06-56-56
+tag: ms-lhfix-s1
+reason: 'Refresh stale lighthouse rows (seed 1 of 3): MPC+MPPI predate the gyro-latency
+  sensor fix (gyro now bypasses the 10ms Lighthouse buffer, run 16-36-29 is pre-fix)'
+git_commit: dd5ba01
+config:
+  controllers:
+  - mppi_l1
+  - mpc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

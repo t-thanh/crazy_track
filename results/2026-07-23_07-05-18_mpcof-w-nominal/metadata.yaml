@@ -1,0 +1,22 @@
+datetime: 2026-07-23_07-05-18
+tag: mpcof-w-nominal
+reason: 'Offset-free MPC ESO bandwidth sweep (nominal): verify w=3/5 keep the nominal
+  records (slow 0.006 / fast 0.053) - ESO only biases the prediction, low w should
+  be near-free here'
+git_commit: dd5ba01
+config:
+  controllers:
+  - mpc_offsetfree_w3
+  - mpc_offsetfree_w5
+  - mpc_offsetfree
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

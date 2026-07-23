@@ -83,9 +83,37 @@ isolate training-seed variance (eval-seed std known small from the 10-seed
 sweep: ±0.007 for v5 lighthouse-fast); flips via flip_eval. Aggregation via
 `aggregate_seeds --prefix mst-`.
 
-## Lighthouse refresh post gyro fix (runs ms-lhfix-*, in progress)
+## Lighthouse refresh post gyro fix (runs ms-lhfix-* / ms-lhfix-acro-*, DONE)
 Stale: MPC + MPPI rows from 16-36-29 (pre-fix, single seed). datt_acro was
-never run under Lighthouse. Re-running all three, 3 eval seeds.
+never run under Lighthouse. Re-ran all three at 3 eval seeds.
+
+RMSE 3D (m), lighthouse, mean±std over seeds 0-2 (min-max in brackets):
+
+| controller | slow | normal | fast |
+|---|---|---|---|
+| MPC | 0.014±0.003 | 0.122±0.021 | 0.067±0.001 |
+| MPPI+L1 (tuned) | 0.051±0.001 | 0.079±0.018 | **0.228±0.178** [0.091-0.480] |
+| datt_acro (CTBR) | 0.063±0.006 | 0.109±0.008 | 0.147±0.002 |
+
+### Findings
+1. **The gyro-latency fix is a non-event for MPC**: matched seed-0 rows
+   pre-fix 0.009/0.121/0.067 vs post-fix 0.009/0.134/0.068. The stale MPC
+   rows were substantively fine — MPC's lighthouse-normal error is dominated
+   by ipopt transients on noisy position (max-err 0.64-0.95 outliers), not by
+   the 10 ms gyro delay. Normal-cell spread across seeds is 0.093-0.138.
+2. **The old MPPI row was doubly stale** (pre-gyro-fix AND pre-tuning), and
+   the refresh surfaces a new finding: **tuned MPPI's lighthouse-fast cell is
+   a variance phenomenon** — 0.091 / 0.114 / 0.480 across three seeds. The
+   clean-sensing fast champion (0.068) does not survive Lighthouse sensing:
+   on a bad bias/sampling draw the AR(1)-correlated exploration noise
+   near-crashes, same failure shape as DATT v3's lighthouse-fast variance
+   (0.155-0.505). Seed 0 is a bad draw both pre-fix (0.303) and post-fix
+   (0.480). For the paper: MPPI's fast-tier advantage is a clean-sensing
+   result only; mean-only tables would hide this.
+3. **First datt_acro Lighthouse rows**: 0.063/0.109/0.147 with the lowest
+   fast-tier variance in the pool (±0.002) — the CTBR policy degrades
+   gracefully under sensor noise too (+19% at fast vs clean 0.123),
+   consistent with the learned-policy robustness pattern (v4/v5).
 
 ## Offset-free MPC: noise-robust ESO (in progress)
 `MPCController` gained `eso_w`; CLI accepts `mpc_offsetfree_w<N>`. Rationale:

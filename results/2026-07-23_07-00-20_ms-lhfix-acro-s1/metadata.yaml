@@ -1,0 +1,19 @@
+datetime: 2026-07-23_07-00-20
+tag: ms-lhfix-acro-s1
+reason: First datt_acro lighthouse rows (seed 1 of 3), post gyro-latency fix; handover
+  listed these as stale/missing (omega-consuming controller)
+git_commit: dd5ba01
+config:
+  controllers:
+  - datt_acro:results/2026-07-22_18-58-56_datt-train/datt_ppo_final.zip
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

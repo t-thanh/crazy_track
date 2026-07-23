@@ -1,0 +1,16 @@
+datetime: 2026-07-23_06-47-56
+tag: datt-train
+reason: 'Multi-seed training: DATT v4 seed 1 (recipe identical to 17-07-10 seed 0)
+  - qualify the v5-vs-v4 policy-level claims with 3 training seeds'
+git_commit: 0b1668b
+config:
+  timesteps: 3000000
+  n_envs: 16
+  reason: 'Multi-seed training: DATT v4 seed 1 (recipe identical to 17-07-10 seed
+    0) - qualify the v5-vs-v4 policy-level claims with 3 training seeds'
+  seed: 1
+  noisy_sensor: true
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
