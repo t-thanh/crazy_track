@@ -10,10 +10,15 @@ the crazyflow simulator, replicating Fig-5/Table-III of "Learning to Fly in
 Seconds" (arXiv:2311.13081), extended with disturbances, a Lighthouse (LH2)
 sensor model (arXiv:2104.11523), acrobatics, and multi-seed statistics.
 Remote: https://github.com/t-thanh/crazy_track (push after every commit).
-- **Paper 1 — controller benchmark on fig-8 scenarios. PRIORITY; nearly
-  camera-ready on the results side** (all statistical qualifications done).
-- **Paper 2 — acrobatic maneuver controller (CTBR / flips). Starts after
-  paper 1.** Design direction reviewed and documented (see below).
+- **Paper 1 — controller benchmark on fig-8 scenarios. Results complete and
+  statistically qualified; writing remains.** Index:
+  `papers/paper1-benchmark/README.md` (claims + evidence + model manifest).
+- **Paper 2 — acrobatic maneuver controller (CTBR / flips). STARTED
+  2026-07-23** (user go): ballistic feasible flip reference + acro3
+  training. Index: `papers/paper2-acrobatics/README.md` (story arc, current
+  experiment, success criteria).
+- New reports are prefixed `p1-`/`p2-`; results/ dirs stay immutable
+  (metadata records their paths) and are referenced from the paper indexes.
 
 ## Environment (CRITICAL — read before running anything)
 - Windows 11 host; **all sim work runs in WSL2 `Ubuntu-24.04`** (default

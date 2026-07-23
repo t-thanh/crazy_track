@@ -123,7 +123,15 @@ src/crazy_track/
   disturbances.py  # wind / gust / ground-effect / payload models
   sensors.py       # Lighthouse LH2 measurement model (arXiv:2104.11523)
 configs/  reports/  results/  scripts/  tests/
+papers/
+  paper1-benchmark/   # fig-8 controller benchmark: claims, evidence map, models
+  paper2-acrobatics/  # acrobatic (flip) controller: story arc, experiments, models
 ```
+
+This work targets two papers; `papers/<paper>/README.md` is the per-paper
+index (scope, claims with statistical evidence, run/model manifests).
+`reports/` stays the chronological lab notebook (new reports are prefixed
+`p1-`/`p2-`); `results/` run dirs are immutable and referenced by both.
 
 ## Roadmap
 
