@@ -356,3 +356,51 @@ variant cycling), flip_eval at z=2.5:
    still shows seed fragility.
 4. Models: s1 `2026-07-23_08-50-19`, s2 `08-43-55` (flip evals in
    `results/2026-07-23_*_flip-eval`).
+
+## Paper 2 kickoff: BallisticFlipTrajectory + acro3 (user go, ZJU refs reviewed)
+
+User pointed at ZJU-FAST-Lab planners (Aerobatic-Planner / am_traj /
+ego-planner / GCOPTER) as trajectory-generation examples. Assessment: all are
+C++/ROS flat-output (MINCO-family) optimizers; flat-output polynomials are
+singular exactly at a flip's zero-thrust core (attitude undefined at f=0 —
+the constraint DDA's loops avoid by keeping ||v|| > 1.1*sqrt(rg), which our
+TWR 1.88 cannot sustain). The Science Robotics Aerobatic-Planner handles
+inverted segments by splitting at attitude keyframes; for a single in-place
+flip the minimal closed-form instance of that idea is a 3-phase primitive —
+so we implement that, not a MINCO port.
+
+### The reference (`BallisticFlipTrajectory`, tests in test_trajectories.py)
+- boost [Ta] -> ballistic+rotate [Tb] -> brake [Tc], level attitude outside
+  the rotation. Choosing Ta = Tc = g*Tb/(2A) (A = net boost accel) gives a
+  symmetric arc that returns exactly to hover at rest and **never goes below
+  the start altitude** (launch speed v1 = g*Tb/2 independent of A).
+- The 360-deg rotation lives entirely in the zero-thrust window, where every
+  attitude is feasible -> position and attitude refs are consistent at every
+  instant. Trapezoidal rate profile (blend 0.2), peak 2pi/(0.8*Tb) = 11.2
+  rad/s at Tb=0.7 <= 0.75*RATE_MAX.
+- **Found in passing: acro2.2's reference was also rate-infeasible** — its
+  cosine ramp at Tf=0.4 peaks at pi^2/0.4 = 24.7 rad/s vs the 15 rad/s
+  command limit. The old recipe asked for a physically untrackable attitude
+  profile on top of the position conflict.
+- THRUST_MIN floor (~1.97 m/s^2 along body-z) cannot be commanded away, but
+  over a full rotation the rotating-unit-vector integral cancels: ~2 cm
+  displacement error. (Sim caveat: crazyflow force_torque gives torque
+  authority at zero collective; hardware flips need a small collective floor.)
+- Feasibility guaranteed by tests: required thrust accel in [0, 0.95*TWR*g],
+  C1 continuity, full 2pi sweep, never below start z. 16/16 pass.
+
+### acro3 training mode
+Flip episodes use the ballistic reference; the maneuver reward is BALANCED
+(exp(-2*err) + exp(-2*att)) — the acro2 domination hack is retired because
+the refs no longer conflict. Also fixed in passing: acro2 leaked its
+level-flight attitude bonus into the aggressive poly episodes (0.6*exp(-3*
+att) rewarded NOT banking during 15 m/s^2 references — a measurable drag on
+standard tracking); acro3 scopes attitude terms to flip episodes via a
+per-env mask.
+
+### Runs launched
+- acro3 seeds 0, 1, 2 (5M steps each, two parallel streams) — multi-seed
+  from day one, per today's lesson.
+- Zero-shot baseline: acro2.2 s0 evaluated on the ballistic reference
+  (`flip_eval --ballistic`), to quantify how much the reference change alone
+  explains vs retraining.

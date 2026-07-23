@@ -1,0 +1,10 @@
+datetime: 2026-07-23_17-46-20
+tag: flip-eval-ballistic
+reason: 'Zero-shot baseline: acro2.2 s0 (hover-ref-trained) evaluated on the feasible
+  ballistic reference - how much of the task does the old policy already solve, for
+  comparison with acro3-trained policies'
+git_commit: 6cadfa4
+config:
+  model: results/2026-07-22_21-41-06_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

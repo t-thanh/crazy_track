@@ -1,0 +1,19 @@
+datetime: 2026-07-23_17-46-18
+tag: datt-train
+reason: 'Acro3 seed 0 of 3: flips on the feasible ballistic reference (consistent
+  pos+att refs, balanced reward, rate-limited rotation profile) - does removing the
+  reference conflict fix the acro2.2 per-seed flip lottery (3/12 cells)?'
+git_commit: 6cadfa4
+config:
+  timesteps: 5000000
+  n_envs: 16
+  reason: 'Acro3 seed 0 of 3: flips on the feasible ballistic reference (consistent
+    pos+att refs, balanced reward, rate-limited rotation profile) - does removing
+    the reference conflict fix the acro2.2 per-seed flip lottery (3/12 cells)?'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: true

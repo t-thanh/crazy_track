@@ -1,0 +1,17 @@
+datetime: 2026-07-23_17-46-23
+tag: datt-train
+reason: 'Acro3 seed 1 of 3: feasible ballistic flip reference (same recipe as acro3
+  s0)'
+git_commit: 6cadfa4
+config:
+  timesteps: 5000000
+  n_envs: 16
+  reason: 'Acro3 seed 1 of 3: feasible ballistic flip reference (same recipe as acro3
+    s0)'
+  seed: 1
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: true
