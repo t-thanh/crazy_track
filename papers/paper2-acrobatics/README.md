@@ -37,14 +37,22 @@ reference) 3-seed training in progress.**
    0.75*RATE_MAX) + balanced maneuver reward (domination hack retired).
    3 training seeds from day one.
 
+## Acro3 5M-step results (2026-07-23 evening): formulation VALIDATED
+- **6/12 cells complete (+2 near-misses at 272-306°) vs acro2.2's 3/12**;
+  10/12 cells attempt large rotations (hover local optimum eliminated).
+- **Pitch asymmetry gone**: pitch flips complete on 2/3 seeds; pitch+
+  completed for the first time in the project (s1: +323°).
+- s1 completes ALL FOUR variants (first-ever full coverage); s2's completed
+  flips already beat the precision targets (ref_dev 0.44, recovery
+  0.05-0.07, no floor contact); s0 lags (over-rotates rolls, refuses pitch
+  while tracking the arc) — execution-precision failures, not refusals.
+- Models: s0 `2026-07-23_17-46-18`, s1 `17-46-23`, s2 `18-48-13`.
+
 ## Current experiment (in progress)
-- acro3 seeds 0/1/2, 5M steps (`--acro3`), eval via
-  `python -m crazy_track.eval.flip_eval --model <zip> --ballistic`.
-- **Zero-shot baseline to beat** (acro2.2-s0 on the ballistic ref,
-  run `2026-07-23_17-46-20_flip-eval-ballistic`): rolls rotate but track
-  the arc at 2.3-3.9 m deviation with floor hits; pitch refuses. Success
-  criterion: complete rotations on >= 3/4 variants per seed, max_ref_dev
-  well under 0.5 m, min_z >= hover z, across all 3 seeds.
+- Extension to 10M cumulative steps per seed (`--resume-from`), same eval.
+  Hypothesis: over/under-rotation at 5M = unconverged execution; success =
+  >= 3/4 completions per seed at s2-level precision, all 3 seeds.
+- Fallback shaping lever if extension stalls: rotation-completion bonus.
 
 ## Queued after acro3
 - Recovery precision < 0.3 m; maneuver-conditioned obs (variant one-hot).

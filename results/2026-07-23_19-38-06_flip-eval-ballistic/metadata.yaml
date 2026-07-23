@@ -1,0 +1,9 @@
+datetime: 2026-07-23_19-38-06
+tag: flip-eval-ballistic
+reason: 'Acro3 seed 2 flip eval (final of 3): s1 completed all 4 variants, s0 over-rotates
+  rolls + refuses pitch - s2 decides the seed-robustness verdict'
+git_commit: 71415ab
+config:
+  model: results/2026-07-23_18-48-13_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

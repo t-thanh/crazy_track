@@ -1,0 +1,20 @@
+datetime: 2026-07-23_19-40-03
+tag: datt-train
+reason: 'Acro3 s0 extension to 10M cumulative: at 5M it over-rotates rolls (421/-477
+  deg, floor) and refuses pitch - hypothesis: unconverged execution, not objective
+  failure (s1 completed 4/4 at 5M)'
+git_commit: 71415ab
+config:
+  timesteps: 10000000
+  n_envs: 16
+  reason: 'Acro3 s0 extension to 10M cumulative: at 5M it over-rotates rolls (421/-477
+    deg, floor) and refuses pitch - hypothesis: unconverged execution, not objective
+    failure (s1 completed 4/4 at 5M)'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: true
+  resume_from: results/2026-07-23_17-46-18_datt-train/datt_ppo_final.zip

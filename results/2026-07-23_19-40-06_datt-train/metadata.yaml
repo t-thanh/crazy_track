@@ -1,0 +1,20 @@
+datetime: 2026-07-23_19-40-06
+tag: datt-train
+reason: 'Acro3 s1 extension to 10M cumulative: at 5M completes 4/4 (first-ever full
+  variant coverage) but tracks the arc loosely (dev 0.9-1.7, rec 0.23-0.70) - does
+  more budget tighten precision toward s2''s 0.44/0.05 level'
+git_commit: 71415ab
+config:
+  timesteps: 10000000
+  n_envs: 16
+  reason: 'Acro3 s1 extension to 10M cumulative: at 5M completes 4/4 (first-ever full
+    variant coverage) but tracks the arc loosely (dev 0.9-1.7, rec 0.23-0.70) - does
+    more budget tighten precision toward s2''s 0.44/0.05 level'
+  seed: 1
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: true
+  resume_from: results/2026-07-23_17-46-23_datt-train/datt_ppo_final.zip

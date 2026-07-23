@@ -77,6 +77,10 @@ def main() -> None:
     parser.add_argument("--acro3", action="store_true",
                         help="acro phase 3: flips on the feasible ballistic reference "
                              "(consistent pos+att refs, balanced reward)")
+    parser.add_argument("--resume-from", default=None,
+                        help="path to a datt_ppo_final.zip to continue training; "
+                             "--timesteps is then the CUMULATIVE target (loaded "
+                             "step count carries over)")
     args = parser.parse_args()
 
     log = RunLogger(tag="datt-train", reason=args.reason, config=vars(args))
@@ -92,13 +96,19 @@ def main() -> None:
         policy, policy_kwargs = AsymmetricPolicy, {}
     else:
         policy, policy_kwargs = "MlpPolicy", dict(net_arch=[64, 64])
-    model = PPO(
-        policy, env, verbose=1, seed=args.seed,
-        n_steps=256, batch_size=1024, learning_rate=3e-4, gamma=0.98,
-        policy_kwargs=policy_kwargs,
-        tensorboard_log=str(log.dir / "tb"),
-    )
-    model.learn(total_timesteps=args.timesteps, progress_bar=False)
+    if args.resume_from:
+        model = PPO.load(args.resume_from, env=env, device="cpu")
+        model.tensorboard_log = str(log.dir / "tb")
+        model.learn(total_timesteps=args.timesteps, progress_bar=False,
+                    reset_num_timesteps=False)
+    else:
+        model = PPO(
+            policy, env, verbose=1, seed=args.seed,
+            n_steps=256, batch_size=1024, learning_rate=3e-4, gamma=0.98,
+            policy_kwargs=policy_kwargs,
+            tensorboard_log=str(log.dir / "tb"),
+        )
+        model.learn(total_timesteps=args.timesteps, progress_bar=False)
     model.save(log.dir / "datt_ppo_final")
     print(f"Saved model to {log.dir / 'datt_ppo_final.zip'}", flush=True)
 

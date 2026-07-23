@@ -1,0 +1,9 @@
+datetime: 2026-07-23_18-48-45
+tag: flip-eval-ballistic
+reason: 'Acro3 seed 0 flip eval on the feasible ballistic reference: success bar =
+  complete rotations, max_ref_dev << baseline 2.3-3.9m, min_z >= 2.0'
+git_commit: 71415ab
+config:
+  model: results/2026-07-23_17-46-18_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

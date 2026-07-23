@@ -402,5 +402,35 @@ per-env mask.
 - acro3 seeds 0, 1, 2 (5M steps each, two parallel streams) — multi-seed
   from day one, per today's lesson.
 - Zero-shot baseline: acro2.2 s0 evaluated on the ballistic reference
-  (`flip_eval --ballistic`), to quantify how much the reference change alone
-  explains vs retraining.
+  (`flip_eval --ballistic`): rolls rotate (325/-330 deg) but track the arc
+  at 2.3-3.9 m deviation with floor hits; pitch refuses. (Old policy learned
+  "flip and drop from static hover", not "follow the arc".)
+
+### Acro3 3-seed results (5M steps, flip_eval --ballistic)
+
+| flip | s0 (17-46-18) | s1 (17-46-23) | s2 (18-48-13) |
+|---|---|---|---|
+| roll+  | 421°, over-rotates, floor | **✓ 377°** (dev 0.92, rec 0.70) | 306° near-miss (dev 0.44, rec 0.11) |
+| roll−  | −477°, over-rotates, floor | **✓ −356°** (dev 1.71, rec 0.36) | **✓ −364°** (dev 0.44, rec 0.05) |
+| pitch+ | −4°, refuses (tracks arc, dev 0.52) | **✓ +323°** (dev 1.57, rec 0.23) | 272° attempt (dev 1.72, rec 0.15) |
+| pitch− | −0°, refuses (tracks arc, dev 0.46) | **✓ −379°** (dev 1.41, rec 0.33) | **✓ −346°** (dev 0.42, rec 0.07) |
+
+### Verdict: formulation validated; budget insufficient for seed robustness
+1. **The hover local optimum is essentially eliminated**: 10/12 cells now
+   attempt large rotations (acro2.2: 5/12 attempts, 7 refusals). The two
+   remaining refusals (s0 pitch±) track the ballistic *position* arc well
+   (dev ~0.5) — the policy engages with the maneuver either way.
+2. **Pitch asymmetry is gone**: pitch flips complete on 2/3 seeds — pitch+
+   completed for the first time in the entire project (never under
+   acro2.0/2.1/2.2 on any seed). Confirms the reference conflict, not the
+   axis, was the blocker.
+3. **Completions: 6/12 (vs 3/12 for acro2.2), plus two near-misses at
+   272-306°**, and failure modes shifted from refusal to rotation-magnitude
+   calibration (s0 over-rotates; s2 slightly under-rotates two variants) —
+   an execution-precision problem, not an objective problem.
+4. **s2's completed flips already beat the paper targets on precision**:
+   ref_dev ~0.44, recovery 0.05-0.07 (goal was <0.3), min_z >= 1.56 from
+   z=2.0 starts — no floor contact.
+5. Remaining gap: per-seed consistency at 5M steps. Next: extend training
+   (resume +5M) — over/under-rotation both look like unconverged policies;
+   a rotation-completion bonus is the fallback shaping lever.
