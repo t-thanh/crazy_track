@@ -1,0 +1,19 @@
+datetime: 2026-07-23_23-16-31
+tag: acro3-suite-v-s2
+reason: 'Acro3 s2@15M acro-suite (vertical fig-8 n/f/acro): paper-2 core scope; refs:
+  datt_acro v1 0.122/0.196/0.349'
+git_commit: 15191db
+config:
+  controllers:
+  - datt_acro:results/2026-07-23_21-35-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

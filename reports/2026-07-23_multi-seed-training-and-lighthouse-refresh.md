@@ -432,5 +432,65 @@ per-env mask.
    ref_dev ~0.44, recovery 0.05-0.07 (goal was <0.3), min_z >= 1.56 from
    z=2.0 starts — no floor contact.
 5. Remaining gap: per-seed consistency at 5M steps. Next: extend training
-   (resume +5M) — over/under-rotation both look like unconverged policies;
-   a rotation-completion bonus is the fallback shaping lever.
+   — over/under-rotation both look like unconverged policies; a
+   rotation-completion bonus is the fallback shaping lever.
+
+### Acro3 extensions to 15M + full acro-suite benchmark (final for today)
+
+(Resume note: SB3 `reset_num_timesteps=False` treats the target as
+ADDITIVE — extensions landed at 15M cumulative, not the intended 10M;
+docs corrected.)
+
+Flips at 15M (flip_eval --ballistic):
+
+| flip | s0@15M | s1@15M | s2@15M |
+|---|---|---|---|
+| roll+  | 631°, crash | **✓ 380°** | **✓ 355°** (dev 0.74, rec 0.10) |
+| roll−  | −374° but dev 3.97, floor, diverged | **✓ −380°** | **✓ −356°** (dev 0.36, rec 0.06) |
+| pitch+ | 3°, refuses (arc dev 0.32) | **✓ +358°** | 241° near-miss |
+| pitch− | 1°, refuses (arc dev 0.33) | **✓ −381°** | **✓ −334°** (dev 0.26, rec 0.06) |
+
+- Score 7-8/12 (vs 6/12 at 5M, 3/12 acro2.2). s1 keeps 4/4 with near-exact
+  rotations; s2 reaches 3/4 at the best precision yet seen (dev 0.26-0.74,
+  recovery 0.06-0.10, no floor contact).
+- **The budget hypothesis is REFUTED for s0**: 10M extra steps made it
+  WORSE (roll+ 421°→631°, roll− diverges). s0 sits in a bad optimum that
+  more gradient steps deepen. Seed-robustness of flip learning is improved
+  but NOT solved by the feasible reference alone — 2/3 seeds converge well,
+  1/3 does not.
+
+Acro-suite benchmark @15M (RMSE 3D; reference: flip-free datt_acro v1):
+
+| trajectory | v1 (no flips) | acro3 s0 | acro3 s1 | acro3 s2 |
+|---|---|---|---|---|
+| horizontal fast | **0.123** | 0.287 | 0.228 | 0.114 |
+| horizontal acro | **0.322** | 0.539 | 0.375 | 0.377 |
+| vertical normal | **0.122** | 0.161 | 0.161 | 0.143 |
+| vertical fast | **0.196** | 0.273 | 0.249 | 0.252 |
+| vertical acro | **0.349** | 0.429 | 0.438 | 0.998 |
+
+- **Flip capability costs general acrobatic tracking**: acro3 policies run
+  1.3-2x worse than the flip-free v1 on most suite cells (same direction as
+  acro2.2's fast regression to 0.162, now measured across the full suite
+  and 3 seeds). The one exception (s2 h-fast 0.114) comes with the worst
+  v-acro cell (0.998) — capability allocation varies by seed.
+
+### Paper-2 decision point (for the user)
+The feasible reference fixed *what* is learnable (pitch, full coverage,
+precision); two tensions remain, and they are architecture choices:
+1. **Seed robustness** (1/3 seeds fails flips regardless of budget), and
+2. **the flip-vs-tracking tradeoff** (one 46-dim policy splits capacity
+   between maneuvers and tracking).
+Options, not mutually exclusive:
+- **A. Maneuver-conditioned obs (variant one-hot / maneuver phase flag)** —
+  pre-existing roadmap item; lets one policy specialize per context; likely
+  helps both tensions. Moderate: new obs version + 3-seed retrain.
+- **B. Lower flip-episode ratio (50% -> 25%)** with a longer budget —
+  cheapest probe at the tracking regression specifically.
+- **C. Specialist policies** (tracker + flip policy, switch at maneuver
+  boundaries) — guaranteed to recover v1 tracking, weaker as a paper claim.
+- **D. Rotation-completion reward term** — targets s0-style bad optima and
+  s2's pitch+ near-misses.
+Recommendation: A (+D if s0-type seeds persist), since a single
+maneuver-aware policy is the stronger paper-2 story and one-hot
+conditioning is the standard cure for multi-task interference.

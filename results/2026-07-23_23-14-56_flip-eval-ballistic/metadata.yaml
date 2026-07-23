@@ -1,0 +1,9 @@
+datetime: 2026-07-23_23-14-56
+tag: flip-eval-ballistic
+reason: 'Acro3 s0 at 15M cumulative (was worst seed at 5M: over-rotated rolls, refused
+  pitch) - seed-robustness verdict hinges on this one'
+git_commit: 15191db
+config:
+  model: results/2026-07-23_19-40-03_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

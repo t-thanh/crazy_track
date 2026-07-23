@@ -64,20 +64,19 @@ policies queued.**
   while tracking the arc) — execution-precision failures, not refusals.
 - Models: s0 `2026-07-23_17-46-18`, s1 `17-46-23`, s2 `18-48-13`.
 
-## Current experiment (in progress)
-- Extension to **15M cumulative** steps per seed (`--resume-from`; SB3
-  treats the target as additive — discovered post-launch, docs fixed).
-  Hypothesis: over/under-rotation at 5M = unconverged execution; success =
-  >= 3/4 completions per seed at s2-level precision, all 3 seeds.
-  (s1@15M: keeps 4/4, rotation calibration tightened to 358-381 deg; arc
-  precision unchanged -> next lever is reward weighting, not budget.)
-- Fallback shaping lever if extension stalls: rotation-completion bonus.
-- **Queued (scope clarification): full acro-trajectory-suite benchmark of
-  each acro3 seed** — horizontal fast+acro and vertical normal+fast+acro
-  Lissajous — to verify the flip-capable policy retains general acrobatic
-  tracking (reference points: datt_acro v1 0.123/0.322 horizontal
-  fast/acro, 0.122/0.196/0.349 vertical n/f/a; acro2.2 regressed fast to
-  0.162).
+## 15M results + acro suite (2026-07-23 late): two tensions identified
+- Flips @15M: s1 4/4 (358-381 deg, near-exact), s2 3/4 at the best
+  precision yet (dev 0.26-0.74, recovery 0.06-0.10), s0 WORSE with budget
+  (bad optimum; budget hypothesis refuted for that seed). 7-8/12 vs 3/12
+  (acro2.2).
+- Acro suite @15M vs flip-free datt_acro v1: **flip capability costs
+  general tracking 1.3-2x** on most cells (full table in report
+  2026-07-23). One 46-dim policy splits capacity between maneuvers and
+  tracking.
+- **DECISION POINT (awaiting user): A. maneuver-conditioned obs (one-hot,
+  recommended) / B. lower flip-episode ratio / C. specialist policies /
+  D. rotation-completion reward term.** Models: s0@15M
+  `2026-07-23_19-40-03`, s1@15M `19-40-06`, s2@15M `21-35-52`.
 
 ## Queued after acro3
 - Recovery precision < 0.3 m; maneuver-conditioned obs (variant one-hot).

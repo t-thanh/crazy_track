@@ -1,0 +1,9 @@
+datetime: 2026-07-23_23-15-12
+tag: flip-eval-ballistic
+reason: 'Acro3 s2 at 15M cumulative (at 5M: 2/4 complete at target precision, 2 near-misses
+  at 272-306 deg)'
+git_commit: 15191db
+config:
+  model: results/2026-07-23_21-35-52_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

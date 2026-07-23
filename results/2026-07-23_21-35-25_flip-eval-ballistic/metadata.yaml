@@ -1,0 +1,10 @@
+datetime: 2026-07-23_21-35-25
+tag: flip-eval-ballistic
+reason: 'Acro3 s1 at 10M cumulative (extended from 5M 4/4-complete): does the extra
+  budget tighten arc tracking (was dev 0.9-1.7, rec 0.23-0.70) while keeping full
+  variant coverage'
+git_commit: 38754ee
+config:
+  model: results/2026-07-23_19-40-06_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

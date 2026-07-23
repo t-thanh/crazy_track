@@ -1,0 +1,18 @@
+datetime: 2026-07-23_21-35-52
+tag: datt-train
+reason: 'Acro3 s2 extension to 10M cumulative: at 5M completes 2/4 with excellent
+  precision (dev 0.44, rec 0.05) and near-misses the other two at 272-306 deg'
+git_commit: 38754ee
+config:
+  timesteps: 10000000
+  n_envs: 16
+  reason: 'Acro3 s2 extension to 10M cumulative: at 5M completes 2/4 with excellent
+    precision (dev 0.44, rec 0.05) and near-misses the other two at 272-306 deg'
+  seed: 2
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: true
+  resume_from: results/2026-07-23_18-48-13_datt-train/datt_ppo_final.zip
