@@ -79,8 +79,9 @@ def main() -> None:
                              "(consistent pos+att refs, balanced reward)")
     parser.add_argument("--resume-from", default=None,
                         help="path to a datt_ppo_final.zip to continue training; "
-                             "--timesteps is then the CUMULATIVE target (loaded "
-                             "step count carries over)")
+                             "--timesteps is then ADDITIONAL steps on top of the "
+                             "loaded count (SB3 reset_num_timesteps=False adds the "
+                             "current count to the target)")
     args = parser.parse_args()
 
     log = RunLogger(tag="datt-train", reason=args.reason, config=vars(args))

@@ -65,10 +65,11 @@ policies queued.**
 - Models: s0 `2026-07-23_17-46-18`, s1 `17-46-23`, s2 `18-48-13`.
 
 ## Current experiment (in progress)
-- Extension to 10M cumulative steps per seed (`--resume-from`), same eval.
+- Extension to **15M cumulative** steps per seed (`--resume-from`; SB3
+  treats the target as additive — discovered post-launch, docs fixed).
   Hypothesis: over/under-rotation at 5M = unconverged execution; success =
   >= 3/4 completions per seed at s2-level precision, all 3 seeds.
-  (s1@10M: keeps 4/4, rotation calibration tightened to 358-381 deg; arc
+  (s1@15M: keeps 4/4, rotation calibration tightened to 358-381 deg; arc
   precision unchanged -> next lever is reward weighting, not budget.)
 - Fallback shaping lever if extension stalls: rotation-completion bonus.
 - **Queued (scope clarification): full acro-trajectory-suite benchmark of
