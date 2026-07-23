@@ -1,0 +1,19 @@
+datetime: 2026-07-23_07-11-11
+tag: mpcof-w-wind
+reason: 'Offset-free MPC ESO bandwidth sweep (wind_const): wind is quasi-static so
+  even w=3 should converge in ~0.5s and keep the 0.039 result'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree_w3
+  - mpc_offsetfree_w5
+  - mpc_offsetfree
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: none
+  traj_z: 1.0

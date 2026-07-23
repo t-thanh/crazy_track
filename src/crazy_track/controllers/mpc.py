@@ -112,7 +112,13 @@ class MPCController(Controller):
             e_v = vel - self._v_hat
             self._v_hat += self.dt * (a_model + self._sigma + 2 * self._w * e_v)
             self._sigma = np.clip(self._sigma + self.dt * self._w**2 * e_v, -3.0, 3.0)
-            self.opti.set_value(self.DISTP, self._sigma)
+            # Soft-start: under sensor noise the cold ESO's first innovations are
+            # noise-dominated at full gain, and planning against that phantom
+            # disturbance during the launch acceleration caused 0.7-1.5 m
+            # transients (t=0.5-1.6 s) that dominated the lighthouse RMSE
+            # (0.178 full-window vs 0.046 steady-state). Ramp the estimate's
+            # authority over ~3x the ESO convergence time instead.
+            self.opti.set_value(self.DISTP, self._sigma * min(1.0, t / 1.5))
         else:
             self.opti.set_value(self.DISTP, np.zeros(3))
 

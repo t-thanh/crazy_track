@@ -1,0 +1,17 @@
+datetime: 2026-07-23_08-07-26
+tag: mst-v5-lhwind-s1
+reason: 'Multi-seed TRAINING stats (v5 train-seed 1): fixed eval seed 0 isolates training-seed
+  variance (eval-seed std known small from 10-seed sweep) - deployment cell (lh+wind)'
+git_commit: 291dd86
+config:
+  controllers:
+  - datt:results/2026-07-23_06-49-11_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0

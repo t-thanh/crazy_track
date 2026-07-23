@@ -1,0 +1,19 @@
+datetime: 2026-07-23_07-28-18
+tag: ms-mpcof-lh-s3
+reason: 'Extend offset-free MPC w=3 lighthouse to 10 seeds (seed 3) for a like-for-like
+  comparison with the existing 10-seed w=7 stats (ms-lh: 0.178+-0.076 normal); 3-seed
+  sweep showed w3 wins paired on every seed'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree_w3
+  speeds:
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

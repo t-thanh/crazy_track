@@ -115,11 +115,60 @@ RMSE 3D (m), lighthouse, mean±std over seeds 0-2 (min-max in brackets):
    gracefully under sensor noise too (+19% at fast vs clean 0.123),
    consistent with the learned-policy robustness pattern (v4/v5).
 
-## Offset-free MPC: noise-robust ESO (in progress)
-`MPCController` gained `eso_w`; CLI accepts `mpc_offsetfree_w<N>`. Rationale:
-unlike ADRC, this ESO is not in a high-gain feedback path — it only biases
-the MPC prediction model — so its bandwidth can sit far below the tracking
-bandwidth. Quasi-static wind converges even at w=3 (~1/w s); the Lighthouse
-velocity noise that jitters the w=7 estimate is attenuated ~(3/7)^2 in the
-sigma channel. Sweep: w in {3,5,7} x {nominal s/n/f, wind_const, lighthouse
-normal+fast x 3 seeds}.
+## Offset-free MPC "noise sensitivity": root-caused and fixed (soft-start ESO)
+
+The handover framed the 0.178±0.076 lighthouse-normal cell as "the ESO
+ingests position-ZOH noise" and suggested lower bandwidth or an innovation
+LPF. The investigation falsified most of that framing in three steps.
+
+### Step 1 — bandwidth sweep (w in {3,5,7}, `mpc_offsetfree_w<N>`)
+Paired per-seed under lighthouse, w3 beats w7 10/10 seeds at normal (mean
+delta 0.032±0.023) and 8/10 at fast; but it costs nominal fast (0.053→0.072)
+and wind (0.039→0.057). Looked like the ADRC story again — until the
+absolute levels were compared: plain MPC (no ESO at all) posted 0.122 on
+seeds 0-2, *better* than any offset-free variant in that cell.
+
+### Step 2 — the real culprit: a launch transient, not steady-state noise
+Time-series inspection of the bad seeds: the entire excess error is a single
+0.7-1.5 m transient at t = 0.5-1.6 s (the benchmark reference starts at
+|v| = 1.14 m/s while the drone is at rest; the 1 s metric warmup only
+excludes the spike's head, not its tail). **Steady-state (t>2.5 s)
+lighthouse-normal RMSE is 0.046±0.008 at w7** — on par with the best
+controllers in that cell, and w3's steady-state advantage is marginal
+(0.041±0.010). The ESO was never noise-fragile in steady state. This also
+explains the paradox that offset-free MPC tracked *better* with wind added
+(lh+wind 0.057±0.014 vs lh-only 0.178): with a real 2.5 m/s^2 disturbance
+the early sigma estimate is signal-dominated instead of noise-dominated, so
+the launch-window corrections are coherent.
+
+### Step 3 — fix: soft-start (ramp DISTP authority over 1.5 s ≈ 3x ESO t_conv)
+A cold ESO's first innovations are noise-dominated at full gain; planning
+against that phantom disturbance during the launch acceleration is what
+amplified the transient. `mpc.py` now ramps the disturbance estimate fed to
+the optimizer as `sigma * min(1, t/1.5)`. Results (10 lighthouse seeds):
+
+| variant | nominal s/n/f | wind | lh normal (n=10) | lh fast (n=10) | lh+wind |
+|---|---|---|---|---|---|
+| plain MPC | 0.018/0.063/0.083 | 0.196 | 0.215/0.230 on bad seeds 4,8 | 0.067±0.001 (n=3) | 0.199±0.017 (n=10) |
+| offset-free w7 (pre-fix) | 0.006/0.043/0.053 | **0.039** | 0.178±0.076 | 0.081±0.022 | 0.057±0.014 (n=10) |
+| offset-free w3 | 0.006/0.056/0.072 | 0.057 | 0.146±0.061 | 0.065±0.014 | 0.060±0.014 (n=3→10 mixed) |
+| **offset-free w7 + soft-start** | **0.004/0.036/0.052** | 0.045 | **0.141±0.058** | 0.070±0.010 | 0.052 (s0) |
+
+- **New nominal records across the board: 0.004 / 0.036 / 0.052** — the
+  cold-start sigma jitter was costing performance even with clean sensing.
+- Lighthouse: 0.178±0.076 → 0.141±0.058 full-window; steady-state 0.046±0.009.
+- Wind pays 0.006 for the delayed pickup (0.039 → 0.045). Acceptable.
+- w=7 + soft-start is the single default; the `_w<N>` variants remain
+  available but are no longer recommended (w3's apparent win was mostly
+  launch-window luck).
+
+### Residual (documented, out of scope): the remaining transient is generic
+Discriminating test on the bad seeds (4, 8): plain MPC spikes identically
+(max 1.16 / 1.22 m, RMSE 0.215 / 0.230) — worse than offset-free+soft-start
+on the same seeds. Every MPC variant reacts violently to the reference
+velocity jump when the first ipopt solves see bad bias draws; plain MPC's
+"0.122±0.021" from the refresh was a lucky 3-seed sample (seeds 0-2 are all
+mild draws). Candidate remedies if the cell ever matters more: state
+pre-filtering (EKF) ahead of the optimizer, reference ramp-in, or a
+hover-spinup phase in the benchmark protocol (a metric change — needs a
+deliberate decision, not a drive-by).

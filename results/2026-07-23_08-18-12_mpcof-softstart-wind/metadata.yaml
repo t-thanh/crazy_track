@@ -1,0 +1,17 @@
+datetime: 2026-07-23_08-18-12
+tag: mpcof-softstart-wind
+reason: 'ESO soft-start regression check (wind_const): ramp delays wind pickup by
+  ~1s at launch only - expect ~0.039 kept'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: none
+  traj_z: 1.0

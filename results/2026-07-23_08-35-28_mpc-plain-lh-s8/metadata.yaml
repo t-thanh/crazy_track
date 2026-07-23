@@ -1,0 +1,17 @@
+datetime: 2026-07-23_08-35-28
+tag: mpc-plain-lh-s8
+reason: 'Discriminating test seed 8: plain MPC launch spike on bad lighthouse seed
+  (s4 confirmed generic: max 1.16 vs offset-free 1.21)'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

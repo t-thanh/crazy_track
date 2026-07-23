@@ -1,0 +1,19 @@
+datetime: 2026-07-23_08-19-12
+tag: ms-mpcofss-lh-s0
+reason: 'ESO soft-start under lighthouse (seed 0 of 10): launch transient (t 0.5-1.6s,
+  0.7-1.5m) diagnosed as the real cause of the 0.178+-0.076 cell; steady-state is
+  0.046 - ramping DISTP authority over 1.5s should close most of the gap'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

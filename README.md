@@ -21,12 +21,13 @@ Nominal, RMSE 3D (m):
 
 | controller | slow | normal | fast |
 |---|---|---|---|
-| PID (acc feedforward) | **0.012** | **0.022** | 0.088 |
+| PID (acc feedforward) | 0.012 | 0.022 | 0.088 |
 | ADRC (velocity-ESO, w=7) | 0.012 | 0.034 | 0.089 |
-| MPPI+L1 (tuned: N=512, AR(1) noise) | 0.023 | 0.035 | **0.068** |
+| MPPI+L1 (tuned: N=512, AR(1) noise) | 0.023 | 0.035 | 0.068 |
 | MPC (CasADi/ipopt, so_rpy model) | 0.018 | 0.063 | 0.083 |
+| Offset-free MPC (+velocity-ESO disturbance state, soft-start) | **0.004** | 0.036 | **0.052** |
 | DATT v3 (PPO + L1 obs + perturb training) | 0.021 | 0.048 | 0.099 |
-| PID + [xadapt](https://github.com/muellerlab/xadapt_ctrl) low-level (pretrained, unseen airframe) | 0.025 | 0.038 | **0.067** |
+| PID + [xadapt](https://github.com/muellerlab/xadapt_ctrl) low-level (pretrained, unseen airframe) | 0.025 | 0.038 | 0.067 |
 | ADRC + xadapt (best overall stack: payload 0.018, gust 0.063) | 0.020 | **0.018** | 0.084 |
 
 Disturbances (normal speed) and Lighthouse-sensor results: see

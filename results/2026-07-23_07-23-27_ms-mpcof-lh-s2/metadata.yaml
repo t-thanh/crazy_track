@@ -1,0 +1,21 @@
+datetime: 2026-07-23_07-23-27
+tag: ms-mpcof-lh-s2
+reason: 'Offset-free MPC ESO bandwidth sweep under lighthouse (seed 2 of 3): target
+  cell is 0.178+-0.076 at w=7 - hypothesis: ESO ingests position-ZOH velocity noise,
+  lower w filters it'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree_w3
+  - mpc_offsetfree_w5
+  - mpc_offsetfree
+  speeds:
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

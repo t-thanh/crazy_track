@@ -1,0 +1,19 @@
+datetime: 2026-07-23_08-15-24
+tag: mpcof-softstart-nominal
+reason: 'ESO soft-start regression check (nominal): DISTP ramped over first 1.5s -
+  launch-transient fix must keep the nominal records (0.006/0.043/0.053)'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

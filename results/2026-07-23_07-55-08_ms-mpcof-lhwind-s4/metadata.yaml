@@ -1,0 +1,20 @@
+datetime: 2026-07-23_07-55-08
+tag: ms-mpcof-lhwind-s4
+reason: 'MPC family deployment cell (lh+wind, seed 4 of 10): plain MPC beats offset-free
+  under lighthouse-only (0.122 vs 0.146) - does the disturbance channel pay for itself
+  when wind is actually present?'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc
+  - mpc_offsetfree
+  - mpc_offsetfree_w3
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0

@@ -1,0 +1,16 @@
+datetime: 2026-07-23_08-32-09
+tag: mpcofss-lhwind-s0
+reason: 'ESO soft-start deployment-cell sanity (lh+wind seed 0): was 0.050 pre-softstart'
+git_commit: 291dd86
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0
