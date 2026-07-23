@@ -1,0 +1,8 @@
+datetime: 2026-07-23_09-50-06
+tag: flip-eval
+reason: 'Multi-seed flip eval: acro2.2 TRAINING seed 1 (recipe identical to 21-41-06
+  s0) - third data point; s2 already showed roll flips do not survive seed change'
+git_commit: c833ba7
+config:
+  model: results/2026-07-23_08-50-19_datt-train/datt_ppo_final.zip
+  hover_z: 1.5

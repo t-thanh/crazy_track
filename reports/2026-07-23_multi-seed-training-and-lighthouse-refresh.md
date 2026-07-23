@@ -317,3 +317,42 @@ Every failure above is one of three kinds:
 
 The pool's champions are exactly the stacks that pushed their particular
 limit one level up without inheriting a new one inside the tested envelope.
+
+## Acro2.2 multi-seed verdict (paper-2 gate): STRUCTURAL, and worse than hypothesized
+
+3 training seeds, identical recipe (5M steps, flip z U(2.0,3.0), deterministic
+variant cycling), flip_eval at z=2.5:
+
+| flip | seed 0 (21-41-06) | seed 1 (08-50-19) | seed 2 (08-43-55) |
+|---|---|---|---|
+| roll+  | **+343°, complete** | −1°, refuses | −4°, refuses |
+| roll−  | **−375°, complete** | −6°, refuses | −504°, over-rotates, floor, diverges |
+| pitch+ | 0°, refuses | 142°, crashes | −2°, refuses |
+| pitch− | −27°, refuses | **−343°, complete** (floor hit, recovery 1.97) | −3°, refuses |
+
+### Verdict
+1. **The question "is pitch-flip failure seed variance or structural?" had a
+   false premise: it is not pitch-specific.** Seed 1 *completes a pitch−
+   flip while refusing both rolls* — the axis-asymmetry hypothesis is
+   refuted. What is structural is the fragility of the whole recipe: which
+   variants get learned (if any) is a per-seed lottery — 3/12
+   (seed, variant) cells complete, each seed converging to a different
+   local optimum (refuse / complete / over-rotate).
+2. **Mechanism, consistent with the acro2.0 lesson and the DDA review:**
+   under the hover-pinned (dynamically infeasible) reference, position and
+   attitude rewards conflict during the maneuver window, so "hover through
+   the window" remains a strong local optimum. The attitude-dominant reward
+   hack merely tilts the landscape; whether PPO's exploration escapes to a
+   flip — and on which axis — is initialization luck. acro2.2-s0's roll
+   success (the phase-2 result) was a favorable draw, not a reliable
+   property of the recipe.
+3. **Paper-2 design consequence (now unambiguous):** discovery-by-RL on an
+   infeasible reference is the wrong problem formulation. The redesign is
+   the DDA-style split — plan a dynamically feasible ballistic flip
+   reference offline (boost / ballistic-arc-with-rotation / brake; cf21B
+   TWR 1.88 excludes constant-speed loops), then *track* it, making
+   position and attitude rewards consistent by construction. Imitation
+   from a quaternion-MPC expert stays as the fallback if feasible-ref PPO
+   still shows seed fragility.
+4. Models: s1 `2026-07-23_08-50-19`, s2 `08-43-55` (flip evals in
+   `results/2026-07-23_*_flip-eval`).

@@ -66,19 +66,23 @@ Remote: https://github.com/t-thanh/crazy_track (push after every commit).
 3. Writing the actual paper text (results are table-ready in the reports).
 
 ## Paper 2 state and next steps
-- acro2.2 (s0 `21-41-06`): roll± flips complete with altitude margin;
-  pitch flips unlearned. **3-seed acro2.2 trainings launched 2026-07-23**
-  (s1, s2 running at session end — check `results/*datt-train` for two new
-  5M-step acro2 runs; then `flip_eval` each + verdict: seed variance vs
-  structural).
-- **Design review done (report 2026-07-23): Deep Drone Acrobatics (RSS20)**.
-  Verdict: planning-before-tracking is the right architecture; our
-  `FlipTrajectory` hover-pinned position ref is dynamically infeasible and
-  conflicts with the attitude ref (root of the reward-hack + likely pitch
-  failure). Paper-2 design: **ballistic feasible flip reference**
-  (Lupashin-style boost/ballistic-arc/brake — cf21B TWR 1.88 cannot fly
-  DDA constant-speed loops, which need ~2.2). DAgger from a quaternion MPC
-  expert is the fallback if feasible refs + PPO still fail on pitch.
+- **acro2.2 3-seed verdict (2026-07-23): the recipe is structurally
+  seed-fragile, and it is NOT pitch-specific** — seed 1 completes pitch−
+  while refusing both rolls; seed 2 refuses/over-rotates everything; only
+  3/12 (seed, variant) cells complete. s0's roll success was a favorable
+  draw. Root cause: hover-pinned infeasible reference makes position and
+  attitude rewards conflict — "hover through the window" stays a strong
+  local optimum and escape direction is initialization luck. Models:
+  s1 `2026-07-23_08-50-19`, s2 `08-43-55`.
+- **Design review done (report 2026-07-23): Deep Drone Acrobatics (RSS20)**,
+  and the 3-seed result makes its conclusion the mandatory starting point:
+  discovery-by-RL on an infeasible reference is the wrong formulation.
+  **Paper-2 design: ballistic feasible flip reference** (Lupashin-style
+  boost/ballistic-arc/brake as a consistent position+attitude reference —
+  cf21B TWR 1.88 cannot fly DDA constant-speed loops, which need ~2.2),
+  then track it; the maneuver-window reward hack should become unnecessary.
+  DAgger from a quaternion MPC expert is the fallback if feasible-ref PPO
+  still shows seed fragility.
 - Then: recovery precision <0.3 m, maneuver-conditioned obs (variant
   one-hot).
 
