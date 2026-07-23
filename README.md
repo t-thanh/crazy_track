@@ -36,7 +36,10 @@ Disturbances (normal speed) and Lighthouse-sensor results: see
   0.025-0.032 vs PID 0.109) but is the most sensor-noise-sensitive.
 - **DATT v5** (asymmetric actor-critic + noise domain randomization) is the
   best policy under the realistic deployment condition (Lighthouse + wind:
-  0.058).
+  0.059±0.002 across 3 training seeds, non-overlapping vs v4's 0.077±0.006;
+  statistically tied with the ADRC+xadapt classical stack at 0.060±0.009).
+  At 3 training seeds v5 dominates or ties v4 in every measured cell — the
+  earlier "v5 trades clean-state performance" reading was single-seed noise.
 - **DATT-acro** (CTBR body-rate policy) wins both acro-tier trajectories and
   degrades gracefully where attitude-mode controllers diverge; **acro2.1**
   additionally performs 360-degree roll flips (reward shaping was decisive —

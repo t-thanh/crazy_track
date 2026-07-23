@@ -71,17 +71,54 @@ second-resolution run-dir timestamp (`FileExistsError`, stream A died).
 `runlog.py` now retries with `-b/-c/-d` suffixes. Windows-side tests pass
 (9/9). The aggregator's tag parsing is suffix-safe.
 
-## Multi-seed training runs (in progress)
+## Multi-seed training runs: v5-vs-v4 verdict (DONE)
 Two WSL background streams, recipes identical to the seed-0 runs:
 - v4 (`--noisy-sensor`, 3M steps): seeds 1, 2 (seed 0 = run 17-07-10)
 - v5 (`--v5`, 4M): seeds 1, 2 (seed 0 = run 17-32-52)
-- acro2.2 (`--acro2`, 5M): seeds 1, 2 (seed 0 = run 21-41-06)
+- acro2.2 (`--acro2`, 5M): seeds 1, 2 (deferred to paper 2; s2 trains on idle
+  time, s1 requeued)
 
-Eval protocol (after training): per policy seed — nominal s/n/f, lighthouse
-s/n/f, wind_const normal, lighthouse+wind normal, all at eval seed 0 to
-isolate training-seed variance (eval-seed std known small from the 10-seed
-sweep: ±0.007 for v5 lighthouse-fast); flips via flip_eval. Aggregation via
-`aggregate_seeds --prefix mst-`.
+Eval protocol: per policy seed — nominal s/n/f, lighthouse s/n/f, wind_const
+normal, lighthouse+wind normal, all at **eval seed 0** to isolate
+training-seed variance (eval-seed std known small from the 10-seed sweep).
+Aggregation: `aggregate_seeds --prefix mst-`. Seed-0 policies re-evaluated
+under mst- tags first; results reproduced yesterday's numbers exactly
+(deterministic eval pipeline).
+
+RMSE 3D (m), mean±std over 3 TRAINING seeds [min-max]:
+
+| cell | DATT v4 | DATT v5 | verdict |
+|---|---|---|---|
+| nominal slow | 0.042±0.015 | 0.038±0.014 | tied (seed spread >> delta) |
+| nominal normal | 0.092±0.013 | 0.075±0.010 | v5 trend |
+| nominal fast | 0.165±0.012 | 0.157±0.007 | tied |
+| lighthouse slow | 0.033±0.009 | 0.033±0.008 | tied |
+| lighthouse normal | 0.070±0.006 [.063-.078] | 0.056±0.005 [.051-.063] | **v5, ranges touch at one point** |
+| lighthouse fast | 0.127±0.003 | 0.120±0.011 | tied |
+| wind_const (clean) | 0.098±0.009 [.089-.111] | 0.073±0.007 [.063-.080] | **v5, non-overlapping** |
+| **lh+wind (deployment)** | 0.077±0.006 [.069-.083] | **0.059±0.002** [.056-.062] | **v5, non-overlapping** |
+
+### Findings
+1. **"v5 wins the deployment condition" is CONFIRMED at the policy level**
+   and is the strongest result in the study: 0.059±0.002 vs 0.077±0.006,
+   non-overlapping ranges, and v5's training-seed variance in that cell is
+   near-zero — the asymmetric-critic recipe reliably produces this behavior,
+   independent of initialization.
+2. **Yesterday's "v5 costs clean-state performance vs v4" claim was
+   seed-0 luck and is RETRACTED**: v4-s0 was v4's best nominal draw
+   (0.022/0.076/0.154) while v5-s0 was v5's worst (0.055/0.089/0.163). At 3
+   seeds the means invert: v5 <= v4 in every nominal cell. v5 dominates or
+   ties v4 in ALL eight cells measured.
+3. **v5's wind-rejection recovery over v4 is real** (0.073±0.007 vs
+   0.098±0.009, non-overlapping) — the privileged critic does buy back part
+   of v3's disturbance rejection (v3 clean-eval wind: 0.050).
+4. Nominal-slow has ±0.015-level training-seed noise for BOTH configs —
+   single-seed comparisons in that cell are meaningless; several yesterday's
+   small deltas there carried no information.
+5. vs the deployment champion: ADRC+xadapt lh+wind 0.060±0.009 (10 eval
+   seeds) vs v5 0.059±0.002 (3 training seeds) — **still statistically
+   tied**; the classical stack and the learned policy have converged to the
+   same deployment performance by different mechanisms.
 
 ## Lighthouse refresh post gyro fix (runs ms-lhfix-* / ms-lhfix-acro-*, DONE)
 Stale: MPC + MPPI rows from 16-36-29 (pre-fix, single seed). datt_acro was

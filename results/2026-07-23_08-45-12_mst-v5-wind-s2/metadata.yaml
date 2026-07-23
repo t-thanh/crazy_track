@@ -1,0 +1,17 @@
+datetime: 2026-07-23_08-45-12
+tag: mst-v5-wind-s2
+reason: 'Multi-seed TRAINING stats (v5 train-seed 2): fixed eval seed 0 isolates training-seed
+  variance (eval-seed std known small from 10-seed sweep) - wind_const'
+git_commit: '9605037'
+config:
+  controllers:
+  - datt:/mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-23_07-30-13_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: none
+  traj_z: 1.0
