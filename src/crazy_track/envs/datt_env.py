@@ -26,6 +26,9 @@ OBS_DIM_V5 = OBS_DIM_V3 + PRIV_DIM
 STACK = 4  # v6a: actor frames stacked so sensor-noise level becomes observable
 OBS_DIM_V6 = OBS_DIM_V3 * STACK + PRIV_DIM
 OBS_DIM_ACRO2 = OBS_DIM_V3 + 3  # + attitude-error rotvec (flip maneuvers)
+# acro4: + maneuver descriptor (signed axis vector 3, countdown 1, progress 1,
+# active 1) — conditioning against flip/tracking multi-task interference
+OBS_DIM_ACRO4 = OBS_DIM_ACRO2 + 6
 MASS = 0.04338
 PERTURB_ACC_MAX = 3.5  # m/s^2 per axis, as in DATT (arXiv:2310.09053)
 
@@ -37,7 +40,7 @@ class DATTTrackingEnv:
                  drone: str = "cf21B_500", dynamics: str = "first_principles",
                  seed: int = 0, v3: bool = True, noisy_sensor: bool = False,
                  v5: bool = False, v6: bool = False, ctbr: bool = False,
-                 acro2: bool = False, acro3: bool = False):
+                 acro2: bool = False, acro3: bool = False, acro4: bool = False):
         from crazyflow import Sim
         from crazyflow.dynamics import Dynamics
 
@@ -47,8 +50,13 @@ class DATTTrackingEnv:
         # acro3: flips on the dynamically FEASIBLE ballistic reference (paper 2).
         # Position/attitude refs are consistent, so the reward needs no
         # maneuver-window domination hack; obs layout identical to acro2.
-        self.acro3 = acro3
-        self.flip_obs = acro2 or acro3  # 46-dim obs with attitude-error rotvec
+        # acro4: acro3 + maneuver-conditioned obs (descriptor block) + one-time
+        # rotation-completion bonus (kills the 720-deg attractor: after an
+        # over-rotation the level-attitude recovery bonus pulls toward the
+        # NEAREST level orientation, which is 4*pi — measured on acro3 s0).
+        self.acro4 = acro4
+        self.ballistic_flips = acro3 or acro4
+        self.flip_obs = acro2 or self.ballistic_flips  # obs with attitude-error rotvec
         self.ctbr = ctbr or self.flip_obs  # action = [thrust, body rates] -> torques
         self.v3 = v3
         self.v6 = v6  # frame-stacked actor obs (implies v5)
@@ -73,7 +81,8 @@ class DATTTrackingEnv:
 
             self.l1 = L1Estimator(MASS, n=num_envs, dt=1.0 / freq)
             self.perturb_force = np.zeros((num_envs, 3))
-        obs_dim = (OBS_DIM_ACRO2 if self.flip_obs else OBS_DIM_V6 if v6 else
+        obs_dim = (OBS_DIM_ACRO4 if acro4 else
+                   OBS_DIM_ACRO2 if self.flip_obs else OBS_DIM_V6 if v6 else
                    OBS_DIM_V5 if self.v5 else (OBS_DIM_V3 if v3 else OBS_DIM))
 
         self.single_observation_space = spaces.Box(-np.inf, np.inf, shape=(obs_dim,),
@@ -85,6 +94,14 @@ class DATTTrackingEnv:
         self.steps = np.zeros(num_envs, dtype=np.int64)
         self._flip_counter = 0
         self._is_flip = np.zeros(num_envs, dtype=bool)  # per-env flip-episode mask
+        # per-env maneuver state (acro4 conditioning + completion bonus)
+        self._man_axis = np.zeros(num_envs, dtype=np.int64)
+        self._man_dir = np.zeros(num_envs)  # 0 = no maneuver this episode
+        self._man_t0 = np.zeros(num_envs)   # rotation window start
+        self._man_t1 = np.zeros(num_envs)   # rotation window end
+        self._man_Tb = np.ones(num_envs)
+        self._rot_acc = np.zeros(num_envs)  # integrated body rate about the axis
+        self._rot_done = np.ones(num_envs, dtype=bool)  # bonus already granted
         # Reference bank: sampled positions at window offsets for each control step.
         self._traj = [None] * num_envs
         self._t_offsets = WINDOW_DT * np.arange(1, WINDOW + 1)
@@ -96,7 +113,10 @@ class DATTTrackingEnv:
         # CTBR/acro mode extends to the platform limit (TWR 1.88 -> ~15 m/s^2 lateral).
         # acro2 mixes in flip episodes (50%): hover -> 360-deg roll/pitch -> recover.
         self._is_flip[i] = False
-        if self.acro3 and self.rng.random() < 0.5:
+        self._man_dir[i] = 0.0
+        self._rot_acc[i] = 0.0
+        self._rot_done[i] = True
+        if self.ballistic_flips and self.rng.random() < 0.5:
             from crazy_track.trajectories import BallisticFlipTrajectory
 
             # Feasible ballistic flip (paper 2): boost/ballistic/brake, arc stays
@@ -105,7 +125,7 @@ class DATTTrackingEnv:
             variant = self._flip_counter % 4
             self._flip_counter += 1
             self._is_flip[i] = True
-            self._traj[i] = BallisticFlipTrajectory(
+            traj = BallisticFlipTrajectory(
                 hover=(0.0, 0.0, float(self.rng.uniform(1.5, 2.5))),
                 t0=float(self.rng.uniform(1.5, 2.2)),
                 Tb=float(self.rng.uniform(0.6, 0.8)),
@@ -114,6 +134,11 @@ class DATTTrackingEnv:
                 a_boost=float(self.rng.uniform(6.0, 7.5)),
                 duration=self.max_steps / self.freq + WINDOW * WINDOW_DT + 1.0,
             )
+            self._traj[i] = traj
+            self._man_axis[i], self._man_dir[i] = traj.axis, traj.direction
+            self._man_t0[i], self._man_t1[i] = traj.t_rot_start, traj.t_rot_end
+            self._man_Tb[i] = traj.Tb
+            self._rot_done[i] = False
             return
         if self.acro2 and self.rng.random() < 0.5:
             from crazy_track.trajectories import FlipTrajectory
@@ -212,7 +237,23 @@ class DATTTrackingEnv:
             parts.append(self.l1.sigma_f.astype(np.float32))
         if self.flip_obs:
             parts.append(self._att_err(quat, t).astype(np.float32))
+        if self.acro4:
+            parts.append(self._maneuver_descriptor(t))
         return np.concatenate(parts, axis=1).astype(np.float32)
+
+    def _maneuver_descriptor(self, t: np.ndarray) -> np.ndarray:
+        """(N, 6): signed axis vector, countdown, progress, active — zeros
+        outside flip episodes so tracking behavior is cleanly conditioned."""
+        n = self.num_envs
+        flip = self._man_dir != 0
+        ax = np.zeros((n, 3), dtype=np.float32)
+        ax[np.arange(n), self._man_axis] = self._man_dir
+        countdown = np.where(flip, np.clip(self._man_t0 - t, 0.0, 1.0), 0.0)
+        progress = np.where(flip, np.clip((t - self._man_t0) / self._man_Tb, 0.0, 1.0), 0.0)
+        active = (flip & (t >= self._man_t0) & (t <= self._man_t1)).astype(np.float32)
+        return np.concatenate(
+            [ax, np.stack([countdown, progress, active], axis=1)], axis=1
+        ).astype(np.float32)
 
     def _att_err(self, quat: np.ndarray, t: np.ndarray) -> np.ndarray:
         """Rotation-vector error between reference attitude and current, (N, 3)."""
@@ -295,7 +336,7 @@ class DATTTrackingEnv:
         crashed = (pos[:, 2] < 0.05) | (err > 2.0)
         truncated = self.steps >= self.max_steps
         reward = np.exp(-2.0 * err) - 0.02 * np.linalg.norm(action[:, 0:2], axis=1)
-        if self.acro3:
+        if self.ballistic_flips:
             # Feasible reference -> position and attitude rewards AGREE during the
             # maneuver: equal weights suffice (no acro2 domination hack). The
             # attitude terms apply ONLY to flip episodes — acro2 leaked a
@@ -308,6 +349,20 @@ class DATTTrackingEnv:
             maneuver_reward = np.exp(-2.0 * err) + np.exp(-2.0 * att_angle)
             level_bonus = np.where(self._is_flip, 0.6 * np.exp(-3.0 * att_angle), 0.0)
             reward = np.where(maneuver, maneuver_reward, reward + level_bonus)
+            if self.acro4:
+                # Rotation-completion bonus (one-time, at rotation-window end):
+                # integrate the body rate about the maneuver axis; reward peaks
+                # at exactly +-2pi and vanishes at the 0 and 4pi attractors.
+                omega = np.asarray(self.sim.data.states.ang_vel[:, 0])
+                flip = self._man_dir != 0
+                in_win = flip & (t >= self._man_t0) & (t <= self._man_t1)
+                rate = omega[np.arange(self.num_envs), self._man_axis]
+                self._rot_acc += np.where(in_win, rate / self.freq, 0.0)
+                fire = (~self._rot_done) & flip & (t > self._man_t1)
+                if fire.any():
+                    delta = np.abs(self._rot_acc - 2 * np.pi * self._man_dir)
+                    reward = np.where(fire, reward + 5.0 * np.exp(-3.0 * delta), reward)
+                    self._rot_done |= fire
         elif self.acro2:
             # During an active attitude maneuver the attitude term must DOMINATE,
             # or hovering outscores flipping (measured: 0-degree "flips" with the

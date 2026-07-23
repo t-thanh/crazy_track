@@ -77,6 +77,9 @@ def main() -> None:
     parser.add_argument("--acro3", action="store_true",
                         help="acro phase 3: flips on the feasible ballistic reference "
                              "(consistent pos+att refs, balanced reward)")
+    parser.add_argument("--acro4", action="store_true",
+                        help="acro phase 4: acro3 + maneuver-conditioned obs "
+                             "(descriptor block) + rotation-completion bonus")
     parser.add_argument("--resume-from", default=None,
                         help="path to a datt_ppo_final.zip to continue training; "
                              "--timesteps is then ADDITIONAL steps on top of the "
@@ -90,7 +93,7 @@ def main() -> None:
     env = SB3Adapter(DATTTrackingEnv(num_envs=args.n_envs, seed=args.seed,
                                      noisy_sensor=args.noisy_sensor, v5=args.v5,
                                      v6=args.v6, ctbr=args.ctbr, acro2=args.acro2,
-                                     acro3=args.acro3))
+                                     acro3=args.acro3, acro4=args.acro4))
     if args.v5 or args.v6:
         from crazy_track.training.asymmetric import AsymmetricPolicy
 
