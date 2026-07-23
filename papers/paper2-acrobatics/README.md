@@ -1,9 +1,25 @@
-# Paper 2 — Acrobatic maneuver controller (CTBR flips on feasible references)
+# Paper 2 — Acrobatic trajectory tracking (CTBR policy, Crazyflie 2.1 brushless)
 
-Learned body-rate (CTBR) acrobatics for the Crazyflie 2.1 brushless:
-acro-tier tracking + 360-degree flip maneuvers with planned, dynamically
-feasible references. **Status: started 2026-07-23; acro3 (ballistic
-reference) 3-seed training in progress.**
+**Scope (user-clarified 2026-07-23): tracking ACROBATIC TRAJECTORIES in
+general** — where paper 1 benchmarks controllers on the flat figure-8,
+paper 2 is the acrobatic regime: the **vertical figure-8** (normal / fast /
+acro tiers), the **acro tier at/beyond the platform feasibility limit**
+(T=2.2 s demands more lateral/vertical acceleration than TWR 1.88 provides),
+and **attitude-referenced maneuvers (360-degree flips)** as the extreme case
+where attitude can no longer be derived from position. One learned
+body-rate (CTBR) policy should cover the whole spectrum.
+
+Unifying thesis candidate: acrobatic tracking fails when references are
+dynamically infeasible — laterally (acro-tier fig-8: graceful degradation),
+vertically (vertical acro fig-8: demands negative thrust), or in attitude
+(hover-pinned flips: position/attitude conflict). The fix is
+feasibility-aware reference treatment: planned feasible maneuver primitives
+(flips, done) and possibly feasibility-projected fig-8 references (open
+design question — currently we measure graceful degradation instead).
+
+**Status: acro3 (ballistic flip reference) validated at 3 seeds; 10M
+extensions in progress; full acro-trajectory-suite benchmark of the acro3
+policies queued.**
 
 ## Scope and story arc
 1. **datt_acro v1** (`2026-07-22_18-58-56`): CTBR policy, refs to the TWR
@@ -52,7 +68,15 @@ reference) 3-seed training in progress.**
 - Extension to 10M cumulative steps per seed (`--resume-from`), same eval.
   Hypothesis: over/under-rotation at 5M = unconverged execution; success =
   >= 3/4 completions per seed at s2-level precision, all 3 seeds.
+  (s1@10M: keeps 4/4, rotation calibration tightened to 358-381 deg; arc
+  precision unchanged -> next lever is reward weighting, not budget.)
 - Fallback shaping lever if extension stalls: rotation-completion bonus.
+- **Queued (scope clarification): full acro-trajectory-suite benchmark of
+  each acro3 seed** — horizontal fast+acro and vertical normal+fast+acro
+  Lissajous — to verify the flip-capable policy retains general acrobatic
+  tracking (reference points: datt_acro v1 0.123/0.322 horizontal
+  fast/acro, 0.122/0.196/0.349 vertical n/f/a; acro2.2 regressed fast to
+  0.162).
 
 ## Queued after acro3
 - Recovery precision < 0.3 m; maneuver-conditioned obs (variant one-hot).
