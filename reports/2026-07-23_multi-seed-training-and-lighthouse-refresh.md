@@ -209,3 +209,111 @@ mild draws). Candidate remedies if the cell ever matters more: state
 pre-filtering (EKF) ahead of the optimizer, reference ramp-in, or a
 hover-spinup phase in the benchmark protocol (a metric change — needs a
 deliberate decision, not a drive-by).
+
+## Paper-1 synthesis: controller ranking, failure modes, and why
+
+No controller dominates; the ranking is condition-dependent. This section is
+the paper-1 discussion skeleton.
+
+### Deployment ranking (Lighthouse + wind, normal — the realistic cell)
+
+Three-way statistical tie at the top, reached by three unrelated mechanisms:
+
+| rank | controller | RMSE 3D (m) | evidence |
+|---|---|---|---|
+| 1= | Offset-free MPC (soft-start) | 0.057±0.014 | 10 eval seeds |
+| 1= | DATT v5 | 0.059±0.002 | 3 training seeds |
+| 1= | ADRC+xadapt | 0.060±0.009 | 10 eval seeds |
+| 4 | DATT v4 | 0.077±0.006 | 3 training seeds |
+| — | plain MPC | 0.199±0.017 | 10 eval seeds |
+
+A disturbance-augmented prediction model, a privileged-critic policy, and an
+ESO over an adaptive rate loop converge to ~0.06 m — that convergence is
+itself a result: at this sensor quality, the deployment cell appears
+estimator-limited, not architecture-limited.
+
+### Per-scenario champions
+
+| scenario | champion | value | runner-up |
+|---|---|---|---|
+| nominal slow / fast | offset-free MPC | **0.004 / 0.052** | PID 0.012 / PID+xadapt 0.067 |
+| nominal normal | ADRC+xadapt | **0.018** | PID 0.022 |
+| wind_const (clean) | ADRC w7 | **0.025** | ADRC+xadapt 0.037 |
+| wind_gust | DATT v3 | **0.061±0.002** | ADRC+xadapt 0.063 |
+| payload | ADRC+xadapt | **0.018** (= its nominal) | ADRC 0.036 |
+| ground effect | PID | **0.023** | — |
+| lighthouse fast tier | DATT v5 | **0.120±0.011** | PID+xadapt 0.122 |
+| acro tier (T=2.2) | datt_acro | **0.322 / 0.349** (h/v) | MPPI 0.341 / 0.372 |
+
+### Failure cases and limits, per controller
+
+- **Offset-free MPC (soft-start)** — best precision instrument. (1) Launch
+  transients on noisy state: on bad bias draws the first ipopt solves react
+  violently to the reference-velocity jump (~1 m at t≈0.9 s), polluting
+  lighthouse-normal full-window (0.141±0.058 vs 0.046 steady-state); generic
+  to the MPC family — no state filter ahead of the optimizer. (2) so_rpy
+  Euler model: hover-fitted, singular at ±90° pitch — no acro, and model
+  bias grows with speed. (3) Compute: 20-70 s wall/episode.
+- **DATT v5** — deployment policy; the only controller with *proven
+  initialization robustness* in its headline cell (±0.002 over training
+  seeds). Limit: memoryless MLP cannot infer per-episode noise level, so it
+  averages over the DR range instead of calibrating — costs clean-state
+  agility (nominal fast 0.157±0.007, worst among competitive stacks) and
+  leaves wind short of v3 (0.073 vs 0.050). Frame stacking (v6a) did not
+  fix it at 4M steps; recurrence is the known next step.
+- **ADRC+xadapt** — best breadth; payload is invisible (0.018 = nominal).
+  (1) ESO phase lag at speed: fast nominal 0.084 vs 0.067 for PID over the
+  same low-level. (2) Under constant wind loses to plain ADRC (0.037 vs
+  0.025): the ESO watches the plant *through* the adaptive rate loop, which
+  partially absorbs — and masks — the signal it estimates.
+- **ADRC (w7)** — constant-wind champion. Limit: one bandwidth knob, two
+  jobs. Low w filters noise / tracks static disturbances; high w tracks
+  gusts; no fixed w wins both. The adaptive-w attempt failed for an
+  identified reason: the innovation statistic cannot distinguish external
+  disturbances from the ESO's own attitude-lag residual during aggressive
+  tracking (false-positives into high bandwidth). Fundamental to
+  fixed-structure lumped-disturbance observers.
+- **MPPI+L1 (tuned)** — clean-sensing fast champion (0.068). (1)
+  Lighthouse-fast fragility is a variance phenomenon (0.091/0.114/0.480):
+  the AR(1)-correlated exploration that helps nominally lets a bad bias
+  draw steer the whole sample distribution wrong for many steps. (2)
+  Internal-model validity: the hover-fitted so_rpy rollout model breaks at
+  vertical-fast (0.423) — sampling cannot rescue wrong physics.
+- **PID (+acc ff)** — honest baseline; ground-effect champion (thrust-gain
+  disturbance is nearly collinear with its feedforward). Limit: no
+  disturbance estimator — sustained forces become steady-state error (wind
+  0.109, payload 0.093, ~4x). Everything above it wins via some form of
+  disturbance estimation.
+- **Plain MPC** — superseded by offset-free within its own family (which is
+  better even nominally: the disturbance state absorbs standing model
+  bias). Re-predicts the same biased trajectory under steady wind
+  (0.196/0.199). No remaining cell where it is the right pick.
+- **DATT v3** — gust champion; the L1 estimate in the obs reacts to
+  disturbance state directly. Limit: unconditional trust in that channel —
+  with Lighthouse noise at high agility it chases phantom disturbances
+  (lighthouse-fast 0.323±0.106; the ±0.106 is the point — some seeds fine,
+  some near-crash). Clean-state deployments only.
+- **DATT v4** — historically important (proved noisy-obs training fixes
+  v3's failure mode) but now dominated by v5 in all 8 measured cells; no
+  deployment reason to use it.
+- **datt_acro (CTBR)** — graceful-degradation specialist: wins both
+  acro-tier trajectories, lowest fast-tier variance under Lighthouse
+  (±0.002), never diverges where attitude-mode stacks do. (1) Precision at
+  feasible speeds: fast 0.123 vs 0.067 pool best — torque-level learning
+  trades easy-regime precision for envelope robustness. (2) Physics, not
+  controller: the acro tier demands 16.3 m/s^2 lateral vs the cf21B's
+  ~15.2 m/s^2 limit — that tier measures graceful degradation on
+  infeasible references for everyone. (3) Pitch flips unlearned (paper-2
+  opening problem; feasible-reference hypothesis).
+
+### Failure taxonomy (for the discussion section)
+Every failure above is one of three kinds:
+1. **Missing model structure** — PID / plain MPC lacking disturbance
+   states; MPPI / MPC carrying a hover-fitted model beyond its envelope.
+2. **Estimator bandwidth-vs-noise tradeoffs** — ADRC's single knob, v3's
+   unfiltered L1 trust, the MPC launch transient.
+3. **Information bottlenecks in learned policies** — v5's memoryless
+   averaging across the noise-DR range.
+
+The pool's champions are exactly the stacks that pushed their particular
+limit one level up without inheriting a new one inside the tested envelope.
