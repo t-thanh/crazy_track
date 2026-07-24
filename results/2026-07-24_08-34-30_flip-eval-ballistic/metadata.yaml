@@ -1,0 +1,9 @@
+datetime: 2026-07-24_08-34-30
+tag: flip-eval-ballistic
+reason: 'Acro4 seed 2 flip eval: success bar >= 3/4 completions at s2-level precision
+  (dev<0.75, rec<0.15)'
+git_commit: 8f4183d
+config:
+  model: /mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-24_06-49-54_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

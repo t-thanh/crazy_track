@@ -1,0 +1,21 @@
+datetime: 2026-07-24_06-49-54
+tag: datt-train
+reason: 'Acro4 seed 2 of 3 (A+D per user): maneuver-conditioned obs + rotation-completion
+  bonus; targets acro3''s two open tensions (seed robustness: s0 bad optimum; flip-vs-tracking
+  interference: 1.3-2x suite regression)'
+git_commit: 8f4183d
+config:
+  timesteps: 8000000
+  n_envs: 16
+  reason: 'Acro4 seed 2 of 3 (A+D per user): maneuver-conditioned obs + rotation-completion
+    bonus; targets acro3''s two open tensions (seed robustness: s0 bad optimum; flip-vs-tracking
+    interference: 1.3-2x suite regression)'
+  seed: 2
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: false
+  acro4: true
+  resume_from: null

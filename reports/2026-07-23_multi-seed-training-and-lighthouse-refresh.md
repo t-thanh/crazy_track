@@ -481,7 +481,7 @@ precision); two tensions remain, and they are architecture choices:
 1. **Seed robustness** (1/3 seeds fails flips regardless of budget), and
 2. **the flip-vs-tracking tradeoff** (one 46-dim policy splits capacity
    between maneuvers and tracking).
-Options, not mutually exclusive:
+Options, not mutually exclusive (user chose A+D, results below):
 - **A. Maneuver-conditioned obs (variant one-hot / maneuver phase flag)** —
   pre-existing roadmap item; lets one policy specialize per context; likely
   helps both tensions. Moderate: new obs version + 3-seed retrain.

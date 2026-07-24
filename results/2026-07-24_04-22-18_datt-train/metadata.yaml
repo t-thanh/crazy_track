@@ -1,0 +1,19 @@
+datetime: 2026-07-24_04-22-18
+tag: datt-train
+reason: 'Acro4 seed 1 of 3 (A+D per user): maneuver-conditioned obs + rotation-completion
+  bonus'
+git_commit: 8f4183d
+config:
+  timesteps: 8000000
+  n_envs: 16
+  reason: 'Acro4 seed 1 of 3 (A+D per user): maneuver-conditioned obs + rotation-completion
+    bonus'
+  seed: 1
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: false
+  acro4: true
+  resume_from: null

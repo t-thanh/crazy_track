@@ -350,14 +350,23 @@ class DATTTrackingEnv:
             level_bonus = np.where(self._is_flip, 0.6 * np.exp(-3.0 * att_angle), 0.0)
             reward = np.where(maneuver, maneuver_reward, reward + level_bonus)
             if self.acro4:
-                # Rotation-completion bonus (one-time, at rotation-window end):
-                # integrate the body rate about the maneuver axis; reward peaks
-                # at exactly +-2pi and vanishes at the 0 and 4pi attractors.
+                # D-v2 (acro4.1): DENSE rotation-progress reward. The one-time
+                # completion bonus alone has zero gradient at 0 deg, and with
+                # conditioned obs the level-freefall solution is cleanly
+                # learnable -> refusal returned (acro4 sparse-D: 4/12). Pay
+                # every radian toward the target immediately: full rotation
+                # accumulates +2.5, past-2pi earns nothing, backward pays
+                # negative. Completion bonus kept to sharpen the 2pi optimum.
                 omega = np.asarray(self.sim.data.states.ang_vel[:, 0])
                 flip = self._man_dir != 0
                 in_win = flip & (t >= self._man_t0) & (t <= self._man_t1)
                 rate = omega[np.arange(self.num_envs), self._man_axis]
-                self._rot_acc += np.where(in_win, rate / self.freq, 0.0)
+                d_rot = np.where(in_win, rate / self.freq, 0.0)
+                a_old = self._rot_acc * self._man_dir  # target-aligned progress
+                a_new = a_old + d_rot * self._man_dir
+                credit = np.minimum(a_new, 2 * np.pi) - np.minimum(a_old, 2 * np.pi)
+                reward = np.where(in_win, reward + 2.5 / (2 * np.pi) * credit, reward)
+                self._rot_acc += d_rot
                 fire = (~self._rot_done) & flip & (t > self._man_t1)
                 if fire.any():
                     delta = np.abs(self._rot_acc - 2 * np.pi * self._man_dir)
