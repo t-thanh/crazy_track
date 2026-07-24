@@ -54,15 +54,20 @@ Launched: 3 seeds x 8M, same chained pipeline.
 
 | flip | s0 | s1 | s2 |
 |---|---|---|---|
-| roll+  | **✓ 323°** (dev 1.06, rec 0.10) | −1°, refuses | pending |
-| roll−  | **✓ −355°** (dev 0.26, rec 0.04) | +2°, refuses | pending |
-| pitch+ | **✓ +333°** (dev 0.39, rec 0.07) | 0°, refuses | pending |
-| pitch− | **✓ −353°** (dev 0.57, rec 0.09) | −2°, refuses | pending |
+| roll+  | **✓ 323°** (dev 1.06, rec 0.10) | −1°, refuses | **✓ 334°** (dev 0.42, rec 0.06) |
+| roll−  | **✓ −355°** (dev 0.26, rec 0.04) | +2°, refuses | **✓ −320°** (dev 0.32, rec 0.09) |
+| pitch+ | **✓ +333°** (dev 0.39, rec 0.07) | 0°, refuses | 307° near-miss (dev 0.35, rec 0.09) |
+| pitch− | **✓ −353°** (dev 0.57, rec 0.09) | −2°, refuses | ✓ −385° but dev 2.62, floor |
 
 Suite: s0 h 0.139/**0.608** v 0.137/0.193/0.375; s1 h 0.137/0.348
-v 0.099/0.184/0.331 (best suite yet).
+v 0.099/0.184/0.331 (best suite yet); s2 h 0.223/0.390 v 0.155/0.235/0.440.
 
-### Reading (pending s2)
+**Final tally: 7/12 completions (5 clean at dev<=0.6, rec<=0.10)** — same
+count as acro3@15M but far cleaner where it works, with the suite held
+near v1 (mild dents only on flip-competent seeds: s0 h-acro 0.608,
+s2 v-acro 0.440 — the capacity tradeoff is reduced, not zero).
+
+### Reading (final)
 1. **acro4.1-s0 is the project's best flip policy**: 4/4 completions,
    min_z >= 1.47 (no floor), recovery 0.04-0.10 — meets the paper bar on
    3/4 variants (roll+ dev 1.06 slightly over). Once rotation is
@@ -73,8 +78,14 @@ v 0.099/0.184/0.331 (best suite yet).
    safe conditioned optimum. Discovery is a stochastic event; acro3
    found flips via cross-context bleed (aggressive-tracking rates leaking
    into flip windows), which conditioning removed.
-3. s0's h-acro dent (0.608) hints the capacity tradeoff re-emerges
-   when flip skill is actually acquired (n=1; s2 will inform).
+3. s0's h-acro dent (0.608) and s2's v-acro (0.440) confirm the capacity
+   tradeoff re-emerges mildly when flip skill is actually acquired —
+   flip-refusing s1 posts the cleanest suite. Much smaller than acro3's
+   1.3-2x regression; conditioning contains, not eliminates, it.
+3b. s2 (2 clean + 1 near-miss + 1 sloppy) sits between s0 and s1 —
+   consistent with discovery being partial per variant, then shaped well
+   wherever it happened (its pitch+ tracks the arc at dev 0.35 while
+   rotating 307 deg).
 4. **Reliable-discovery levers for the next iteration** (not launched —
    machine shutdown scheduled): (a) rate-feedforward auxiliary reward —
    reward w_cmd matching the reference trapezoid rate profile during the

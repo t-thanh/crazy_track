@@ -1,0 +1,18 @@
+datetime: 2026-07-24_11-53-53
+tag: acro41-suite-h-s2
+reason: 'Acro4.1 seed 2 suite horizontal: confirm dense progress reward did not reintroduce
+  tracking interference (acro4 refs 0.146-0.167/0.290-0.329)'
+git_commit: 7fb546e
+config:
+  controllers:
+  - datt_acro:/mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-24_10-39-38_datt-train/datt_ppo_final.zip
+  speeds:
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

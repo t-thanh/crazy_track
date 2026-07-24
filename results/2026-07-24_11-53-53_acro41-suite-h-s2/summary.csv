@@ -1,0 +1,3 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,wall_time_s
+datt_acro,fast,0.22310189148587473,0.2214556467710836,0.428285492384356,1.0,1.7
+datt_acro,acro,0.3901911706551984,0.3881495944063145,0.7255703729229828,1.0,0.6

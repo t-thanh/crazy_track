@@ -6,19 +6,27 @@ and per-run `results/*/metadata.yaml` (date-time, reason, git hash).
 
 ## PICKUP PROMPT (paste this to start the next session)
 > Continue the crazy_track project (two-paper plan) at
-> `C:\Users\tient\Documents\GitHub\crazy_track`. Read `HANDOVER.md` first —
-> it has environment setup, current state, and the acro4.1 status. Paper 1
-> (fig-8 benchmark) is results-complete; current work is paper 2 (acrobatic
-> trajectory tracking): the acro4.1 recipe (maneuver-conditioned obs +
-> DENSE rotation-progress reward + completion bonus) was training 3 seeds
-> at session end. Check `results/*_datt-train` metadata (acro4: true, git
-> hash 8464372+) for which seeds finished; relaunch any missing seeds
-> (command in HANDOVER "How to run"), run `flip_eval --ballistic` + the
-> acro-suite benchmarks for each, then write the acro4.1 verdict vs the
-> acro4 table in `reports/2026-07-24_p2-acro4-maneuver-conditioning.md`.
-> Success bar: >= 3/4 flip completions per seed at dev<0.75/rec<0.15 AND
-> suite still at flip-free-v1 level. Keep the discipline: meaningful
-> --reason on every run, commit+push each work unit, document failures.
+> `C:\Users\tient\Documents\GitHub\crazy_track`. Read `HANDOVER.md` first
+> (environment setup, state, gotchas). Paper 1 (fig-8 benchmark) is
+> results-complete. Current work: paper 2 (acrobatic trajectory tracking).
+> The acro4.1 experiment is COMPLETE (results in
+> `reports/2026-07-24_p2-acro4-maneuver-conditioning.md`): flip DISCOVERY
+> is the last open problem — the same recipe gave 4/4 flips on seed 0,
+> 3/4 on seed 2, but total refusal on seed 1; shaping after discovery and
+> general acro-suite tracking are both solved. Next experiment (acro4.2,
+> agreed direction): add a rate-feedforward auxiliary reward — during the
+> rotation window, reward the commanded body rates matching the reference
+> trapezoid rate profile (dense in ACTION space, where exploration
+> happens; gradient exists at refusal; anneal or keep small, e.g.
+> +0.5*exp(-|w_cmd - w_ref|/5) per step, window only). Implement in
+> datt_env acro4 branch (the reference rate profile is analytic:
+> BallisticFlipTrajectory.att_ref_rotvec derivative, trapezoid with blend
+> 0.2, peak 2pi/(0.8*Tb)), smoke-test, then 3 seeds x 8M with the chained
+> train->flip_eval-->suite pipeline (scripts pattern in the scratchpad of
+> session 2026-07-23/24, recreate from HANDOVER "How to run"). Success:
+> >= 3/4 completions on ALL 3 seeds at dev<0.75/rec<0.15, suite near v1.
+> Keep discipline: meaningful --reason, commit+push per work unit,
+> document failures in reports, 3 seeds minimum for any claim.
 
 ## The two papers
 1. **Paper 1 — fig-8 controller benchmark: RESULTS COMPLETE** (all claims
@@ -63,12 +71,24 @@ and per-run `results/*/metadata.yaml` (date-time, reason, git hash).
   flip-free datt_acro v1 = `2026-07-22_18-58-56` (suite reference:
   h 0.123/0.322, v 0.122/0.196/0.349).
 
-## acro4.1 results at session end (fill state: see below)
-- s0: PENDING at write time — check `results/2026-07-24_*_datt-train`
-- s1: PENDING at write time
-- s2: PENDING (expected killed by shutdown — relaunch)
-(If a seed finished, its flip-eval + acro41-suite-h/v-sN runs exist too;
-the chained scripts create them automatically.)
+## acro4.1 results (COMPLETE — all 3 seeds + evals finished before shutdown)
+Models: s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38` (all
+`_datt-train/datt_ppo_final.zip`).
+- **s0: 4/4 flips complete** — best flip policy of the project (roll−
+  dev 0.26/rec 0.04; pitch+ 333°/dev 0.39; min_z >= 1.47, no floor).
+- **s1: 0/4 — total refusal** (±2°) while tracking the ballistic arc at
+  dev 0.29-0.35 and posting the best suite (v-normal 0.099).
+- **s2: 3/4** (roll± clean, pitch+ 307° near-miss, pitch− complete but
+  sloppy/floor).
+- Suite: near flip-free-v1 everywhere; mild dents only on flip-competent
+  seeds (s0 h-acro 0.608, s2 v-acro 0.440) — conditioning contains the
+  capacity tradeoff, doesn't eliminate it.
+- **Conclusion: discovery is a stochastic exploration event and is the
+  ONLY remaining problem.** Post-discovery shaping (dense progress +
+  completion bonus + conditioning) produces clean, precise flips. The
+  rate-feedforward aux reward (see pickup prompt) targets discovery
+  directly; fallbacks: warm-start weight surgery (46->52 obs zero-pad),
+  or k-seed selection (weakest science).
 
 ## How to run (WSL venv, repo root)
 - Train acro4.1 seed N (8M):

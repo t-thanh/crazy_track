@@ -64,6 +64,19 @@ policies queued.**
   while tracking the arc) — execution-precision failures, not refusals.
 - Models: s0 `2026-07-23_17-46-18`, s1 `17-46-23`, s2 `18-48-13`.
 
+## Acro4/4.1 (2026-07-24): tracking interference SOLVED; discovery is the last open problem
+- acro4 (maneuver-conditioned obs + sparse completion bonus): suite
+  restored to flip-free-v1 level on ALL seeds; flips regressed to 4/12
+  (sparse bonus has no gradient at refusal).
+- acro4.1 (bonus made dense: rotation-progress reward): **s0 = 4/4 flips,
+  best of project (dev 0.26-1.06, rec 0.04-0.10, no floor); s2 = 3/4;
+  s1 = 0/4 total refusal.** Same recipe, three outcomes: flip DISCOVERY is
+  a stochastic exploration event; everything downstream of discovery is
+  solved. Full tables: `reports/2026-07-24_p2-acro4-maneuver-conditioning.md`.
+- Next (acro4.2): rate-feedforward auxiliary reward (dense in action
+  space) to make discovery reliable; see HANDOVER pickup prompt.
+- Models: acro4.1 s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38`.
+
 ## 15M results + acro suite (2026-07-23 late): two tensions identified
 - Flips @15M: s1 4/4 (358-381 deg, near-exact), s2 3/4 at the best
   precision yet (dev 0.26-0.74, recovery 0.06-0.10), s0 WORSE with budget
