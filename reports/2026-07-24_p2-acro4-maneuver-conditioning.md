@@ -49,3 +49,37 @@ Replace the discovery mechanism, keep everything else:
 - Obs unchanged (52-dim) — same `--acro4` flag; recipes distinguished by
   git hash in run metadata.
 Launched: 3 seeds x 8M, same chained pipeline.
+
+## Acro4.1 results (s0, s1 in; s2 pending)
+
+| flip | s0 | s1 | s2 |
+|---|---|---|---|
+| roll+  | **✓ 323°** (dev 1.06, rec 0.10) | −1°, refuses | pending |
+| roll−  | **✓ −355°** (dev 0.26, rec 0.04) | +2°, refuses | pending |
+| pitch+ | **✓ +333°** (dev 0.39, rec 0.07) | 0°, refuses | pending |
+| pitch− | **✓ −353°** (dev 0.57, rec 0.09) | −2°, refuses | pending |
+
+Suite: s0 h 0.139/**0.608** v 0.137/0.193/0.375; s1 h 0.137/0.348
+v 0.099/0.184/0.331 (best suite yet).
+
+### Reading (pending s2)
+1. **acro4.1-s0 is the project's best flip policy**: 4/4 completions,
+   min_z >= 1.47 (no floor), recovery 0.04-0.10 — meets the paper bar on
+   3/4 variants (roll+ dev 1.06 slightly over). Once rotation is
+   DISCOVERED, dense-D + conditioning shape it excellently.
+2. **acro4.1-s1 refuses everything** despite the dense progress reward —
+   with per-step Gaussian exploration, coherent 10 rad/s rotations across
+   ~35 steps are never sampled once the value function locks onto the
+   safe conditioned optimum. Discovery is a stochastic event; acro3
+   found flips via cross-context bleed (aggressive-tracking rates leaking
+   into flip windows), which conditioning removed.
+3. s0's h-acro dent (0.608) hints the capacity tradeoff re-emerges
+   when flip skill is actually acquired (n=1; s2 will inform).
+4. **Reliable-discovery levers for the next iteration** (not launched —
+   machine shutdown scheduled): (a) rate-feedforward auxiliary reward —
+   reward w_cmd matching the reference trapezoid rate profile during the
+   window; dense in ACTION space where exploration actually happens;
+   effectively imitation of the trivial feedforward expert, annealable.
+   (b) warm-start weight surgery from a flip-competent policy (46->52 obs
+   needs zero-padded input columns). (c) pragmatic: train k seeds, select
+   flip-competent (weakest science).

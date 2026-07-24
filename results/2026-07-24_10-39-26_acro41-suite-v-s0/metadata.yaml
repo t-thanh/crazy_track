@@ -1,0 +1,18 @@
+datetime: 2026-07-24_10-39-26
+tag: acro41-suite-v-s0
+reason: Acro4.1 seed 0 suite vertical (acro4 refs 0.107-0.154/0.169-0.229/0.286-0.331)
+git_commit: a681045
+config:
+  controllers:
+  - datt_acro:/mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-24_08-38-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

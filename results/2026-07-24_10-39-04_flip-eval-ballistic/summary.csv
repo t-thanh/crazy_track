@@ -1,0 +1,5 @@
+controller,trajectory,total_rotation_deg,rotation_complete,max_ref_dev,max_hover_dev,min_z,recovery_err
+datt_acro,roll+,323.1,True,1.058,1.391,1.465,0.095
+datt_acro,roll-,-355.4,True,0.259,1.388,1.941,0.039
+datt_acro,pitch+,332.8,True,0.393,1.392,1.848,0.072
+datt_acro,pitch-,-352.8,True,0.573,1.4,1.564,0.089

@@ -1,0 +1,21 @@
+datetime: 2026-07-24_08-38-52
+tag: datt-train
+reason: 'Acro4.1 seed 0 of 3: DENSE rotation-progress reward (D-v2, gradient at 0
+  deg) + kept completion bonus + maneuver-conditioned obs; sparse-D acro4 refused
+  flips on 5/12 cells while A fixed the suite on all seeds'
+git_commit: '8464372'
+config:
+  timesteps: 8000000
+  n_envs: 16
+  reason: 'Acro4.1 seed 0 of 3: DENSE rotation-progress reward (D-v2, gradient at
+    0 deg) + kept completion bonus + maneuver-conditioned obs; sparse-D acro4 refused
+    flips on 5/12 cells while A fixed the suite on all seeds'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: false
+  acro4: true
+  resume_from: null

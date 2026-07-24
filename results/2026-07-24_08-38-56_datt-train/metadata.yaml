@@ -1,0 +1,19 @@
+datetime: 2026-07-24_08-38-56
+tag: datt-train
+reason: 'Acro4.1 seed 1 of 3: DENSE rotation-progress reward (D-v2) + completion bonus
+  + maneuver-conditioned obs'
+git_commit: '8464372'
+config:
+  timesteps: 8000000
+  n_envs: 16
+  reason: 'Acro4.1 seed 1 of 3: DENSE rotation-progress reward (D-v2) + completion
+    bonus + maneuver-conditioned obs'
+  seed: 1
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: false
+  acro4: true
+  resume_from: null
