@@ -62,11 +62,16 @@ recovery err m; ✓ = complete (|rot−360°| < 45°).
 
 | seed | roll+ | roll− | pitch+ | pitch− | completions |
 |------|-------|-------|--------|--------|-------------|
-| 0    |       |       |        |        | /4          |
+| 0    | ✓ 362/0.69/0.04 | ✓ −347/0.27/0.04 | ✓ 353/0.43/0.04 | ✓ −357/0.53/0.05 | **4/4** |
 | 1    | ✓ 333/0.96/0.06 | ✓ −361/0.31/0.03 | ✗ 315/0.39/0.06 | ✓ −326/0.29/0.03 | **3/4** |
 | 2    |       |       |        |        | /4          |
 
 Reference (acro4.1): s0 4/4, s1 0/4, s2 3/4.
+
+**s0: 4/4, every variant within the dev<0.75/rec<0.15 gate** (model
+`2026-07-29_16-24-22-b_datt-train`, flip eval `18-18-04`, min_z ≥ 1.65 —
+no floor). Matches acro4.1 s0's 4/4; the aux reward did not disturb the
+already-working seed.
 
 **s1 (the acro4.1 total refuser) discovers flips: 0/4 → 3/4** (model
 `2026-07-29_16-24-22_datt-train`, flip eval `18-17-56`). min_z ≥ 1.92 (no
@@ -81,7 +86,7 @@ v 0.122/0.196/0.349.
 
 | seed | h fast | h acro | v normal | v fast | v acro |
 |------|--------|--------|----------|--------|--------|
-| 0    |        |        |          |        |        |
+| 0    | 0.128  | 0.335  | 0.131    | 0.205  | 0.435  |
 | 1    | 0.131  | 0.373  | 0.132    | 0.194  | 0.362  |
 | 2    |        |        |          |        |        |
 
