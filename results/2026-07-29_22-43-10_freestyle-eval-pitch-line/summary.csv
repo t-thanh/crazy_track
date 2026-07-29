@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,max_ref_dev,min_z,gates_passed,gates_clean,flips_complete
+datt_acro,freestyle-pitch-line,0.542098039682738,0.41359614152295554,1.7514811517454745,1.0,1.751,0.201,2,2,1

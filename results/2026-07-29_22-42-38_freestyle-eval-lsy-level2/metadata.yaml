@@ -1,0 +1,24 @@
+datetime: 2026-07-29_22-42-38
+tag: freestyle-eval-lsy-level2
+reason: 'freestyle 3-seed x 3-track matrix: acro4.2 s0 zero-shot on lsy-level2 (all
+  4 flip variants covered across tracks)'
+git_commit: 381be03
+config:
+  model: results/2026-07-29_16-24-22-b_datt-train/datt_ppo_final.zip
+  track: lsy-level2
+  cruise: 1.5
+  duration: 11.238889638183322
+  feasibility:
+    max_thrust_acc_outside_arc: 16.810000000000002
+    thrust_acc_limit: 17.52066
+    min_thrust_acc_outside_arc: 5.255981288736674
+    min_z: 0.700000000009408
+    peak_ref_rate: 11.219973762820691
+    gate_max_inplane_offset:
+    - 3.641116825160718e-09
+    - 3.1550903614984936e-09
+    - 4.388936564750714e-09
+    - 8.553676003126386e-10
+    gate_clearance_bound: 0.13
+    gate_crossings_ok: true
+    feasible: true

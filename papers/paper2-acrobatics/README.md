@@ -113,13 +113,18 @@ capacity dent (worst 0.523, s2).
   D. rotation-completion reward term.** Models: s0@15M
   `2026-07-23_19-40-03`, s1@15M `19-40-06`, s2@15M `21-35-52`.
 
-## Next phase (post-acro4.2): freestyle sequences through gates
-- Chain maneuver primitives (poly connect → ballistic flip → poly
-  connect …) through race-gate waypoints; gate spec taken from
-  lsy_drone_racing (user direction 2026-07-29). This is where a
-  MINCO-style optimizer could become relevant (see ZJU analysis, report
-  2026-07-23) — start with closed-form chaining of the validated
-  primitives.
+## Freestyle sequences through gates (v1 + 3×3 matrix COMPLETE 2026-07-29)
+- Closed-form chaining of validated primitives through lsy_drone_racing
+  gates (`trajectories/freestyle.py`): quintic connects + TRAVELING
+  ballistic flips (drift-generalized, feasibility exact) + via/hover ops;
+  analytic feasibility_report; 3 tracks covering all 4 flip variants.
+- **Zero-shot 3-seed × 3-track matrix** (report 2026-07-29_p2-freestyle-v1):
+  single-flip tracks compose on ALL seeds (24/24 gates, 6/6 flips, RMSE
+  0.12–0.17); the two-flip pitch-line track discriminates by primitive
+  quality (s2 full success incl. both flips; s0/s1 drop their known-weak
+  pitch+ variant). Claim: freestyle needs no new training; sequence
+  difficulty is bounded by per-primitive quality. MINCO-style optimizer
+  still only relevant beyond closed-form chaining.
 - Hardware-transfer caveat to address in writing: sim force_torque mode
   gives torque authority at zero collective; real flips need a small
   collective floor during the rotation (~2 cm displacement effect,

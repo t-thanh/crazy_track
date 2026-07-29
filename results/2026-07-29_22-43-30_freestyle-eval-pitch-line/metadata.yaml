@@ -1,0 +1,23 @@
+datetime: 2026-07-29_22-43-30
+tag: freestyle-eval-pitch-line
+reason: 'freestyle 3-seed x 3-track matrix: acro4.2 s2 zero-shot on pitch-line (all
+  4 flip variants covered across tracks)'
+git_commit: 381be03
+config:
+  model: results/2026-07-29_18-18-41_datt-train/datt_ppo_final.zip
+  track: pitch-line
+  cruise: 1.5
+  duration: 12.786699036996566
+  feasibility:
+    max_thrust_acc_outside_arc: 16.810000000000002
+    thrust_acc_limit: 17.52066
+    min_thrust_acc_outside_arc: 5.25553400400513
+    min_z: 0.695
+    peak_ref_rate: 11.219973762820691
+    gate_max_inplane_offset:
+    - 0.0
+    - 1.4979932783202032e-09
+    - 4.259928610626983e-09
+    gate_clearance_bound: 0.13
+    gate_crossings_ok: true
+    feasible: true

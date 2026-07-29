@@ -110,6 +110,14 @@ roll −361°, RMSE 0.138** (run `2026-07-29_22-29-12`). Planning lessons:
 route U-turns wide of frames (via op); flip drift must not overshoot the
 next gate plane (first attempt flew over gate 3 — documented).
 
+**3-seed × 3-track matrix (runs `22-42`–`22-43`, table in the report):**
+3 tracks cover all 4 flip variants (level2 roll−; pitch-line pitch+ +
+roll+ barrel, TWO flips; tower-climb pitch− + reverse traversal).
+Single-flip tracks: 24/24 gates, 6/6 flips on all seeds. pitch-line
+discriminates: s2 completes everything; s0 309° pitch+ & misses gate 3;
+s1 0/2 flips, floor graze. Per-seed flip quality (s2>s0>s1) transfers
+directly; fixing s1's pitch+ (the acro4.2 blemish) is the same lever.
+
 ## How to run (WSL venv, repo root)
 - Train acro4.1 seed N (8M):
   `python -m crazy_track.training.ppo_train --timesteps 8000000 --acro4

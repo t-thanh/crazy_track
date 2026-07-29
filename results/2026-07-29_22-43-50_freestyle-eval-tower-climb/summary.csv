@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,max_ref_dev,min_z,gates_passed,gates_clean,flips_complete
+datt_acro,freestyle-tower-climb,0.15719358843023545,0.12102186337281925,0.38033779158625214,1.0,0.38,0.647,4,2,1
