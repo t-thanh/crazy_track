@@ -14,16 +14,21 @@ and per-run `results/*/metadata.yaml` (date-time, reason, git hash).
 > rate-feedforward aux reward gives 11/12 flip completions across 3 seeds
 > (s0 4/4, s1 3/4 — was the 0/4 total refuser, s2 4/4 cleanest of the
 > project), zero refusals, suite near flip-free v1. The core paper-2
-> result is achieved. Next: CONSOLIDATION — build the paper-2 results
-> table (acro2.2 -> acro3 -> acro4 -> acro4.1 -> acro4.2 progression, all
-> numbers already in reports/), then decide the two open blemishes with
-> the user if available (s1 roll+ dev 0.96 > 0.75 gate and its pitch+
-> 314.8-deg near-miss; v-acro capacity dent on flip-competent seeds,
-> worst 0.523 vs v1 0.349 — report as limitation vs iterate). Optional
-> extensions afterwards: recovery precision, Lighthouse-sensing flips,
-> feasibility-projected acro-tier refs (paper-2 README). Keep discipline:
-> meaningful --reason, commit+push per work unit, document failures in
-> reports, 3 seeds minimum for any claim.
+> result is achieved; the consolidated results table is in
+> `papers/paper2-acrobatics/README.md`. FREESTYLE v1 is also COMPLETE
+> (user direction 2026-07-29; report
+> `reports/2026-07-29_p2-freestyle-v1.md`): gate sequences with
+> lsy_drone_racing gates + traveling ballistic flips, and the acro4.2 s2
+> policy tracked the demo track ZERO-SHOT (4/4 gates clean, roll -361
+> deg, RMSE 0.138). Next candidates (ask the user which): (a) expand
+> freestyle to a 3-seed x multi-track claim (more flips, both axes,
+> cruise sweeps); (b) settle the acro4.2 blemishes (s1 roll+ dev 0.96 >
+> 0.75 gate, pitch+ 314.8-deg near-miss; v-acro dent worst 0.523 vs v1
+> 0.349 — report as limitation vs iterate); (c) recovery precision /
+> Lighthouse-sensing flips / feasibility-projected acro-tier refs
+> (paper-2 README). Keep discipline: meaningful --reason, commit+push
+> per work unit, document failures in reports, 3 seeds minimum for any
+> claim.
 
 ## The two papers
 1. **Paper 1 — fig-8 controller benchmark: RESULTS COMPLETE** (all claims
@@ -91,6 +96,19 @@ Models: s0 `2026-07-29_16-24-22-b`, s1 `16-24-22`, s2 `18-18-41`.
   report-as-limitation vs iterate): s1 roll+ precision; v-acro dent.
 - Pipeline script now persisted: `scripts/acro42_pipeline.sh <seeds...>`
   (chained train -> flip_eval -> suite-h -> suite-v per seed).
+
+## Freestyle v1 (COMPLETE — report 2026-07-29_p2-freestyle-v1)
+`trajectories/freestyle.py`: RaceGate (lsy_drone_racing geometry, 0.4 m
+opening / 0.72 m frame, tracks port verbatim — same drone+sim), quintic
+connects, TRAVELING ballistic flip (primitive + constant horizontal
+drift, feasibility exact), via/hover ops, multi-window
+maneuver_descriptor (DATTAcroController prefers it), analytic
+feasibility_report incl. gate-plane crossing discipline. Eval:
+`python -m crazy_track.eval.freestyle_eval [--model ...] --reason ...`.
+**Zero-shot: acro4.2 s2 flew the level-2 demo track 4/4 gates clean +
+roll −361°, RMSE 0.138** (run `2026-07-29_22-29-12`). Planning lessons:
+route U-turns wide of frames (via op); flip drift must not overshoot the
+next gate plane (first attempt flew over gate 3 — documented).
 
 ## How to run (WSL venv, repo root)
 - Train acro4.1 seed N (8M):
