@@ -41,7 +41,9 @@ def gate_crossing_metrics(pos: np.ndarray, t: np.ndarray,
             if best is None or abs(tc - tg) < abs(best[0] - tg):
                 best = (tc, off)
         off = best[1] if best else np.inf
-        out.append({"t_gate": round(tg, 2), "offset": round(off, 3),
+        out.append({"t_gate": round(tg, 2),
+                    "t_cross": round(best[0], 3) if best else np.inf,
+                    "offset": round(off, 3),
                     "passed": bool(off < RaceGate.HALF_OPENING),
                     "clean": bool(off < CLEAN_BOUND)})
     return out
@@ -147,6 +149,10 @@ def main() -> None:
         "gates_passed": sum(g["passed"] for g in gates),
         "gates_clean": sum(g["clean"] for g in gates),
         "flips_complete": sum(f["rotation_complete"] for f in flips),
+        # motion onset (post-lead-in) -> actual last-gate crossing; the lsy
+        # leaderboard clock instead starts at episode start on the ground
+        "race_time": round(gates[-1]["t_cross"] - traj.lead_in, 3)
+                     if gates and all(g["passed"] for g in gates) else np.inf,
     }
     log.log_rollout("datt_acro", f"freestyle-{args.track}", data, metrics)
     plot_track(traj, pos, log.dir / "freestyle_rollout.png", title=title)

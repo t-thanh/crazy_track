@@ -89,6 +89,10 @@ class TestFreestyle:
         np.testing.assert_allclose(num_vel, traj.vel(t), atol=1e-3)
 
     def test_maneuver_descriptor_windows(self, traj):
+        if not traj.flips:
+            d = traj.maneuver_descriptor(np.linspace(0, traj.duration, 7))
+            np.testing.assert_allclose(d, 0.0)  # flip-free track: zeros throughout
+            return
         f = traj.flips[0]
         mid = 0.5 * (f["t_rot_start"] + f["t_rot_end"])
         d = traj.maneuver_descriptor(mid)

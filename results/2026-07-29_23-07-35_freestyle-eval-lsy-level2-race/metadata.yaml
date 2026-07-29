@@ -1,0 +1,24 @@
+datetime: 2026-07-29_23-07-35
+tag: freestyle-eval-lsy-level2-race
+reason: 'lsy-level2 speed run: acro4.2 s2 at cruise 2.5, race_time vs TUM leaderboard
+  (best 3.394s incl. takeoff)'
+git_commit: cd1d955
+config:
+  model: results/2026-07-29_18-18-41_datt-train/datt_ppo_final.zip
+  track: lsy-level2-race
+  cruise: 2.5
+  duration: 7.1252539778954205
+  feasibility:
+    max_thrust_acc_outside_arc: 16.656748840828026
+    thrust_acc_limit: 17.52066
+    min_thrust_acc_outside_arc: 8.039493671307035
+    min_z: 0.7000000009727956
+    peak_ref_rate: 0.0
+    gate_max_inplane_offset:
+    - 9.225494445364455e-09
+    - 1.3661597872023317e-08
+    - 1.5579623210831044e-08
+    - 7.43953209194103e-09
+    gate_clearance_bound: 0.13
+    gate_crossings_ok: true
+    feasible: true

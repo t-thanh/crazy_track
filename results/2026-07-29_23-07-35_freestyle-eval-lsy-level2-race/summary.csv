@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,max_ref_dev,min_z,gates_passed,gates_clean,flips_complete,race_time
+datt_acro,freestyle-lsy-level2-race,0.16683742672228768,0.14043258316536458,0.28954527153888887,1.0,0.29,0.729,3,2,0,inf

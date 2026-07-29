@@ -30,6 +30,11 @@ from crazy_track.trajectories.chained_poly import _quintic
 
 GRAVITY = 9.81
 BLEND = 0.2  # rate-trapezoid ramp fraction (matches BallisticFlipTrajectory)
+# lateral-acceleration budget for the segment-duration seed guess; the final
+# duration is then TIME-SCALED (classical trick) until the segment's analytic
+# peak thrust demand fits under SEG_ACC_LIMIT, so this need not be exact
+TURN_ACC_BUDGET = 7.0
+SEG_ACC_LIMIT = 17.2  # just under feasibility_report's 0.95*TWR*g = 17.52
 
 
 @dataclass(frozen=True)
@@ -182,6 +187,7 @@ class FreestyleTrajectory(Trajectory):
 
     def __init__(self, start, ops, cruise: float = 1.5, min_seg_T: float = 1.0,
                  lead_in: float = 1.5):
+        self.lead_in = lead_in
         self._segments: list = []
         self._t0s: list[float] = []
         self.gates: list[RaceGate] = []
@@ -202,8 +208,24 @@ class FreestyleTrajectory(Trajectory):
         def connect(p1, v1, a1, T=None):
             nonlocal p, v, a
             dist = float(np.linalg.norm(p1 - p))
-            T = T if T is not None else max(dist / cruise, min_seg_T)
-            add(_QuinticSegment((p, v, a), (p1, v1, a1), T), T)
+            # duration law: distance at cruise, floor, AND time to turn the
+            # velocity vector within a lateral-acceleration budget (sharp
+            # direction changes on short legs otherwise demand infeasible thrust)
+            dv = float(np.linalg.norm(np.asarray(v1, float) - v))
+            if T is None:
+                T = max(dist / cruise, min_seg_T, dv / TURN_ACC_BUDGET)
+                # time-scale until the quintic's peak thrust demand is feasible
+                for _ in range(12):
+                    seg = _QuinticSegment((p, v, a), (p1, v1, a1), T)
+                    s = np.linspace(0.0, T, 200)
+                    demand = np.linalg.norm(
+                        seg.acc(s) + np.array([0.0, 0.0, GRAVITY]), axis=1).max()
+                    if demand <= SEG_ACC_LIMIT:
+                        break
+                    T *= 1.15
+                add(seg, T)
+            else:
+                add(_QuinticSegment((p, v, a), (p1, v1, a1), T), T)
             p, v, a = np.asarray(p1, float), np.asarray(v1, float), np.asarray(a1, float)
 
         # lead-in hold so rollouts starting at rest see a stationary reference
@@ -376,10 +398,38 @@ def tower_climb_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
     )
 
 
+def lsy_level2_race(cruise: float = 3.0) -> FreestyleTrajectory:
+    """Speed-run variant of the level-2 track: gates only, no flip, tight
+    segment times (min_seg_T scales inversely with cruise). Race time =
+    last-gate crossing minus the stationary lead-in; the lsy leaderboard
+    clock instead starts at episode start with the drone on the ground."""
+    g1 = RaceGate((0.5, 0.25, 0.7), yaw=-0.78)
+    g2 = RaceGate((1.05, 0.75, 1.2), yaw=2.35)
+    g3 = RaceGate((-1.0, -0.25, 0.7), yaw=3.14)
+    g4 = RaceGate((0.0, -0.75, 1.2), yaw=0.0)
+    return FreestyleTrajectory(
+        start=(-1.5, 0.75, 1.0),
+        ops=[
+            # g1 -> g2 is a hairpin (exit SE, re-enter NW): slow through both
+            # gates and swing wide east through a via, like a racing line
+            ("gate", g1, 0.7 * cruise),
+            ("via", (1.75, 0.5, 0.95), (0.0, 0.7 * cruise, 0.0)),
+            ("gate", g2, 0.7 * cruise),
+            ("gate", g3, cruise),
+            ("via", (-1.7, -1.1, 0.95), (0.8 * cruise, 0.0, 0.0)),
+            ("gate", g4, cruise),
+            ("hover", (1.0, -0.75, 1.2), 1.0),
+        ],
+        cruise=cruise,
+        min_seg_T=min(1.0, 1.2 / cruise),
+    )
+
+
 TRACKS = {
     "lsy-level2": lsy_level2_freestyle,
     "pitch-line": pitch_line_freestyle,
     "tower-climb": tower_climb_freestyle,
+    "lsy-level2-race": lsy_level2_race,
 }
 
 

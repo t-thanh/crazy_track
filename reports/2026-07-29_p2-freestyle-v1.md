@@ -110,3 +110,47 @@ sequence difficulty is bounded by per-primitive quality, which the
 acro4.2 discovery recipe already measures per seed. Improving s1's
 pitch+ (the acro4.2 blemish) is the same lever that would fix its
 pitch-line run.
+
+## Speed run vs the TUM leaderboard (user question, runs `23-07`–`23-08`)
+
+`lsy-level2-race` track variant: gates only, per-gate speeds (slow-in at
+the g1→g2 hairpin), racing-line vias, and a new segment-duration law —
+seed guess from distance/Δv, then classical TIME-SCALING per segment until
+the quintic's analytic peak thrust demand fits under 17.2 m/s²
+(0.95·TWR·g − margin). `race_time` metric = motion onset → actual
+last-gate crossing.
+
+Reference sweep: fastest feasible plan is **4.49 s at cruise 3.0** —
+higher cruise makes the two U-turns longer (time-scaling), so the
+closed-form plan is TWR-limited at ≈4.5 s on this hairpin-heavy track.
+
+Achieved (zero-shot, nominal track, single run):
+
+| cruise | s0 | s1 | s2 |
+|---|---|---|---|
+| 2.5 | 4.586 (4/4) | 4.624 (4/4) | DNF (g1, 0.218 m) |
+| 3.0 | **4.464 (4/4)** | 4.508 (4/4) | DNF (g1) |
+| 3.5 | 4.800 (4/4) | DNF | DNF |
+
+Leaderboard (competition branch, level 2): current best **3.419 s**
+(100% success), then 4.652 / 4.896 / 5.404; all-time best **3.394 s**
+(winter25); summer25 best 4.290. **Our 4.464 s would place 2nd on all
+three boards**, ~1.05 s behind the all-time best.
+
+Honest caveats — the protocols differ in both directions: the
+leaderboard clock starts with the drone ON THE GROUND (takeoff included,
+which costs them time), but level 2 also randomizes gates/dynamics with
+a 0.7 m sensor range and requires ≥50% success across randomized runs
+(much harder than our nominal, deterministic, full-state single run).
+
+Gap analysis: tracking is NOT the bottleneck — s0's achieved 4.464 s
+beats its own 4.49 s reference by corner-cutting. The ~1 s gap to 3.4 s
+is PLAN optimality: per-segment time-scaling is conservative (min thrust
+demand along the ref never drops below 8 m/s² — a time-optimal plan
+would use the full brake envelope). That is precisely the MINCO-style /
+time-optimal-optimization upgrade path, now with a measured payoff bound.
+
+Cross-finding: the racing hierarchy INVERTS the flip hierarchy — s0
+(weaker flipper) races best; s2 (cleanest flipper) clips gate 1 by 1.8 cm
+at every speed. The capacity tradeoff between maneuver precision and
+aggressive tracking shows up even within flip-competent seeds.
