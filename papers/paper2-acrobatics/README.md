@@ -17,9 +17,31 @@ feasibility-aware reference treatment: planned feasible maneuver primitives
 (flips, done) and possibly feasibility-projected fig-8 references (open
 design question — currently we measure graceful degradation instead).
 
-**Status: acro3 (ballistic flip reference) validated at 3 seeds; 10M
-extensions in progress; full acro-trajectory-suite benchmark of the acro3
-policies queued.**
+**Status: CORE RESULT ACHIEVED (2026-07-29, acro4.2). Flip discovery,
+post-discovery shaping, and suite tracking are all solved: 11/12 flip
+completions across 3 seeds with zero refusals, suite at flip-free-v1
+level. Now: consolidation + freestyle-sequence planning (gates).**
+
+## CONSOLIDATED RESULTS TABLE (the paper's experimental arc)
+
+Flip cells = (seed × 4 variants), 3 seeds. Suite = Lissajous benchmark
+RMSE vs the flip-free datt_acro v1 reference (`2026-07-22_18-58-56`:
+h fast/acro 0.123/0.322, v normal/fast/acro 0.122/0.196/0.349).
+
+| recipe | flips | suite vs v1 | what it established |
+|---|---|---|---|
+| acro2.2 — hover-pinned ref + attitude-domination reward | 3/12 | n/a (46-dim, pre-conditioning) | infeasible refs make flip learning a per-seed lottery; structural, not pitch-specific |
+| acro3 — ballistic feasible ref, balanced reward (8M/15M) | 7–8/12 | **1.3–2× regression** on most cells | plan-then-track validated: consistent pos+att refs eliminate the lottery and pitch asymmetry; one policy splits capacity |
+| acro4 — + maneuver-conditioned obs (52-dim) + SPARSE completion bonus | 4/12 | **restored to v1 on all seeds** | conditioning solves tracking interference; sparse bonus has no gradient at refusal → discovery regresses |
+| acro4.1 — completion bonus made DENSE (state-space rotation progress) | 7/12 (4/4, 3/4, **0/4**) | near v1 | post-discovery shaping solved (clean, precise flips) — but discovery itself is a stochastic exploration event (s1 refused at ±2° for 8M steps) |
+| **acro4.2 — + rate-feedforward aux reward (ACTION-space dense)** | **11/12, zero refusals** (4/4, 3/4, 4/4) | near v1; only dent = v-acro on flip-competent seeds (0.36–0.52 vs 0.349) | **discovery solved**: gradient exists at refusal because the term rewards commanded rates, where Gaussian exploration lives |
+
+Per-recipe details: acro2.2 in report 2026-07-23, acro3 in 2026-07-23,
+acro4/4.1 in 2026-07-24, acro4.2 in 2026-07-29 (`reports/*_p2-*.md`).
+acro4.2 models: s0 `2026-07-29_16-24-22-b`, s1 `16-24-22`, s2 `18-18-41`.
+Known blemishes (user decision pending: limitation vs iterate): s1 roll+
+dev 0.96 (gate 0.75) and pitch+ 314.8° (0.2° under threshold); v-acro
+capacity dent (worst 0.523, s2).
 
 ## Scope and story arc
 1. **datt_acro v1** (`2026-07-22_18-58-56`): CTBR policy, refs to the TWR
@@ -91,11 +113,13 @@ policies queued.**
   D. rotation-completion reward term.** Models: s0@15M
   `2026-07-23_19-40-03`, s1@15M `19-40-06`, s2@15M `21-35-52`.
 
-## Queued after acro3
-- Recovery precision < 0.3 m; maneuver-conditioned obs (variant one-hot).
-- Fallback if acro3 still seed-fragile: DAgger from a quaternion CTBR-MPC
-  expert (DDA recipe; our so_rpy Euler MPC cannot serve — singular at
-  +-90 deg pitch).
+## Next phase (post-acro4.2): freestyle sequences through gates
+- Chain maneuver primitives (poly connect → ballistic flip → poly
+  connect …) through race-gate waypoints; gate spec taken from
+  lsy_drone_racing (user direction 2026-07-29). This is where a
+  MINCO-style optimizer could become relevant (see ZJU analysis, report
+  2026-07-23) — start with closed-form chaining of the validated
+  primitives.
 - Hardware-transfer caveat to address in writing: sim force_torque mode
   gives torque authority at zero collective; real flips need a small
   collective floor during the rotation (~2 cm displacement effect,
