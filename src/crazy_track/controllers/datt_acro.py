@@ -47,7 +47,9 @@ class DATTAcroController(Controller):
             # maneuver descriptor, mirroring datt_env._maneuver_descriptor
             desc = np.zeros(6)
             tr = self._traj
-            if hasattr(tr, "t_rot_start"):  # BallisticFlipTrajectory
+            if hasattr(tr, "maneuver_descriptor"):  # FreestyleTrajectory (multi-window)
+                desc = np.asarray(tr.maneuver_descriptor(t), dtype=np.float64)
+            elif hasattr(tr, "t_rot_start"):  # BallisticFlipTrajectory
                 desc[tr.axis] = tr.direction
                 desc[3] = np.clip(tr.t_rot_start - t, 0.0, 1.0)
                 desc[4] = np.clip((t - tr.t_rot_start) / tr.Tb, 0.0, 1.0)

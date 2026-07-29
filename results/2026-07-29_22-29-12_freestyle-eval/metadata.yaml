@@ -1,0 +1,23 @@
+datetime: 2026-07-29_22-29-12
+tag: freestyle-eval
+reason: 'freestyle v1 ZERO-SHOT: acro4.2 s2 (cleanest flip seed) on lsy level-2 gates
+  + traveling roll - policy never saw gates, traveling flips, or this track'
+git_commit: 8e99bb2
+config:
+  model: results/2026-07-29_18-18-41_datt-train/datt_ppo_final.zip
+  cruise: 1.5
+  duration: 11.238889638183322
+  feasibility:
+    max_thrust_acc_outside_arc: 16.810000000000002
+    thrust_acc_limit: 17.52066
+    min_thrust_acc_outside_arc: 5.255981288736674
+    min_z: 0.700000000009408
+    peak_ref_rate: 11.219973762820691
+    gate_max_inplane_offset:
+    - 3.641116825160718e-09
+    - 3.1550903614984936e-09
+    - 4.388936564750714e-09
+    - 8.553676003126386e-10
+    gate_clearance_bound: 0.13
+    gate_crossings_ok: true
+    feasible: true

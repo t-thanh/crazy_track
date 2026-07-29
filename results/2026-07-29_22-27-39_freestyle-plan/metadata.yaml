@@ -1,0 +1,23 @@
+datetime: 2026-07-29_22-27-39
+tag: freestyle-plan
+reason: 'freestyle v1 plan check: lsy level-2 gates + traveling roll, analytic feasibility
+  + reference render'
+git_commit: 8e99bb2
+config:
+  model: null
+  cruise: 1.5
+  duration: 11.238889638183322
+  feasibility:
+    max_thrust_acc_outside_arc: 16.810000000000002
+    thrust_acc_limit: 17.52066
+    min_thrust_acc_outside_arc: 7.9607977417698
+    min_z: 0.700000000009408
+    peak_ref_rate: 11.219973762820691
+    gate_max_inplane_offset:
+    - 3.641116825160718e-09
+    - 5.877828166867394e-09
+    - 3.902298374042543e-09
+    - 8.553676003126386e-10
+    gate_clearance_bound: 0.13
+    gate_crossings_ok: true
+    feasible: true
