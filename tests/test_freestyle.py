@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from crazy_track.trajectories import RaceGate, feasibility_report
-from crazy_track.trajectories.freestyle import lsy_level2_freestyle
+from crazy_track.trajectories.freestyle import TRACKS
 
 EPS = 1e-5
 TWR = 1.88
@@ -10,9 +10,9 @@ GRAVITY = 9.81
 RATE_MAX_RP = 15.0  # rad/s roll/pitch command limit (controllers.utils.RATE_MAX)
 
 
-@pytest.fixture(scope="module")
-def traj():
-    return lsy_level2_freestyle()
+@pytest.fixture(scope="module", params=list(TRACKS))
+def traj(request):
+    return TRACKS[request.param]()
 
 
 class TestRaceGate:
@@ -66,12 +66,12 @@ class TestFreestyle:
         assert rep["peak_ref_rate"] <= 0.76 * RATE_MAX_RP
 
     def test_flip_completes_full_rotation(self, traj):
-        f = traj.flips[0]
-        t = np.linspace(f["t_rot_start"], f["t_rot_end"], 2001)
-        ang = np.unwrap(traj.att_ref_rotvec(t)[:, f["axis"]])
-        total = ang[-1] - ang[0]
-        np.testing.assert_allclose(abs(total), 2 * np.pi, atol=1e-6)
-        assert np.sign(total) == f["direction"]
+        for f in traj.flips:
+            t = np.linspace(f["t_rot_start"], f["t_rot_end"], 2001)
+            ang = np.unwrap(traj.att_ref_rotvec(t)[:, f["axis"]])
+            total = ang[-1] - ang[0]
+            np.testing.assert_allclose(abs(total), 2 * np.pi, atol=1e-6)
+            assert np.sign(total) == f["direction"]
 
     def test_attitude_level_outside_windows(self, traj):
         t = np.linspace(0, traj.duration, 3001)
@@ -103,10 +103,10 @@ class TestFreestyle:
         assert before[5] == 0.0
 
     def test_traveling_flip_drift_preserved(self, traj):
-        f = traj.flips[0]
-        v0 = traj.vel(f["t_rot_start"] - EPS)
-        v1 = traj.vel(f["t_rot_end"] + EPS)
-        np.testing.assert_allclose(v0[:2], v1[:2], atol=1e-6)  # horizontal conserved
+        for f in traj.flips:
+            v0 = traj.vel(f["t_rot_start"] - EPS)
+            v1 = traj.vel(f["t_rot_end"] + EPS)
+            np.testing.assert_allclose(v0[:2], v1[:2], atol=1e-6)  # horizontal conserved
 
     def test_shapes_and_clamping(self, traj):
         assert traj.pos(1.0).shape == (3,)

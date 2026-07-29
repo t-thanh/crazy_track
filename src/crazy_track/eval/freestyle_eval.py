@@ -16,7 +16,7 @@ import numpy as np
 
 from crazy_track.eval.runlog import RunLogger, tracking_metrics
 from crazy_track.trajectories import RaceGate, feasibility_report
-from crazy_track.trajectories.freestyle import FreestyleTrajectory, lsy_level2_freestyle
+from crazy_track.trajectories.freestyle import TRACKS, FreestyleTrajectory
 
 CLEAN_BOUND = 0.13  # opening half-width minus drone half-extent margin
 
@@ -65,7 +65,8 @@ def flip_rotation_metrics(quat: np.ndarray, t: np.ndarray,
     return out
 
 
-def plot_track(traj: FreestyleTrajectory, path: np.ndarray | None, outfile) -> None:
+def plot_track(traj: FreestyleTrajectory, path: np.ndarray | None, outfile,
+               title: str = "Freestyle sequence") -> None:
     import matplotlib
 
     matplotlib.use("Agg")
@@ -99,7 +100,7 @@ def plot_track(traj: FreestyleTrajectory, path: np.ndarray | None, outfile) -> N
         ax.axis("equal")
         ax.grid(alpha=0.3)
     axes[0].legend(loc="best", fontsize=8)
-    fig.suptitle("Freestyle sequence: lsy_drone_racing level-2 gates + traveling roll")
+    fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(outfile, dpi=130)
     plt.close(fig)
@@ -110,20 +111,23 @@ def main() -> None:
     parser.add_argument("--model", default=None,
                         help="acro4 policy zip; omit for plan-only")
     parser.add_argument("--reason", required=True)
+    parser.add_argument("--track", default="lsy-level2", choices=sorted(TRACKS))
     parser.add_argument("--cruise", type=float, default=1.5)
     args = parser.parse_args()
 
-    traj = lsy_level2_freestyle(cruise=args.cruise)
-    rep = feasibility_report(traj)
-    log = RunLogger(tag="freestyle-eval" if args.model else "freestyle-plan",
+    traj = TRACKS[args.track](cruise=args.cruise)
+    kind = "freestyle-eval" if args.model else "freestyle-plan"
+    log = RunLogger(tag=f"{kind}-{args.track}",
                     reason=args.reason,
-                    config={"model": args.model, "cruise": args.cruise,
-                            "duration": traj.duration,
-                            "feasibility": {k: v for k, v in rep.items()}})
+                    config={"model": args.model, "track": args.track,
+                            "cruise": args.cruise, "duration": traj.duration,
+                            "feasibility": dict(feasibility_report(traj))})
+    rep = feasibility_report(traj)
     print(f"Logging to {log.dir}")
     print(f"plan feasibility: {rep}")
+    title = f"Freestyle: {args.track} (cruise {args.cruise} m/s)"
     if not args.model:
-        plot_track(traj, None, log.dir / "freestyle_plan.png")
+        plot_track(traj, None, log.dir / "freestyle_plan.png", title=title)
         return
 
     from crazy_track.controllers.datt_acro import DATTAcroController
@@ -144,8 +148,8 @@ def main() -> None:
         "gates_clean": sum(g["clean"] for g in gates),
         "flips_complete": sum(f["rotation_complete"] for f in flips),
     }
-    log.log_rollout("datt_acro", "freestyle-lsy-level2", data, metrics)
-    plot_track(traj, pos, log.dir / "freestyle_rollout.png")
+    log.log_rollout("datt_acro", f"freestyle-{args.track}", data, metrics)
+    plot_track(traj, pos, log.dir / "freestyle_rollout.png", title=title)
     for k, g in enumerate(gates):
         print(f"gate {k + 1}: {g}")
     for f in flips:

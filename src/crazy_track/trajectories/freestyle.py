@@ -327,6 +327,62 @@ def lsy_level2_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
     )
 
 
+def pitch_line_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
+    """Out-and-back line with TWO traveling flips: a pitch+ forward flip over
+    the direction of travel on the way out, and a roll+ rotation about the
+    travel direction (barrel-roll-like) on the way back. Short/tall lsy gate
+    heights. Covers the two variants the level-2 demo doesn't touch."""
+    g1 = RaceGate((-1.0, 0.3, 0.695), yaw=0.0)
+    g2 = RaceGate((2.6, 0.0, 1.195), yaw=0.0)
+    g3 = RaceGate((1.5, -1.0, 0.695), yaw=np.pi)
+    return FreestyleTrajectory(
+        start=(-2.0, 0.0, 1.0),
+        ops=[
+            ("gate", g1, cruise),
+            # forward flip: pitch+ while drifting +x; exit x ~ 0.2 + 1.34 = 1.5,
+            # east of nothing (g2's plane at 2.6 is well ahead)
+            ("flip", (0.2, 0.3, 1.5), 1, 1, 0.7, (0.8, 0.0, 0.0)),
+            ("gate", g2, cruise),
+            ("via", (3.4, -0.8, 1.0), (-1.0, -0.5, 0.0)),
+            ("gate", g3, cruise),
+            # barrel roll: roll+ about the (-x) travel direction; exit x ~ -1.18
+            ("flip", (0.0, -1.0, 1.5), 0, 1, 0.7, (-0.7, 0.0, 0.0)),
+            ("hover", (-1.5, -1.0, 1.0), 1.5),
+        ],
+        cruise=cruise,
+    )
+
+
+def tower_climb_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
+    """Climb through a short then a tall gate, pitch- flip at the top, return
+    through both gates in REVERSE traversal (modeled as gates with yaw + pi,
+    the lsy signed-gate-order convention)."""
+    g1 = RaceGate((0.0, -0.5, 0.695), yaw=np.pi / 2)
+    g2 = RaceGate((0.0, 0.9, 1.195), yaw=np.pi / 2)
+    g2_rev = RaceGate((0.0, 0.9, 1.195), yaw=-np.pi / 2)
+    g1_rev = RaceGate((0.0, -0.5, 0.695), yaw=-np.pi / 2)
+    return FreestyleTrajectory(
+        start=(0.0, -1.5, 0.8),
+        ops=[
+            ("gate", g1, cruise),
+            ("gate", g2, cruise),
+            # pitch- flip drifting +y at the top of the climb; exit y ~ 2.9
+            ("flip", (0.0, 1.9, 1.7), 1, -1, 0.7, (0.0, 0.6, 0.0)),
+            ("gate", g2_rev, cruise),
+            ("gate", g1_rev, cruise),
+            ("hover", (0.0, -1.5, 0.8), 1.5),
+        ],
+        cruise=cruise,
+    )
+
+
+TRACKS = {
+    "lsy-level2": lsy_level2_freestyle,
+    "pitch-line": pitch_line_freestyle,
+    "tower-climb": tower_climb_freestyle,
+}
+
+
 def feasibility_report(traj: FreestyleTrajectory, twr: float = 1.88,
                        clearance_margin: float = 0.07, dt: float = 0.002) -> dict:
     """Analytic feasibility of a freestyle reference. All checks on the REF."""
