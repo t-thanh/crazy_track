@@ -1,4 +1,4 @@
-# Session handover — 2026-07-24
+# Session handover — 2026-07-29
 
 For the next agent/session. Read this + `papers/*/README.md` first; deep
 context in `reports/*.md` (chronological; p1-/p2- prefixes from 07-23 on)
@@ -8,25 +8,22 @@ and per-run `results/*/metadata.yaml` (date-time, reason, git hash).
 > Continue the crazy_track project (two-paper plan) at
 > `C:\Users\tient\Documents\GitHub\crazy_track`. Read `HANDOVER.md` first
 > (environment setup, state, gotchas). Paper 1 (fig-8 benchmark) is
-> results-complete. Current work: paper 2 (acrobatic trajectory tracking).
-> The acro4.1 experiment is COMPLETE (results in
-> `reports/2026-07-24_p2-acro4-maneuver-conditioning.md`): flip DISCOVERY
-> is the last open problem — the same recipe gave 4/4 flips on seed 0,
-> 3/4 on seed 2, but total refusal on seed 1; shaping after discovery and
-> general acro-suite tracking are both solved. Next experiment (acro4.2,
-> agreed direction): add a rate-feedforward auxiliary reward — during the
-> rotation window, reward the commanded body rates matching the reference
-> trapezoid rate profile (dense in ACTION space, where exploration
-> happens; gradient exists at refusal; anneal or keep small, e.g.
-> +0.5*exp(-|w_cmd - w_ref|/5) per step, window only). Implement in
-> datt_env acro4 branch (the reference rate profile is analytic:
-> BallisticFlipTrajectory.att_ref_rotvec derivative, trapezoid with blend
-> 0.2, peak 2pi/(0.8*Tb)), smoke-test, then 3 seeds x 8M with the chained
-> train->flip_eval-->suite pipeline (scripts pattern in the scratchpad of
-> session 2026-07-23/24, recreate from HANDOVER "How to run"). Success:
-> >= 3/4 completions on ALL 3 seeds at dev<0.75/rec<0.15, suite near v1.
-> Keep discipline: meaningful --reason, commit+push per work unit,
-> document failures in reports, 3 seeds minimum for any claim.
+> results-complete; writing remains. Paper 2: the acro4.2 experiment is
+> COMPLETE and flip DISCOVERY IS SOLVED (results in
+> `reports/2026-07-29_p2-acro42-rate-feedforward.md`): the action-space
+> rate-feedforward aux reward gives 11/12 flip completions across 3 seeds
+> (s0 4/4, s1 3/4 — was the 0/4 total refuser, s2 4/4 cleanest of the
+> project), zero refusals, suite near flip-free v1. The core paper-2
+> result is achieved. Next: CONSOLIDATION — build the paper-2 results
+> table (acro2.2 -> acro3 -> acro4 -> acro4.1 -> acro4.2 progression, all
+> numbers already in reports/), then decide the two open blemishes with
+> the user if available (s1 roll+ dev 0.96 > 0.75 gate and its pitch+
+> 314.8-deg near-miss; v-acro capacity dent on flip-competent seeds,
+> worst 0.523 vs v1 0.349 — report as limitation vs iterate). Optional
+> extensions afterwards: recovery precision, Lighthouse-sensing flips,
+> feasibility-projected acro-tier refs (paper-2 README). Keep discipline:
+> meaningful --reason, commit+push per work unit, document failures in
+> reports, 3 seeds minimum for any claim.
 
 ## The two papers
 1. **Paper 1 — fig-8 controller benchmark: RESULTS COMPLETE** (all claims
@@ -71,24 +68,29 @@ and per-run `results/*/metadata.yaml` (date-time, reason, git hash).
   flip-free datt_acro v1 = `2026-07-22_18-58-56` (suite reference:
   h 0.123/0.322, v 0.122/0.196/0.349).
 
-## acro4.1 results (COMPLETE — all 3 seeds + evals finished before shutdown)
-Models: s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38` (all
-`_datt-train/datt_ppo_final.zip`).
-- **s0: 4/4 flips complete** — best flip policy of the project (roll−
-  dev 0.26/rec 0.04; pitch+ 333°/dev 0.39; min_z >= 1.47, no floor).
-- **s1: 0/4 — total refusal** (±2°) while tracking the ballistic arc at
-  dev 0.29-0.35 and posting the best suite (v-normal 0.099).
-- **s2: 3/4** (roll± clean, pitch+ 307° near-miss, pitch− complete but
-  sloppy/floor).
-- Suite: near flip-free-v1 everywhere; mild dents only on flip-competent
-  seeds (s0 h-acro 0.608, s2 v-acro 0.440) — conditioning contains the
-  capacity tradeoff, doesn't eliminate it.
-- **Conclusion: discovery is a stochastic exploration event and is the
-  ONLY remaining problem.** Post-discovery shaping (dense progress +
-  completion bonus + conditioning) produces clean, precise flips. The
-  rate-feedforward aux reward (see pickup prompt) targets discovery
-  directly; fallbacks: warm-start weight surgery (46->52 obs zero-pad),
-  or k-seed selection (weakest science).
+## acro4.1 results (COMPLETE — see report 2026-07-24)
+Models: s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38`.
+s0 4/4, s1 **0/4 total refusal** (±2°), s2 3/4; suite near v1 with mild
+dents on flip-competent seeds. Verdict: discovery is a stochastic
+exploration event and was the only remaining problem — post-discovery
+shaping produces clean flips.
+
+## acro4.2 results (COMPLETE — DISCOVERY SOLVED; report 2026-07-29)
+Rate-feedforward aux reward `+0.5*exp(-|w_cmd - w_ref|/5)` per step in
+the rotation window (w_cmd = commanded body rate about the maneuver axis,
+w_ref = analytic trapezoid of the ballistic ref). Dense in ACTION space
+-> gradient exists at refusal. Same `--acro4` flag, git hash >= `ffd9e91`.
+Models: s0 `2026-07-29_16-24-22-b`, s1 `16-24-22`, s2 `18-18-41`.
+- **11/12 completions, zero refusals: s0 4/4 (dev 0.27-0.69), s1 3/4
+  (was 0/4! roll+ dev 0.96 is the one gate breach; pitch+ 314.8° misses
+  completion by 0.2°), s2 4/4 (dev 0.20-0.36, cleanest of the project).**
+- Recovery err <= 0.06 everywhere (gate 0.15); min_z >= 1.65, no floor.
+- Suite: fast/normal tiers match/beat v1 on all seeds; v-acro dent on
+  flip-competent seeds persists (0.36-0.52 vs v1 0.349), worst s2 0.523.
+- **Core paper-2 result achieved.** Open blemishes (user decision:
+  report-as-limitation vs iterate): s1 roll+ precision; v-acro dent.
+- Pipeline script now persisted: `scripts/acro42_pipeline.sh <seeds...>`
+  (chained train -> flip_eval -> suite-h -> suite-v per seed).
 
 ## How to run (WSL venv, repo root)
 - Train acro4.1 seed N (8M):
@@ -105,14 +107,14 @@ Models: s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38` (all
 - ALWAYS meaningful `--reason`; commit results + reports and push after
   each work unit.
 
-## Paper-2 next steps after acro4.1 verdict
-- If flips >= 3/4 per seed with suite held: core result achieved ->
-  consolidate paper-2 results table; then recovery precision (<0.3 m
-  already near on good seeds), optional Lighthouse-sensing flips, and the
-  feasibility-projected acro-tier reference design question (see paper-2
-  README).
-- If flips still weak: escalation path is DAgger from a quaternion CTBR-MPC
-  expert (DDA recipe; so_rpy Euler MPC cannot serve — singular at +-90 deg).
+## Paper-2 next steps (post-acro4.2: core result achieved)
+- Consolidate the paper-2 results table: acro2.2 3/12 -> acro3 7-8/12
+  (suite regressed) -> acro4 4/12 (sparse D) -> acro4.1 7/12 (one
+  refuser) -> acro4.2 11/12 (no refusal, suite held). All numbers in
+  reports/.
+- Then: recovery precision, optional Lighthouse-sensing flips, and the
+  feasibility-projected acro-tier reference design question (paper-2
+  README). DAgger escalation path no longer needed for flips.
 - ZJU planners (user ref): method citations only; MINCO-style optimizer
   becomes relevant only for chained freestyle sequences (see report
   2026-07-23 + chat analysis: flat-output singularity at zero-thrust core;
@@ -127,7 +129,10 @@ Models: s0 `2026-07-24_08-38-52`, s1 `08-38-56`, s2 `10-39-38` (all
    RMSE past the 1s warmup for noise-sensitive optimizers — check max-err
    TIMING before blaming steady-state noise (offset-free MPC lesson).
 4. Flip reward shaping: sparse terminal bonuses have no gradient at
-   refusal; dense progress terms are the discovery mechanism. The
+   refusal, and dense STATE-space progress terms still stall there (the
+   state never moves if the policy never commands rotation — acro4.1 s1).
+   ACTION-space terms (reward the commanded rate matching the reference
+   profile) are the reliable discovery mechanism (acro4.2). The
    post-window level bonus creates a 720-deg attractor after
    over-rotation — the completion bonus counteracts it.
 5. Single-seed conclusions on ANYTHING policy-level are worthless in this
