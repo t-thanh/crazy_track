@@ -366,6 +366,28 @@ class DATTTrackingEnv:
                 a_new = a_old + d_rot * self._man_dir
                 credit = np.minimum(a_new, 2 * np.pi) - np.minimum(a_old, 2 * np.pi)
                 reward = np.where(in_win, reward + 2.5 / (2 * np.pi) * credit, reward)
+                # acro4.2: rate-feedforward aux reward. Discovery is the last
+                # open problem (acro4.1: s1 refused at +-2 deg despite the dense
+                # STATE-space progress term — the policy must first emit large
+                # rate COMMANDS for any state gradient to exist). Reward the
+                # commanded rate about the maneuver axis matching the analytic
+                # trapezoid profile of the reference: dense in ACTION space, so
+                # the gradient exists even at total refusal. Small (+0.5 peak)
+                # so tracking terms still dominate post-discovery.
+                from crazy_track.controllers.utils import RATE_MAX
+                from crazy_track.trajectories.flip import BallisticFlipTrajectory
+
+                r_bl = BallisticFlipTrajectory.BLEND
+                p = 1.0 / (1.0 - r_bl)
+                u = np.clip((t - self._man_t0) / self._man_Tb, 0.0, 1.0)
+                phi_dot = np.select([u < r_bl, u < 1.0 - r_bl],
+                                    [p * u / r_bl, p], default=p * (1.0 - u) / r_bl)
+                w_ref = self._man_dir * 2 * np.pi / self._man_Tb * phi_dot
+                idx = np.arange(self.num_envs)
+                w_cmd = (np.clip(np.asarray(action)[:, 1:4], -1, 1)[idx, self._man_axis]
+                         * RATE_MAX[self._man_axis])
+                reward = np.where(
+                    in_win, reward + 0.5 * np.exp(-np.abs(w_cmd - w_ref) / 5.0), reward)
                 self._rot_acc += d_rot
                 fire = (~self._rot_done) & flip & (t > self._man_t1)
                 if fire.any():
