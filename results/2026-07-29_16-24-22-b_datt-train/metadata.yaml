@@ -1,0 +1,21 @@
+datetime: 2026-07-29_16-24-22
+tag: datt-train
+reason: 'acro4.2 s0: acro4.1 recipe + rate-feedforward aux reward (+0.5*exp(-|w_cmd-w_ref|/5)
+  in rotation window, commanded-rate trapezoid match) targeting flip DISCOVERY (acro4.1
+  s1 total refusal)'
+git_commit: ffd9e91
+config:
+  timesteps: 8000000
+  n_envs: 16
+  reason: 'acro4.2 s0: acro4.1 recipe + rate-feedforward aux reward (+0.5*exp(-|w_cmd-w_ref|/5)
+    in rotation window, commanded-rate trapezoid match) targeting flip DISCOVERY (acro4.1
+    s1 total refusal)'
+  seed: 0
+  noisy_sensor: false
+  v5: false
+  v6: false
+  ctbr: false
+  acro2: false
+  acro3: false
+  acro4: true
+  resume_from: null

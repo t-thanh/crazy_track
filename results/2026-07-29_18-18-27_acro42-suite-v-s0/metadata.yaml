@@ -1,0 +1,19 @@
+datetime: 2026-07-29_18-18-27
+tag: acro42-suite-v-s0
+reason: 'acro4.2 s0 vertical suite: check rate-feedforward aux reward did not dent
+  tracking (target near flip-free v1)'
+git_commit: b65081c
+config:
+  controllers:
+  - datt_acro:/mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-29_16-24-22-b_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  - fast
+  - acro
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

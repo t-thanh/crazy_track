@@ -1,0 +1,9 @@
+datetime: 2026-07-29_18-18-04
+tag: flip-eval-ballistic
+reason: 'acro4.2 s0 flip eval: 4 ballistic flip variants, success gate >=3/4 complete
+  at dev<0.75/rec<0.15'
+git_commit: b65081c
+config:
+  model: /mnt/c/Users/tient/Documents/GitHub/crazy_track/results/2026-07-29_16-24-22-b_datt-train/datt_ppo_final.zip
+  hover_z: 2.0
+  ballistic: true

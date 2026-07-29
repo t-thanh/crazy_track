@@ -57,19 +57,38 @@ v 0.122/0.196/0.349).
 
 ## Results — flips (4 variants per seed)
 
-_PENDING_
+_s0/s2 PENDING (stream I)._ Cell format: total rotation ° / max ref dev m /
+recovery err m; ✓ = complete (|rot−360°| < 45°).
 
 | seed | roll+ | roll− | pitch+ | pitch− | completions |
 |------|-------|-------|--------|--------|-------------|
 | 0    |       |       |        |        | /4          |
-| 1    |       |       |        |        | /4          |
+| 1    | ✓ 333/0.96/0.06 | ✓ −361/0.31/0.03 | ✗ 315/0.39/0.06 | ✓ −326/0.29/0.03 | **3/4** |
 | 2    |       |       |        |        | /4          |
 
 Reference (acro4.1): s0 4/4, s1 0/4, s2 3/4.
 
+**s1 (the acro4.1 total refuser) discovers flips: 0/4 → 3/4** (model
+`2026-07-29_16-24-22_datt-train`, flip eval `18-17-56`). min_z ≥ 1.92 (no
+floor). Two caveats: roll+ completes at dev 0.96 (above the 0.75 gate; the
+other three variants sit at 0.29–0.39), and pitch+ misses the completion
+threshold by 0.2° (314.8° vs 315°) — a near-miss, not a refusal.
+
 ## Results — suite
 
-_PENDING_
+_s0/s2 PENDING._ RMSE 3d; v1 flip-free reference h 0.123/0.322,
+v 0.122/0.196/0.349.
+
+| seed | h fast | h acro | v normal | v fast | v acro |
+|------|--------|--------|----------|--------|--------|
+| 0    |        |        |          |        |        |
+| 1    | 0.131  | 0.373  | 0.132    | 0.194  | 0.362  |
+| 2    |        |        |          |        |        |
+
+s1 suite (`18-18-09` h, `18-18-21` v): near v1 everywhere; mild acro-tier
+dent (+0.05 h-acro, +0.01 v-acro) — the same contained capacity tradeoff
+flip-competent seeds showed in acro4.1. Notably s1's acro4.1 "best suite"
+(v normal 0.099) degrades only to 0.132 while gaining flips.
 
 ## Verdict
 
