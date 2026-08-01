@@ -193,6 +193,7 @@ class FreestyleTrajectory(Trajectory):
         self.gates: list[RaceGate] = []
         self.gate_times: list[float] = []
         self.flips: list[dict] = []
+        self.obstacles: list[tuple] = []  # pole tops (lsy convention), render-only
 
         p = np.asarray(start, dtype=np.float64)
         v = np.zeros(3)
@@ -327,7 +328,7 @@ def lsy_level2_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
     g2 = RaceGate((1.05, 0.75, 1.2), yaw=2.35)
     g3 = RaceGate((-1.0, -0.25, 0.7), yaw=3.14)
     g4 = RaceGate((0.0, -0.75, 1.2), yaw=0.0)
-    return FreestyleTrajectory(
+    traj = FreestyleTrajectory(
         start=(-1.5, 0.75, 1.0),
         ops=[
             ("gate", g1, cruise),
@@ -347,6 +348,8 @@ def lsy_level2_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
         ],
         cruise=cruise,
     )
+    traj.obstacles = LSY_LEVEL2_OBSTACLES
+    return traj
 
 
 def pitch_line_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
@@ -398,6 +401,11 @@ def tower_climb_freestyle(cruise: float = 1.5) -> FreestyleTrajectory:
     )
 
 
+# level2.toml obstacle poles; pos = TOP of the pole (lsy convention)
+LSY_LEVEL2_OBSTACLES = [(0.0, 0.75, 1.55), (1.0, 0.25, 1.55),
+                        (-1.5, -0.25, 1.55), (-0.5, -0.75, 1.55)]
+
+
 def lsy_level2_race(cruise: float = 3.0) -> FreestyleTrajectory:
     """Speed-run variant of the level-2 track: gates only, no flip, tight
     segment times (min_seg_T scales inversely with cruise). Race time =
@@ -407,7 +415,7 @@ def lsy_level2_race(cruise: float = 3.0) -> FreestyleTrajectory:
     g2 = RaceGate((1.05, 0.75, 1.2), yaw=2.35)
     g3 = RaceGate((-1.0, -0.25, 0.7), yaw=3.14)
     g4 = RaceGate((0.0, -0.75, 1.2), yaw=0.0)
-    return FreestyleTrajectory(
+    traj = FreestyleTrajectory(
         start=(-1.5, 0.75, 1.0),
         ops=[
             # g1 -> g2 is a hairpin (exit SE, re-enter NW): slow through both
@@ -423,6 +431,8 @@ def lsy_level2_race(cruise: float = 3.0) -> FreestyleTrajectory:
         cruise=cruise,
         min_seg_T=min(1.0, 1.2 / cruise),
     )
+    traj.obstacles = LSY_LEVEL2_OBSTACLES
+    return traj
 
 
 TRACKS = {
