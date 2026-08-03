@@ -1,0 +1,36 @@
+%% Abstract + keywords (SPIE style). Every number here is traceable to
+%% papers/paper1-benchmark/README.md and the reports/ notebook.
+
+\begin{abstract}
+Trajectory-tracking controllers for nano-quadrotors are typically reported on
+different platforms, references, metrics and sensing stacks, so their relative merits
+--- and, more importantly, their failure modes --- are difficult to compare. We
+benchmark eight controller stacks on one simulated platform (Crazyflie~2.1 brushless,
+$43.4$~g, thrust-to-weight $1.88$), one reference family (figure-eight Lissajous at
+three cycle times) and one command interface: a PID with acceleration feedforward, an
+active disturbance rejection controller (ADRC) with a reduced-order velocity extended
+state observer, sampling-based MPPI with $\mathcal{L}_1$ adaptation, nonlinear MPC on a
+system-identified attitude model, an offset-free MPC variant, two classical outer loops
+over a pretrained learned adaptive rate controller, and a DATT-style learned policy in
+three variants ($\mathcal{L}_1$-augmented, noise-trained, and privileged-critic).
+Each stack is evaluated under constant wind, gusts, in-ground effect, added payload, and
+a Lighthouse measurement model grounded in published characterization data
+($34\pm18$~Hz zero-order-hold position, $2$--$4$~cm quasi-static bias), using ten
+evaluation seeds and three training seeds so that claims are statistically qualified
+rather than single-run. No stack dominates. Under the realistic deployment condition
+(Lighthouse sensing with wind) three unrelated architectures converge to statistically
+indistinguishable errors of $0.057\pm0.014$, $0.059\pm0.002$ and $0.060\pm0.009$~m,
+which we argue makes that regime estimator-limited rather than architecture-limited.
+Every failure we observe falls into one of three classes: missing model structure,
+estimator bandwidth-versus-noise trade-offs, and information bottlenecks in memoryless
+learned policies. We further show that mean-only reporting misleads --- two pool leaders
+fail only on unlucky sensor-bias draws, and an apparent noise fragility of offset-free
+MPC is a launch transient, removed by soft-starting the observer and shown to be generic
+to the MPC family. All results are in simulation; absolute errors are optimistic
+relative to flight, and we report relative comparisons together with the evidence trail
+for every claim.
+\end{abstract}
+
+\keywords{quadrotor control, trajectory tracking, benchmarking, disturbance rejection,
+active disturbance rejection control, model predictive control, reinforcement learning,
+domain randomization, Lighthouse positioning, nano-aerial vehicles}
