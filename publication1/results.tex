@@ -205,10 +205,15 @@ this paper, shown in Fig.~\ref{fig:deployment}:
 \caption{The deployment condition (Lighthouse sensing with wind): per-controller mean
 with seed spread, the four-way tie band shaded, and the stacks without a disturbance
 estimate shown for scale. Every filled point is a mean over ten evaluation seeds, so the
-four tied stacks are compared like with like. The clean-sensing value of each stack is
-marked as a hollow point: every tied stack is further from itself than from the others.
-Those hollow points come from Table~\ref{tab:nominal}, whose learned-policy entries are
-means over three training seeds.}
+four tied stacks are compared like with like. The shaded band spans the union of those
+four stacks' one-standard-deviation intervals; membership is decided by the stricter
+test used throughout, that the gap between two means fall within the larger of their two
+spreads, which is why the sampling stack --- \SI{21}{\milli\meter} above the best mean
+against a largest spread of \SI{14}{\milli\meter} --- sits outside the tie despite an
+error bar that reaches into the band. The clean-sensing value of each stack is marked as
+a hollow point: every tied stack is further from itself than from the others. Those
+hollow points come from Table~\ref{tab:nominal}, whose learned-policy entries are means
+over three training seeds.}
 \label{fig:deployment}
 \end{figure}
 
