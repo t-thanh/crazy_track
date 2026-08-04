@@ -226,11 +226,9 @@ point: every tied stack is further from itself than from the others.}
 The last column of Table~\ref{tab:sensing} carries the result: a disturbance-augmented
 prediction model at $0.057\pm0.014$~\si{\meter}, a privileged-critic policy at
 $0.059\pm0.002$, an observer over an adaptive rate loop at $0.060\pm0.009$, and that
-observer driving the firmware attitude loop at $0.063\pm0.006$. The stacks that miss the
-band do so by mechanism as well: sampling with an $\mathcal{L}_1$ estimate reaches
-$0.078\pm0.014$, an earlier policy trained on noisy observations without the privileged
-critic $0.077\pm0.006$, and the two stacks with no disturbance estimate at all $0.116$
-and \SI{0.199}{\meter}.
+observer driving the firmware attitude loop at $0.063\pm0.006$. Just outside the band
+sit sampling with an $\mathcal{L}_1$ estimate ($0.078\pm0.014$) and an earlier policy
+trained on noisy observations without the privileged critic ($0.077\pm0.006$).
 
 \noindent Four architectures with nothing in common --- an optimizer carrying a
 disturbance state, a neural policy trained with a privileged critic, a classical observer
