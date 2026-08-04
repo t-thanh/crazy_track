@@ -1,8 +1,8 @@
 \section{CONCLUSION}
 \label{sec:conclusion}
 
-We benchmarked six trajectory-tracking controllers --- one per control paradigm, each
-the strongest member of its own family in our data --- on a single nano-quadrotor, a
+We benchmarked six trajectory-tracking controllers, one per control paradigm, on a
+single nano-quadrotor, a
 single reference family and a single command interface, across constant wind, gusts,
 ground effect, a payload step and a measurement model of the optical positioning system
 the vehicle actually carries, with per-cell seed statistics throughout.
@@ -15,11 +15,17 @@ deployment. With realistic onboard sensing and wind,
 an offset-free predictive controller, a reinforcement-learning policy trained with a
 privileged critic, a classical observer stacked on a learned adaptive rate loop, and that
 same observer driving the firmware attitude loop directly converge to within
-\SI{6}{\milli\meter} of one another at approximately \SI{0.06}{\meter} --- each further
+\SI{8}{\milli\meter} of one another at approximately \SI{0.06}{\meter} --- each further
 from its own clean-sensing performance than from the other three. When four unrelated
-mechanisms saturate at the same value, the binding constraint lies elsewhere; we read
-this regime as estimator-limited, which makes state estimation, not controller
-architecture, the higher-leverage investment at this sensor quality.
+mechanisms saturate at the same value the binding constraint lies elsewhere, and the
+obvious candidate is the state estimate they share. We tested that and it is wrong: a
+fourfold better sensor buys between three and sixteen per cent and leaves the four
+tied, while a twofold worse one separates them and triples their spread. Measurement
+quality bounds this regime from above without setting its floor, which inverts the
+engineering advice we had been about to give --- a better positioning system protects
+against the bad tail rather than buying accuracy. What does set the floor is left open;
+the discriminating experiment, the same sweep flown without wind, is the first thing we
+would run next.
 
 One stack deserves separate comment. The reinforcement-learning policy is the weakest in
 the pool under every clean-sensing condition we measured, and it reaches the leading

@@ -90,7 +90,7 @@ sustained force is applied.
 \caption{Realistic sensing, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters. LH is the
 Lighthouse measurement model of Sec.~\ref{sec:method:sensor}; LH\,+\,wind is the
 deployment condition. Entries with a spread are over ten evaluation seeds except the
-learned-policy rows, which are over three training seeds.}
+learned-policy rows, which are over three training seeds unless marked otherwise.}
 \label{tab:sensing}
 \begin{center}\small
 \begin{tabular}{lcccc}
@@ -102,7 +102,7 @@ ADRC                     & 0.021 & 0.056 & 0.181 & $0.063\pm0.006$ \\
 MPPI + $\mathcal{L}_1$   & $0.051\pm0.001$ & $0.079\pm0.018$ & $0.157\pm0.113$ & $0.078\pm0.014$ \\
 Offset-free MPC          & 0.021 & $0.141\pm0.058$ & $0.070\pm0.010$ & $\mathbf{0.057\pm0.014}$ \\
 ADRC + learned low level & 0.025 & \textbf{0.046} & 0.145 & $0.060\pm0.009$ \\
-DATT-Asym (RL)           & $0.033\pm0.008$ & $0.056\pm0.005$ & $\mathbf{0.120\pm0.011}$ & $0.059\pm0.002$ \\
+DATT-Asym (RL)           & $0.033\pm0.008$ & $0.056\pm0.005$ & $\mathbf{0.120\pm0.011}$ & $0.065\pm0.010$\rlap{$^{\P}$} \\
 \midrule
 \multicolumn{5}{l}{\emph{context rows, not part of the pool}} \\
 Plain MPC                & $0.014\pm0.003$ & $0.122\pm0.021$ & $0.067\pm0.001$ & $0.199\pm0.017$ \\
@@ -110,6 +110,10 @@ DATT-L1 (RL)             & 0.034 & 0.073 & $0.323\pm0.106$ & 0.067 \\
 \bottomrule
 \end{tabular}
 \end{center}
+{\footnotesize $^{\P}$ ten \emph{evaluation} seeds at a fixed training seed, so that it
+is commensurable with the classical rows; over three \emph{training} seeds at a fixed
+evaluation seed the same cell is $0.059\pm0.002$. See
+Sec.~\ref{sec:results:deployment}.\par}
 \end{table}
 
 \begin{figure}[p]
@@ -194,6 +198,11 @@ beyond \SI{2.5}{\second} is \SI{0.046}{\meter}, on par with the best stacks in t
 cell. Adding wind on top produces the deployment condition and the central result of
 this paper, shown in Fig.~\ref{fig:deployment}:
 
+%% !!! REGENERATE: this figure still plots the learned policy at 0.059 +- 0.002
+%% (3 training seeds), where it appears second-best. The text now uses the
+%% evaluation-seed convention, 0.065 +- 0.010, in which it is last of the four tied
+%% stacks. Re-run the generator with the ms-datt-asym-lhwind-s* aggregate and update
+%% the row's n-label from "n = 3 train" to "n = 10 eval".
 \begin{figure}[t]
 \begin{center}
 \includegraphics[width=\linewidth]{figures/fig4_deployment.pdf}
@@ -206,31 +215,41 @@ point: every tied stack is further from itself than from the others.}
 \end{figure}
 
 The last column of Table~\ref{tab:sensing} carries the result: a disturbance-augmented
-prediction model at $0.057\pm0.014$~\si{\meter}, a privileged-critic policy at
-$0.059\pm0.002$, an observer over an adaptive rate loop at $0.060\pm0.009$, and that
-observer driving the firmware attitude loop at $0.063\pm0.006$. Just outside the band
-sit sampling with an $\mathcal{L}_1$ estimate ($0.078\pm0.014$) and an earlier policy
-trained on noisy observations without the privileged critic ($0.077\pm0.006$).
+prediction model at $0.057\pm0.014$~\si{\meter}, an observer over an adaptive rate loop
+at $0.060\pm0.009$, that observer driving the firmware attitude loop at
+$0.063\pm0.006$, and a privileged-critic policy at $0.065\pm0.010$. Just outside the
+band sit an earlier policy trained on noisy observations without the privileged critic
+($0.077\pm0.006$) and sampling with an $\mathcal{L}_1$ estimate ($0.078\pm0.014$).
+
+All four figures are spreads over ten evaluation seeds, which is a deliberate choice.
+The policy's deployment cell can be summarized two ways, and they answer different
+questions. Over three \emph{training} seeds at a fixed evaluation seed it is
+$0.059\pm0.002$~\si{\meter} --- a statement that initialization barely matters for this
+cell. Over ten \emph{evaluation} seeds at a fixed training seed it is
+$0.065\pm0.010$ --- a statement about run-to-run behaviour under different sensor-bias
+draws, and the only one commensurable with the classical stacks, none of which has a
+training seed at all. Quoting the training-seed number alongside evaluation-seed
+numbers would compare two different sources of variance and would, not coincidentally,
+make this member look tightest.
 
 \noindent Four architectures with nothing in common --- an optimizer carrying a
-disturbance state, a neural policy trained with a privileged critic, a classical observer
-stacked on a learned rate controller, and that same observer driving the firmware
-attitude loop directly --- arrive within \SI{6}{\milli\meter} of each other, inside their
-own seed spreads. The convergence is itself the finding. Each of these stacks sits
+disturbance state, a classical observer stacked on a learned rate controller, that same
+observer driving the firmware attitude loop directly, and a neural policy trained with a
+privileged critic --- arrive within \SI{8}{\milli\meter} of each other, inside their own
+seed spreads. The convergence is itself the finding. Each of these stacks sits
 considerably further from its own clean-sensing performance than from the other three:
 the optimizer gives up an order of magnitude relative to its \SI{0.036}{\meter} nominal,
 the hybrid stack quadruples its \SI{0.015}{\meter}, and the observer nearly triples its
 \SI{0.023}{\meter}. The learned policy moves in the opposite direction: it is
-\emph{better} under degraded sensing (\SI{0.059}{\meter}) than with perfect state
-feedback (\SI{0.075}{\meter}), because clean state is out of the distribution it was
-trained on. It reaches the lead not by being robust to the deployment condition but by
-having been built for it, and it pays for that everywhere else in this study. When four unrelated mechanisms saturate at the same value, the binding constraint
-is not any of them. \textbf{At this sensor quality the deployment condition is
-estimator-limited, not architecture-limited}, and effort spent on a better controller is
-effort misspent relative to effort spent on state estimation. The stacks that do
-\emph{not} reach the band are equally instructive: the two without any disturbance
-estimate sit at $0.116$ and \SI{0.199}{\meter}, so the price of entry (Lesson~1) is paid
-under realistic sensing exactly as it is under clean sensing.
+\emph{better} under degraded sensing than with perfect state feedback
+(\SI{0.065}{\meter} against \SI{0.075}{\meter}, and \SI{0.059}{\meter} against
+\SI{0.075}{\meter} on the training-seed convention --- the direction holds either way),
+because clean state is out of the distribution it was trained on. It reaches the band
+not by being robust to the deployment condition but by having been built for it, and it
+pays for that everywhere else in this study. The stacks that do \emph{not} reach the
+band are equally instructive: the two without any disturbance estimate sit at $0.116$
+and \SI{0.199}{\meter}, so the price of entry (Lesson~1) is paid under realistic sensing
+exactly as it is under clean sensing.
 
 One caveat is stated rather than buried: the tied value is specific to this sensing
 quality; with motion-capture-grade state the same four stacks are clearly separated
@@ -242,6 +261,100 @@ ten-seed re-run puts it at $0.063\pm0.006$~\si{\meter}, and \SI{0.053}{\meter} t
 to be the \emph{minimum} of the ten draws. The single seed was not merely noisy; it was
 the most favourable sample available, and reading it would have produced a false claim of
 a new best stack. The correction adds a fourth member to the tie rather than a winner.
+
+\subsection{What binds the deployment cell? A test we expected to pass}
+\label{sec:results:whatbinds}
+
+The natural reading of Sec.~\ref{sec:results:deployment} is that four unrelated
+mechanisms saturate at the same value because the state estimate, common to all of them,
+is what binds --- that the cell is \emph{estimator-limited} rather than
+architecture-limited. We drafted that sentence, then noticed it was an interpretation
+rather than a measurement: the same convergence is equally consistent with a shared
+actuator envelope, or with the reference itself setting a floor at this tier. So we
+tested it, writing down in advance what each outcome would mean.
+
+The test is direct. A single scale factor multiplies every Lighthouse error term
+together --- quasi-static bias, jitter, velocity noise and attitude noise --- so that one
+number moves overall measurement quality, with $1.0$ the literature-grounded model of
+Sec.~\ref{sec:method:sensor}. The rate gyroscope is deliberately left unscaled: it is an
+onboard inertial sensor rather than a Lighthouse product, and scaling it would have
+confounded the test with a different instrument. If the estimator binds, relieving it
+should relieve all four stacks together.
+
+\begin{table}[t]
+\caption{Sensor-error scale sweep at the deployment condition (normal tier, Lighthouse,
+constant wind), $\mathrm{RMSE}_{\mathrm{3D}}$ in meters over five evaluation seeds.
+Scale $1.0$ is the model used everywhere else in this paper and reproduces the ten-seed
+values of Table~\ref{tab:sensing} within their spreads.}
+\label{tab:scale}
+\begin{center}\small
+\begin{tabular}{lccccc}
+\toprule
+Sensor-error scale & Offset-free MPC & ADRC + low level & ADRC & DATT-Asym & spread \\
+\midrule
+$0.25\times$ & $0.048\pm0.001$ & $0.050\pm0.003$ & $0.056\pm0.003$ & $0.061\pm0.001$ & 0.014 \\
+$0.50\times$ & $0.049\pm0.005$ & $0.052\pm0.002$ & $0.057\pm0.002$ & $0.061\pm0.004$ & 0.012 \\
+$1.00\times$ & $0.057\pm0.010$ & $0.054\pm0.006$ & $0.060\pm0.005$ & $0.063\pm0.010$ & \textbf{0.009} \\
+$2.00\times$ & $0.093\pm0.045$ & $0.068\pm0.020$ & $0.073\pm0.018$ & $0.077\pm0.026$ & 0.025 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.72\linewidth]{figures/fig7_sensor_scale.pdf}
+\end{center}
+\caption{The four tied stacks against sensor-error scale. Better sensing (left) does not
+lift them off a common floor near \SI{0.05}{\meter}; worse sensing (right) separates them
+and inflates their seed spreads. The tie is tightest at exactly the operating point the
+rest of the paper reports.}
+\label{fig:scale}
+\end{figure}
+
+\textbf{The interpretation failed, and the failure is more informative than the claim
+would have been.} Quartering every sensor error term --- a fourfold better positioning
+system --- buys between \SI{3}{\percent} and \SI{16}{\percent}: the optimizer improves
+from $0.057$ to \SI{0.048}{\meter}, the observer and the hybrid stack by
+\SI{7}{\percent} each, and the policy by \SI{3}{\percent}. Between $0.5\times$ and
+$0.25\times$, another halving, three of the four move by a millimetre or less and the
+policy does not move at all. That is not the signature of a binding constraint being
+relieved; it is the signature of a constraint that stopped binding some time earlier.
+All four flatten onto a common floor near \SI{0.05}{\meter} that better sensing does not
+lift.
+
+Sensing does bind, but only in the other direction. Doubling the error degrades every
+stack by a factor of $1.3$ to $1.6$ and inflates the seed spreads three- to fivefold ---
+the optimizer's $\pm0.010$ becomes $\pm0.045$. The correct statement is therefore
+asymmetric: \textbf{measurement quality bounds this cell from above without setting its
+floor}, and the engineering advice that follows is the opposite of what we first wrote.
+Sensor upgrades protect against the tail rather than buying accuracy.
+
+What the sweep does establish is that the tie is a property of the operating point
+rather than an artifact of one sensor setting. The four stacks stay within $9$ to
+\SI{25}{\milli\meter} of each other at every scale, and they are closest precisely where
+this paper measures them --- spread \SI{0.009}{\meter} at $1.0\times$, widening to
+\SI{0.014}{\meter} as sensing improves and \SI{0.025}{\meter} as it degrades. Better
+sensing does not collapse the differences between architectures; it slowly resolves
+them, and the ordering that emerges at $0.25\times$ carries error bars an order of
+magnitude tighter than at $1.0\times$.
+
+One stack behaves differently, for a reason the paper has already given. The policy is
+flat within noise from $1.0\times$ down to $0.25\times$ and benefits least from a better
+sensor. It was trained with sensor-noise randomization spanning this entire range, so a
+quieter sensor is not new information to it --- it has learned to average over the range
+rather than to exploit any point in it. Lesson~6 predicts exactly this; the sweep
+measures it.
+
+We leave the binding constraint open rather than substituting one untested
+interpretation for another. The floor is shared by four unrelated architectures, so it
+belongs to the task and not to any controller, and the candidates are the wind itself
+(\SI{2.5}{\meter\per\second\squared} standing against
+\SI{8.6}{\meter\per\second\squared} of spare authority, with every stack having finite
+rejection bandwidth however well it senses), the actuator envelope and attitude-loop lag
+at this tier, or the curvature of the reference. The discriminating experiment is the
+same sweep flown without wind: if the floor persists, the platform sets it and the wind
+does not.
 
 \subsection{Hardware validation in the wind tunnel}
 \label{sec:results:hardware}
@@ -375,10 +488,16 @@ drawn its \emph{best} nominal initialization and the newer one its \emph{worst},
 the mean the newer policy dominates or ties the older in all eight measured cells. The
 retracted claim was not marginal; it was a stated design trade-off that did not exist.
 Meanwhile the deployment-cell result survived the same test with the smallest spread we
-measured anywhere ($\pm\SI{0.002}{\meter}$), which is what makes it quotable. Training
-variance in this setting is comparable to the effect sizes being claimed --- in the
-slow-tier nominal cell it is $\pm\SI{0.015}{\meter}$ against effects of a similar size
---- so single-seed policy comparisons in that regime carry no information at all.
+measured anywhere, $\pm\SI{0.002}{\meter}$ --- but that number deserves care, because it
+is a statement about \emph{initialization} and nothing else. Re-measured across ten
+evaluation seeds at a fixed initialization, the same cell is $\pm\SI{0.010}{\meter}$,
+comparable to the classical stacks. Both are true and they answer different questions:
+which training run you get barely matters here, while which sensor-bias draw you get
+matters as much as it does for everyone else. Reporting only the first would have made
+this stack look more reproducible than it is. Training variance is otherwise comparable
+to the effect sizes being claimed --- in the slow-tier nominal cell it is
+$\pm\SI{0.015}{\meter}$ against effects of a similar size --- so single-seed policy
+comparisons in that regime carry no information at all.
 
 \paragraph{Lesson 6: robustness is bought with agility at a measurable exchange rate.}
 The three policy variants form a clean ladder. Training with an $\mathcal{L}_1$ channel
@@ -420,7 +539,18 @@ estimator observability and outer-loop bandwidth for actuation invariance.
 \label{sec:results:recommendations}
 
 No controller in this pool dominates, so a recommendation must be indexed by the
-condition (Table~\ref{tab:recommend}). The most consequential entry is the last: once
+condition (Table~\ref{tab:recommend}). One column of that table deserves its own
+sentence, because measuring it changed a recommendation. Timing the controllers alone,
+without the simulator, spreads them over a factor of $180$: the baseline and the
+observer cost \SI{0.17}{\milli\second} per step and the policy \SI{0.27}{\milli\second},
+all under \SI{3}{\percent} of the \SI{10}{\milli\second} control period, while the
+sampling controller takes \SI{5.4}{\milli\second} and \emph{both} optimizers take around
+\SI{31}{\milli\second} --- three times the period they are supposed to run in. The stack
+this paper otherwise recommends for maximum precision is not real-time feasible as
+built. That is an implementation statement rather than a statement about predictive
+control, and a compiled solver would change it; but it is the kind of fact that a table
+of tracking errors alone will never surface, and it is why the high-agility row now
+recommends the sampling controller instead. The most consequential entry is the last: once
 sensing is realistic, the choice among the four tied stacks should be made on
 engineering cost rather than accuracy, and their costs differ by orders of magnitude ---
 the optimizer requires tens of seconds of solver time per episode in our implementation,
@@ -432,22 +562,24 @@ forward pass through a two-layer network respectively (Table~\ref{tab:recommend}
 $\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted.}
 \label{tab:recommend}
 \begin{center}\small
-\begin{tabular}{@{}p{0.21\linewidth} p{0.21\linewidth} c p{0.36\linewidth}@{}}
+\begin{tabular}{@{}p{0.20\linewidth} p{0.20\linewidth} r p{0.36\linewidth}@{}}
 \toprule
-Operating condition & Recommended stack & Cost & Reason, and what it costs \\
+Operating condition & Recommended stack & $t_{\mathrm{step}}$ & Reason, and what it costs \\
 \midrule
-Clean state, maximum precision & Offset-free MPC & \SI{41}{\second} & records at slow and fast; heavy solver load \\
-Sustained wind, clean state    & ADRC & \SI{2.9}{\second} & \SI{0.025}{\meter}; loses under gusts (one bandwidth) \\
-Gusting wind                   & ADRC + learned low level & \SI{9.5}{\second} & \SI{0.054}{\meter}; acts on the estimate, not on accumulated error \\
-Payload or airframe change     & ADRC + learned low level & \SI{9.5}{\second} & payload nearly invisible; masks wind from the observer \\
-High agility, clean sensing    & Offset-free MPC & \SI{41}{\second} & fast-tier best; MPPI is competitive but has unsafe variance under noise \\
-Low altitude, ground effect    & ADRC + learned low level & \SI{9.5}{\second} & mildest column: the baseline is within \SI{7}{\milli\meter} at a twentieth of the cost \\
-\textbf{Realistic onboard sensing} & \textbf{any of the four tied stacks} & \SIrange{2.9}{41}{\second} & \textbf{indistinguishable in accuracy; choose on compute and initialization robustness} \\
+Clean state, maximum precision & Offset-free MPC & \SI{31.3}{\milli\second} & records at slow and fast, but $3\times$ over the control period \\
+Sustained wind, clean state    & ADRC & \SI{0.17}{\milli\second} & \SI{0.025}{\meter}; loses under gusts (one bandwidth) \\
+Gusting wind                   & ADRC + learned low level & \SI{0.34}{\milli\second} & \SI{0.054}{\meter}; acts on the estimate, not on accumulated error \\
+Payload or airframe change     & ADRC + learned low level & \SI{0.34}{\milli\second} & payload nearly invisible; masks wind from the observer \\
+High agility, clean sensing    & MPPI + $\mathcal{L}_1$ & \SI{5.38}{\milli\second} & within budget where the optimizer is not; unsafe variance once sensing degrades \\
+Low altitude, ground effect    & ADRC + learned low level & \SI{0.34}{\milli\second} & mildest column: the baseline is within \SI{7}{\milli\meter} at half the cost \\
+\textbf{Realistic onboard sensing} & \textbf{any of the four tied stacks} & \SIrange{0.17}{31.3}{\milli\second} & \textbf{indistinguishable in accuracy, so choose on compute: a factor of 180 separates them} \\
 \bottomrule
 \end{tabular}
 \end{center}
-{\footnotesize Cost is the median wall-clock time for one two-cycle episode over the
-three nominal tiers, measured in our unoptimized CPU harness; roughly \SI{3}{\second} of
-it is simulation overhead common to every row, so the column separates the stacks by
-solver load rather than reporting a real-time budget.\par}
+{\footnotesize $t_{\mathrm{step}}$ is the median time for one call to the controller
+alone --- no simulator, no logging --- over 150 calls after warm-up, against a
+\SI{10}{\milli\second} control period (\SI{2}{\milli\second} for the hybrid stack, whose
+rate loop runs at \SI{500}{\hertz}). Python with CasADi and an interior-point solver on
+a laptop CPU; a compiled implementation would be faster, so the ratios transfer and the
+absolute values do not.\par}
 \end{table}

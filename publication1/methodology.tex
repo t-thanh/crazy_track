@@ -77,9 +77,17 @@ itself informative: the decimation is not a concession but the correct design.
 \subsection{Controller pool}
 \label{sec:method:pool}
 
-The pool contains one representative per control paradigm, each selected as the best
-member of its own family in our data. Table~\ref{tab:pool} summarizes the resulting
-configurations.
+The pool contains one representative per control paradigm. How each configuration was
+arrived at differs, and we state it rather than implying a uniform search: the observer
+bandwidth and the offset-free formulation were selected by documented sweeps reported in
+Sec.~\ref{sec:results:lessons}; the sampling controller's parameters come from a
+four-configuration sweep; the baseline uses textbook gains for a critically damped
+response and was never swept; and the learned policy is the best of four training
+recipes we tried, compared at three seeds each. The pool is therefore a set of
+competently configured representatives, not a set of optima --- and we note that the
+effort is unevenly distributed in exactly the way this paper criticises elsewhere,
+which is a limit on how far the between-paradigm comparisons should be pushed.
+Table~\ref{tab:pool} summarizes the resulting configurations.
 
 \paragraph{PID with acceleration feedforward.}
 A cascaded position loop with full reference feedforward, $k_p = 16$, $k_d = 8$
@@ -138,8 +146,8 @@ A DATT-style tracking policy\cite{huang2023datt} trained with
 PPO\cite{schulman2017ppo}, described in Sec.~\ref{sec:method:policy}.
 
 \begin{table}[t]
-\caption{The controller pool: one representative per paradigm, each the best member of
-its own family in our data. Rate is the outer-loop rate; all stacks command
+\caption{The controller pool: one representative per paradigm, configured as described
+in the text. Rate is the outer-loop rate; all stacks command
 $[\phi,\theta,\psi,f]$ at \SI{100}{\hertz} except where noted.}
 \label{tab:pool}
 \begin{center}\small

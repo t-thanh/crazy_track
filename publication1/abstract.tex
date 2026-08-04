@@ -24,11 +24,14 @@ in published characterization data, using ten evaluation seeds and three trainin
 so that every claim carries an error bar. No controller dominates: the per-condition
 champions differ, and each wins through a different disturbance-estimation mechanism.
 Under the realistic deployment condition --- degraded onboard sensing with wind --- four
-of them become statistically indistinguishable: the offset-free MPC at
-$0.057\pm0.014$~m, the learned policy at $0.059\pm0.002$~m, the hybrid adaptive stack at
-$0.060\pm0.009$~m and the extended state observer alone at $0.063\pm0.006$~m. Four
-unrelated mechanisms saturating at the same value argues that the regime is
-estimator-limited rather than architecture-limited. We
+of them become statistically indistinguishable, spanning $0.057$ to $0.065$~m: an
+offset-free MPC, an extended state observer over a learned adaptive rate loop, that same
+observer alone, and the learned policy. The obvious reading is that the shared state
+estimate is what binds. We tested that reading by scaling every sensor error term
+together, and it does not survive: a fourfold better sensor improves the four stacks by
+only $3$ to $16\,\%$ and leaves them tied, while a twofold worse one separates them and
+triples their spread. Measurement quality bounds this regime from above without setting
+its floor, so sensor upgrades protect against the tail rather than buying accuracy. We
 distil the study into seven transferable lessons. Three of them record occasions on
 which our own earlier reading of the data was wrong and the protocol caught it: a launch
 transient misdiagnosed as noise fragility, a single evaluation seed that proved to be the

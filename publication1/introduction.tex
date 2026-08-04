@@ -82,18 +82,19 @@ effort. That is the gap this benchmark is built to close.
 
 \begin{itemize}
 \item A \textbf{cross-paradigm benchmark}: six trajectory-tracking controllers, one per
-      paradigm and each the best member of its own family in our data, evaluated on a
+      paradigm and each competently configured against our own data, evaluated on a
       single nano-quadrotor under a shared matrix of constant wind, gusts, ground
       effect, a \SI{23}{\percent} payload step and a literature-grounded optical
       positioning model, with ten evaluation seeds and three training seeds so that
       every cell carries an error bar.
-\item The \textbf{deployment-cell convergence result}: under degraded onboard sensing
-      with wind, an offset-free MPC, a privileged-critic reinforcement-learning policy,
-      an extended state observer over a learned adaptive rate loop, and that same
-      observer driving the firmware attitude loop all become statistically
-      indistinguishable at approximately \SI{0.06}{\meter}. We argue that
-      this regime is estimator-limited rather than architecture-limited, which redirects
-      engineering effort from controller design to state estimation.
+\item The \textbf{deployment-cell convergence result}, and a test of what causes it:
+      under degraded onboard sensing with wind, an offset-free MPC, an extended state
+      observer over a learned adaptive rate loop, that same observer driving the
+      firmware attitude loop, and a privileged-critic reinforcement-learning policy all
+      become statistically indistinguishable near \SI{0.06}{\meter}. Rather than
+      attribute this to the shared state estimate, we scale every sensor error term and
+      show that a fourfold better sensor buys $3$ to $16\,\%$ and does not break the
+      tie: measurement quality bounds the regime from above without setting its floor.
 \item A \textbf{lessons-learnt analysis} organised around a three-class failure taxonomy,
       including three occasions on which the protocol overturned our own earlier reading
       of the data --- a launch transient misdiagnosed as noise fragility, a single
