@@ -72,10 +72,11 @@ actor--critic schemes\cite{pinto2018asymmetric}, in which a privileged critic se
 true state while the actor sees only deployable observations, and domain randomization
 over sensor noise. Separately, learned low-level controllers trained across many
 airframes\cite{zhang2025xadapt} adapt online to vehicles they have never seen, which
-makes them composable with classical outer loops. What remains open is what these
-methods buy once the classical alternatives are tuned \emph{under the same conditions}
---- most published comparisons tune the learned method carefully and the baseline
-casually.
+makes them composable with classical outer loops. Across all three threads the open
+question is the same and is symmetric: published comparisons rarely tune every candidate
+\emph{under the same conditions} --- most tune the method under study carefully and its
+alternatives casually --- so the reported differences confound paradigm with tuning
+effort. That is the gap this benchmark is built to close.
 
 \subsection{Contributions}
 
