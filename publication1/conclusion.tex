@@ -2,7 +2,7 @@
 \label{sec:conclusion}
 
 We benchmarked six trajectory-tracking controllers, one per control paradigm, on a
-single nano-quadrotor, a
+single quadrotor testbed, a
 single reference family and a single command interface, across constant wind, gusts,
 ground effect, a payload step and a measurement model of the optical positioning system
 the vehicle actually carries, with per-cell seed statistics throughout.
@@ -55,7 +55,17 @@ effect, are cheap procedures that would have prevented all three.
 
 The study has clear limits. The simulator omits aerodynamic drag, motor asymmetry and
 battery sag, so absolute errors are optimistic and only relative comparisons are
-claimed; a single airframe is used; and yaw is held fixed throughout. The hardware
+claimed; yaw is held fixed throughout; and every number comes from a single airframe.
+That last point bounds what generalizes and what does not. The error levels are
+properties of a vehicle with a thrust-to-weight ratio of $1.88$ and a positioning system
+updating at a few tens of hertz, and they would change on a larger platform. The
+mechanisms behind them --- that beating a feedforward baseline under load requires
+estimating the disturbance, that one observer bandwidth cannot serve two purposes, that
+randomization produces averaging rather than adaptation in a memoryless policy, that
+layered adaptation trades estimator observability for actuation invariance --- are
+architectural, and the natural test of that reading is to repeat the protocol on a
+platform with a wider authority margin and better sensing, where the same trade-offs
+should appear compressed rather than absent. The hardware
 campaign of Sec.~\ref{sec:method:hardware} addresses the first directly, testing three
 pre-registered predictions in a programmable fan-array wind tunnel with motion-capture
 ground truth, where the simulated disturbance classes are reproducible as physical set

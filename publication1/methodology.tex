@@ -8,10 +8,12 @@ All experiments use the Crazyflie~2.1 Brushless. It has a mass of
 \SI{43.38}{\gram} and an inertia of
 $\operatorname{diag}(25, 28, 49)\times10^{-6}$~\si{\kilogram\meter\squared}, and its
 four motors deliver $0.0214$--\SI{0.2}{\newton} each, giving a collective thrust of
-$0.085$--\SI{0.8}{\newton} and a thrust-to-weight ratio of $1.88$. The narrowness of
-that margin is the defining property of the platform: a \SI{10}{\gram} payload is
-\SI{23}{\percent} of vehicle weight, and a \SI{2.5}{\meter\per\second\squared} wind
-consumes roughly a quarter of the available lateral acceleration.
+$0.085$--\SI{0.8}{\newton} and a thrust-to-weight ratio of $1.88$. As set out in
+Sec.~\ref{sec:intro}, this platform is a measuring instrument rather than the subject:
+its narrow authority margin makes a \SI{10}{\gram} payload worth \SI{23}{\percent} of
+vehicle weight and a \SI{2.5}{\meter\per\second\squared} wind worth roughly a quarter of
+the available lateral acceleration, so effects that a larger airframe would absorb are
+resolvable here against seed noise.
 
 Simulation is performed in \texttt{crazyflow}.\footnote{\url{https://github.com/utiasDSL/crazyflow}} The ground-truth plant is
 a first-principles rigid-body model integrated at \SI{500}{\hertz} with a

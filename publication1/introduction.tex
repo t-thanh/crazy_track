@@ -1,17 +1,28 @@
 \section{INTRODUCTION}
 \label{sec:intro}
 
-Micro- and nano-scale unmanned aerial vehicles are attractive for inspection,
-reconnaissance and confined-space operation precisely because they are small, and every
-control difficulty they present follows from the same property. On a \SI{43}{\gram}
-platform with a thrust-to-weight ratio below two, a \SI{10}{\gram} payload is a quarter
-of the vehicle's weight, a light breeze is a substantial fraction of the available
-lateral acceleration, and there is no margin to absorb either. Such vehicles rarely
-carry laboratory-grade positioning: they fly on onboard estimates that update at a few
-tens of hertz, carry centimeter-scale spatial bias, and lag the true state. Trajectory
-tracking under wind, payload variation and degraded sensing is therefore not a
-refinement of the nominal problem but a different problem, and it is the one that
-determines whether a vehicle is useful outside a flight arena.
+A quadrotor that has to hold a trajectory outside controlled conditions meets three
+things at once: wind that is both sustained and unsteady, a mass that changes when it
+picks something up or when a battery is swapped, and a state estimate produced onboard
+rather than by a motion-capture rig. Any of the three can dominate the error budget, and
+which controller handles them best is a question practitioners face directly when
+specifying a vehicle. It is not a refinement of the nominal tracking problem but a
+different problem, and it is the one that determines whether a design is useful outside
+a flight arena.
+
+Answering it requires a testbed on which the trade-offs are visible. We use a
+\SI{43}{\gram} brushless quadrotor with a thrust-to-weight ratio below two, and the
+choice is deliberate: on that platform a \SI{10}{\gram} payload is a quarter of the
+vehicle's weight, a light breeze consumes a substantial fraction of the available
+lateral acceleration, and the onboard position estimate updates at a few tens of hertz
+with centimetre-scale bias. Effects that a larger airframe with a generous authority
+margin and a better sensor would absorb are, here, large enough to measure against seed
+noise. The consequence for how this paper should be read is stated once and then
+respected throughout: the absolute errors belong to this platform, while the mechanisms
+they expose --- where a disturbance estimate enters a loop, what an observer bandwidth
+must trade, what domain randomization does and does not buy --- are properties of the
+control architectures and carry over to any quadrotor whose authority margin and sensing
+quality place it in the same regime.
 
 A large literature addresses it, from classical cascaded feedback through disturbance
 observers, adaptive control and predictive control to end-to-end learned policies. What
@@ -83,7 +94,7 @@ effort. That is the gap this benchmark is built to close.
 \begin{itemize}
 \item A \textbf{cross-paradigm benchmark}: six trajectory-tracking controllers, one per
       paradigm and each competently configured against our own data, evaluated on a
-      single nano-quadrotor under a shared matrix of constant wind, gusts, ground
+      single quadrotor testbed under a shared matrix of constant wind, gusts, ground
       effect, a \SI{23}{\percent} payload step and a literature-grounded optical
       positioning model, with ten evaluation seeds and three training seeds so that
       every cell carries an error bar.
