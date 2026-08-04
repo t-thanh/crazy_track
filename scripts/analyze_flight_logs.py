@@ -9,10 +9,15 @@ attitude, thrust duty cycle) as PNG + PDF.
 
 Data note: the 15:09 and 15:13 logs carry a TRUNCATED header -- it names 45
 columns (obs_0..obs_12) while every data row has 75 fields (obs_0..obs_42),
-the same physical layout as the complete 15:21 header. Parsing those two by
-their own header silently shifts every column after obs_12, so the actuator
-and command columns would read observation values instead. The 15:21 header
-is therefore used as canonical for all three files.
+the same physical layout as the complete headers of the later logs. Parsing
+those two by their own header silently shifts every column after obs_12, so
+the actuator and command columns would read observation values instead. The
+widest header found across the logs is therefore used as canonical for all of
+them.
+
+Flights are discovered from data/flights/<date>/flight_*.csv, and the commanded
+circle differs between sessions (r = 0.5 m on 2026-08-03, r = 0.1 m on
+2026-08-04), so every plot takes the reference geometry from the data.
 """
 from __future__ import annotations
 
@@ -27,26 +32,48 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "flights" / "2026-08-03"
-FILES = {
-    "15:09": "flight_20260803_150929.csv",
-    "15:13": "flight_20260803_151315.csv",
-    "15:21": "flight_20260803_152107.csv",
-}
-CANON = None  # filled from the 15:21 header
+FLIGHT_ROOT = Path(__file__).resolve().parents[1] / "data" / "flights"
+
+
+def discover() -> dict[str, Path]:
+    """{label: path} for every data/flights/<date>/flight_*.csv, in time order.
+
+    Label is MM-DD HH:MM taken from the filename, so logs from several days
+    coexist without collision.
+    """
+    out = {}
+    for f in sorted(FLIGHT_ROOT.glob("*/flight_*.csv")):
+        stamp = f.stem.split("_", 1)[1]            # 20260803_150929
+        day, tod = stamp.split("_")
+        out[f"{day[4:6]}-{day[6:8]} {tod[:2]}:{tod[2:4]}"] = f
+    return out
+
+
+FILES = discover()
+CANON = None
 
 
 def _canonical_header():
+    """The widest header among the logs.
+
+    Some logs carry a TRUNCATED header (see the module docstring); the widest
+    one is the complete column list and every file's rows match its width.
+    """
     global CANON
     if CANON is None:
-        with open(DATA_DIR / FILES["15:21"]) as fh:
-            CANON = next(csv.reader(fh))
+        best = None
+        for f in FILES.values():
+            with open(f) as fh:
+                h = next(csv.reader(fh))
+            if best is None or len(h) > len(best):
+                best = h
+        CANON = best
     return CANON
 
 
 def load(key):
     names = _canonical_header()
-    with open(DATA_DIR / FILES[key]) as fh:
+    with open(FILES[key]) as fh:
         rows = list(csv.reader(fh))
     header, data = rows[0], rows[1:]
     if len(header) != len(names):          # truncated header: use canonical
@@ -81,8 +108,9 @@ def phase_spans(d):
 
 
 
-# Okabe-Ito trio; validated: CVD sep 11.4 (protan) / 27.6 (tritan), all checks pass
-COL = {"15:09": "#0072B2", "15:13": "#E69F00", "15:21": "#009E73"}
+# Okabe-Ito; validated with scripts/validate_palette.js: all checks pass at 4 slots
+PALETTE = ["#0072B2", "#E69F00", "#009E73", "#CC79A7"]
+COL = {k: PALETTE[i % len(PALETTE)] for i, k in enumerate(FILES)}
 REF_C, GRID = "#3a3a3a", "#d8d8d8"
 CLIP_DEG = 15.0
 THR_MIN, THR_MAX = 0.021362630650401115, 0.2
@@ -105,6 +133,13 @@ def prep(key):
     cx = (rx[air].max() + rx[air].min()) / 2
     cy = (ry[air].max() + ry[air].min()) / 2
     d["_air"], d["_t"], d["_c"] = air, t, (cx, cy)
+    # commanded radius is NOT the same in every log (0.5 m on 2026-08-03, 0.1 m on
+    # 2026-08-04), so take it from the reference rather than assuming it
+    d["_r"] = float(np.hypot(rx[air] - cx, ry[air] - cy).mean())
+    ang = np.unwrap(np.arctan2(ry[air] - cy, rx[air] - cx))
+    laps = abs(ang[-1] - ang[0]) / (2 * np.pi)
+    ta = t[air]
+    d["_T"] = (ta[-1] - ta[0]) / laps if laps > 0.05 else float("nan")
     d["_rmse"] = float(np.sqrt((d["pos_err"][air] ** 2).mean()))
     d["_t0"] = t[air][0]
     return d
@@ -115,7 +150,8 @@ DATA = {k: prep(k) for k in FILES}
 
 def make_figures(out: Path) -> None:
     # ----------------------------------------------------------------- figure A
-    fig, axes = plt.subplots(3, 4, figsize=(15.5, 10.2))
+    n = len(FILES)
+    fig, axes = plt.subplots(n, 4, figsize=(15.5, 3.4 * n))
     for r, key in enumerate(FILES):
         d, c = DATA[key], COL[key]
         t, air = d["_t"], d["_air"]
@@ -125,7 +161,7 @@ def make_figures(out: Path) -> None:
         # --- col 0: xy path vs reference circle
         ax = axes[r][0]
         th = np.linspace(0, 2 * np.pi, 400)
-        ax.plot(cx + 0.5 * np.cos(th), cy + 0.5 * np.sin(th), "--", color=REF_C,
+        ax.plot(cx + d["_r"] * np.cos(th), cy + d["_r"] * np.sin(th), "--", color=REF_C,
                 lw=1.0, dashes=(5, 4), zorder=2, label="reference circle")
         ax.plot(d["pos_x"][air], d["pos_y"][air], color=c, lw=1.3, zorder=3,
                 label="flown")
@@ -134,7 +170,8 @@ def make_figures(out: Path) -> None:
         ax.plot(d["pos_x"][air][-1], d["pos_y"][air][-1], "s", ms=6, color=c, zorder=4)
         ax.set_aspect("equal")
         ax.set_xlabel("x [m]"); ax.set_ylabel("y [m]")
-        ax.set_title(f"{key}  ·  xy path", loc="left", color=c, fontweight="bold")
+        ax.set_title(f"{key}  ·  xy path  (r = {d['_r']:.2f} m)", loc="left", color=c,
+                     fontweight="bold")
         ax.text(0.03, 0.97, f"RMSE {d['_rmse']:.2f} m", transform=ax.transAxes,
                 fontsize=8.5, color="#222", va="top",
                 bbox=dict(fc="white", ec="none", alpha=0.75, pad=1.5))
@@ -189,8 +226,9 @@ def make_figures(out: Path) -> None:
         if r == 0:
             ax.legend(loc="upper right", frameon=False, fontsize=7.5, ncol=2)
 
-    fig.suptitle("Crazyflie 2.1 brushless + Lighthouse — three circle flights, 2026-08-03"
-                 "   (r = 0.5 m, T = 4.0 s, |v| = 0.79 m/s)",
+    geom = ", ".join(f"{k}: r={DATA[k]['_r']:.2f} m" for k in FILES)
+    fig.suptitle(f"Crazyflie 2.1 brushless + Lighthouse — {len(FILES)} circle flights"
+                 f"   ({geom};  T = 4.0 s)",
                  fontsize=11.5, fontweight="bold", x=0.5, y=1.002)
     fig.tight_layout()
     fig.savefig(out / "flights_overview.png")
@@ -214,11 +252,16 @@ def make_figures(out: Path) -> None:
         ax.plot([i - 0.28, i + 0.28], [np.median(e)] * 2, color=COL[key], lw=2.2)
         ax.text(i, e.max() + 0.06, f"med {np.median(e):.2f}", ha="center",
                 fontsize=8, color=COL[key])
-    ax.set_xticks(range(3)); ax.set_xticklabels(keys)
+    ax.set_xticks(range(len(keys))); ax.set_xticklabels(keys, fontsize=7.5)
     ax.set_ylabel("position error [m]"); ax.set_ylim(bottom=0)
     ax.set_title("error spread (airborne)", loc="left")
-    ax.text(0.02, 0.93, "circle radius = 0.5 m", transform=ax.transAxes,
+    ax.text(0.02, 0.93, "error vs the commanded circle radius", transform=ax.transAxes,
             fontsize=7.5, color="#777")
+    for i, key in enumerate(keys):  # the target each flight was actually given
+        r = DATA[key]["_r"]
+        ax.plot([i - 0.3, i + 0.3], [r, r], color=REF_C, lw=1.1, ls="--",
+                dashes=(4, 3), zorder=5)
+        ax.text(i + 0.32, r, f"r={r:.2f}", fontsize=6.5, color=REF_C, va="center")
 
     # B2 flight radius vs commanded
     ax = axes[1]
@@ -228,10 +271,11 @@ def make_figures(out: Path) -> None:
         cx, cy = d["_c"]
         rad = np.hypot(d["pos_x"][air] - cx, d["pos_y"][air] - cy)
         ax.plot(d["_t"][air] - d["_t0"], rad, color=COL[key], lw=1.2, label=key)
-    ax.axhline(0.5, color=REF_C, ls="--", lw=1.1, dashes=(5, 4))
-    ax.text(0.985, 0.5, "commanded 0.5 m ", transform=ax.get_yaxis_transform(),
-            fontsize=7.5, color=REF_C, va="bottom", ha="right",
-            bbox=dict(fc="white", ec="none", alpha=0.85, pad=1))
+    for r in sorted({round(DATA[k]["_r"], 3) for k in keys}):
+        ax.axhline(r, color=REF_C, ls="--", lw=1.1, dashes=(5, 4))
+        ax.text(0.985, r, f"commanded {r:.2f} m ", transform=ax.get_yaxis_transform(),
+                fontsize=7.5, color=REF_C, va="bottom", ha="right",
+                bbox=dict(fc="white", ec="none", alpha=0.85, pad=1))
     ax.set_xlabel("time airborne [s]"); ax.set_ylabel("radius from circle centre [m]")
     ax.set_title("flying wide", loc="left"); ax.set_ylim(bottom=0)
     ax.legend(frameon=False, fontsize=8, loc="upper left")
@@ -251,9 +295,9 @@ def make_figures(out: Path) -> None:
         ax.text(i + w / 2, got + 1.5, f"{got:.0f}°", ha="center", fontsize=8,
                 color=COL[key])
     ax.axhline(CLIP_DEG, color="#b00020", ls="--", lw=1.0, dashes=(4, 3))
-    ax.text(2.42, CLIP_DEG + 4.5, "15° limit", fontsize=7.5, color="#b00020",
-            ha="right")
-    ax.set_xticks(range(3)); ax.set_xticklabels(keys)
+    ax.text(-0.46, CLIP_DEG + 4.5, "15° limit", fontsize=7.5, color="#b00020",
+            ha="left")
+    ax.set_xticks(range(len(keys))); ax.set_xticklabels(keys, fontsize=7.5)
     ax.set_ylabel("mean |roll| [deg]")
     ax.set_ylim(0, 95)
     ax.set_title("policy asked  vs  vehicle allowed", loc="left")
@@ -265,7 +309,7 @@ def make_figures(out: Path) -> None:
 
     # B4 thrust duty cycle
     ax = axes[3]
-    bottom = np.zeros(3)
+    bottom = np.zeros(len(keys))
     shades = [("at minimum", 0.30), ("in between", 0.62), ("at maximum", 1.0)]
     for j, (lab, alpha) in enumerate(shades):
         vals = []
@@ -280,14 +324,14 @@ def make_figures(out: Path) -> None:
                       - np.mean(np.isclose(thr, THR_MAX, atol=1e-4))
             vals.append(100 * v)
         vals = np.array(vals)
-        ax.bar(range(3), vals, 0.6, bottom=bottom, color="#444", alpha=alpha,
+        ax.bar(range(len(keys)), vals, 0.6, bottom=bottom, color="#444", alpha=alpha,
                edgecolor="white", linewidth=1.4, label=lab)
         for i, v in enumerate(vals):
             if v > 7:
                 ax.text(i, bottom[i] + v / 2, f"{v:.0f}%", ha="center", va="center",
                         fontsize=8, color="white" if alpha > 0.5 else "#222")
         bottom += vals
-    ax.set_xticks(range(3)); ax.set_xticklabels(keys)
+    ax.set_xticks(range(len(keys))); ax.set_xticklabels(keys, fontsize=7.5)
     ax.set_ylabel("share of airborne samples [%]"); ax.set_ylim(0, 100)
     ax.set_title("thrust command sits on its rails", loc="left")
     ax.legend(frameon=False, fontsize=7.5, loc="upper center", ncol=3,
@@ -303,7 +347,7 @@ def make_figures(out: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", type=Path, default=DATA_DIR / "analysis",
+    ap.add_argument("--out", type=Path, default=FLIGHT_ROOT / "analysis",
                     help="directory for the generated figures")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
