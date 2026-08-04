@@ -1,0 +1,13 @@
+# SPIE author-kit files are not vendored; drop spie.cls / spiebib.bst here yourself.
+spie.cls
+spiebib.bst
+# build artefacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+main.pdf

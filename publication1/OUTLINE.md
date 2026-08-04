@@ -260,7 +260,37 @@ three numbers inside Lesson 2), the DATT ablation-ladder figure (becomes a three
 inset table in Sec. 4.5, Lessons 5–6), the Lighthouse-model illustration (becomes two
 sentences in Sec. 3.6), and the taxonomy schematic (becomes the structure of T4).
 
-## Writing order
-Abstract ✔ → Methodology 3.7 ✔ → rest of Methodology → Results 4.1–4.3 → Lessons 4.5 →
-Introduction → Conclusion → figures → number audit against `reports/` → hardware
-subsections 4.4 / T5 / F7 when the campaign completes.
+## Status (2026-08-03)
+
+Full draft written and compiling: abstract, introduction, methodology (3.1–3.8),
+results (4.1–4.3, 4.5–4.6) and conclusion. Reserved / outstanding:
+
+1. **Results 4.4 + Table 5 + Fig. 7** — hardware campaign, to be written after the runs.
+2. **Figures 2, 4, 6** — currently framed placeholders in the source
+   (`\figplaceholder`); generate from the `results/` run dirs and drop the PDFs into
+   `figures/`.
+3. **Open data cells** (marked `\tbd` in red in Table 3, and TODO comments in the
+   source) — see the list below; these must be zero before submission.
+4. **Facility numbers** in Sec. 3.7, pending confirmation on the UCLouvain installation.
+5. **Length** — the draft renders long; trim candidates are listed below.
+
+### Benchmark runs still needed
+- ADRC at $\omega_o = 7$: nominal slow and fast (the current row mixes bandwidths);
+  payload and ground effect (current values predate the retune).
+- **ADRC at $\omega_o = 7$, LH + wind, 10 evaluation seeds.** Its single-seed 0.053 is
+  nominally better than all three tied stacks — until this run exists, the paper cannot
+  safely call the deployment tie three-way.
+- Tuned MPPI + $\mathcal{L}_1$ under wind, payload, ground, and LH + wind.
+- Offset-free MPC (soft-start) under gust, payload, ground.
+- Ground effect for the hybrid adaptive stack and the RL policy.
+- PID under LH + wind.
+
+### Trim candidates if over length
+Lesson 2's bandwidth numbers → one sentence; Lesson 6's ladder → two sentences plus the
+inset; the related-work paragraphs → merge threads 3 and 4; Table 1 → fold the internal
+model and disturbance columns together; Sec. 3.2's metric equation → inline.
+
+## Writing order (completed)
+Abstract ✔ → Methodology 3.7 ✔ → rest of Methodology ✔ → Results 4.1–4.3 ✔ →
+Lessons 4.5 ✔ → Introduction ✔ → Conclusion ✔ → **next: figures, then the number audit
+against `reports/`, then hardware subsections 4.4 / T5 / F7 when the campaign completes.**

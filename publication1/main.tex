@@ -29,6 +29,11 @@
 \newcommand{\dattstack}{DATT-Stack}    % repo tag v6a
 \newcommand{\ofmpc}{offset-free MPC}
 \newcommand{\xadapt}{ADRC\,+\,xadapt}
+%% cell not yet measured -- must be zero at submission time
+\newcommand{\tbd}{\textcolor{red}{\textendash}}
+%% figure placeholder: \figplaceholder{height}{caption of what goes here}
+\newcommand{\figplaceholder}[2]{%
+  \fbox{\parbox[c][#1][c]{0.97\linewidth}{\centering\footnotesize\itshape #2}}}
 \newcommand{\unitm}{\,\mathrm{m}}
 
 %% ---- title and authors --------------------------------------------------
@@ -36,8 +41,8 @@
 Reinforcement Learning against Classical, Robust, Predictive, and Adaptive Control}
 
 %% TODO: confirm author list, affiliations and contact before submission.
-\author[a]{Tien-Thanh Nguyen}
-\affil[a]{Affiliation, Street, City, Country}
+\author{Tien-Thanh Nguyen\supit{a}}
+\affiliation{\supit{a}Affiliation, Street, City, Country}
 
 \authorinfo{Further author information: (Send correspondence to T.-T. Nguyen)\\
 T.-T. Nguyen: E-mail: nttputus@gmail.com}
