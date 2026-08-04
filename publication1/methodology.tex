@@ -119,8 +119,10 @@ proved necessary: the estimate fed to the optimizer is ramped in over the first
   \mathbf{d}_{\mathrm{plan}}(t) = \boldsymbol{\sigma}(t)\cdot\min\!\left(1,\ \frac{t}{1.5}\right),
   \label{eq:softstart}
 \end{equation}
-approximately three observer convergence times. The reasoning behind this
-\emph{soft start}, and the misdiagnosis it corrected, is Lesson~4.
+approximately three observer convergence times. A cold observer's first innovations are
+noise-dominated at full gain, and planning against that estimate during the launch
+transient produced metre-scale excursions; ramping it in removed them and, unexpectedly,
+improved every nominal cell as well.
 
 \paragraph{Hybrid adaptive stack.}
 An ADRC outer loop as above, commanding body rates into a \emph{pretrained} learned
