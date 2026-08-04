@@ -206,8 +206,8 @@ DATT-Asym (RL)           & $0.059\pm0.002$ & 3 train.\ seeds & privileged-critic
 ADRC + learned low level & $0.060\pm0.009$ & 10 eval.\ seeds & observer over an adaptive rate loop \\
 ADRC                     & $0.063\pm0.006$ & 10 eval.\ seeds & observer in the control law \\
 \midrule
-MPPI + $\mathcal{L}_1$   & $0.078\pm0.014$ & 10 eval.\ seeds & sampling with an $\mathcal{L}_1$ estimate \\
 DATT-Noisy (RL, earlier) & $0.077\pm0.006$ & 3 train.\ seeds & noisy-observation training only \\
+MPPI + $\mathcal{L}_1$   & $0.078\pm0.014$ & 10 eval.\ seeds & sampling with an $\mathcal{L}_1$ estimate \\
 PID + feedforward        & $0.116\pm0.013$ & 10 eval.\ seeds & no disturbance estimate \\
 Plain MPC                & $0.199\pm0.017$ & 10 eval.\ seeds & no disturbance state \\
 \bottomrule
@@ -419,7 +419,7 @@ forward pass through a two-layer network respectively (Table~\ref{tab:recommend}
 $\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted.}
 \label{tab:recommend}
 \begin{center}\small
-\begin{tabular}{@{}p{0.24\linewidth} p{0.24\linewidth} c p{0.38\linewidth}@{}}
+\begin{tabular}{@{}p{0.21\linewidth} p{0.21\linewidth} c p{0.36\linewidth}@{}}
 \toprule
 Operating condition & Recommended stack & Cost & Reason, and what it costs \\
 \midrule

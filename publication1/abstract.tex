@@ -23,10 +23,12 @@ in-ground effect, a $23\,\%$ payload step, and a Lighthouse measurement model gr
 in published characterization data, using ten evaluation seeds and three training seeds
 so that every claim carries an error bar. No controller dominates: the per-condition
 champions differ, and each wins through a different disturbance-estimation mechanism.
-Under the realistic deployment condition --- degraded onboard sensing with wind --- the
-offset-free MPC, the learned policy and the hybrid adaptive stack become statistically
-indistinguishable at $0.057\pm0.014$, $0.059\pm0.002$ and $0.060\pm0.009$~m, which we
-argue makes that regime estimator-limited rather than architecture-limited. We
+Under the realistic deployment condition --- degraded onboard sensing with wind --- four
+of them become statistically indistinguishable: the offset-free MPC at
+$0.057\pm0.014$~m, the learned policy at $0.059\pm0.002$~m, the hybrid adaptive stack at
+$0.060\pm0.009$~m and the extended state observer alone at $0.063\pm0.006$~m. Four
+unrelated mechanisms saturating at the same value argues that the regime is
+estimator-limited rather than architecture-limited. We
 distil the study into seven transferable lessons, two of which overturn conclusions we
 had drawn ourselves from single-seed, full-window data: mean-only tables hide leaders
 that fail on unlucky sensor-bias draws, and an apparent noise fragility proved to be a

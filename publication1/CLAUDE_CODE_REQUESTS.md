@@ -1,226 +1,176 @@
-# Requests for a Claude Code session — paper 1 completion
+# Requests for a Claude Code session — paper 1, round 2
 
-Paste the **Kickoff prompt** below into a fresh Claude Code session at the repo root.
-Everything after it is the detailed spec that session should follow.
+Round 1 (gap runs + figures) is done and was good work: zero red cells, five vector
+figures, four corrections found and documented, and the four-way tie discovery is a
+better result than the claim it replaced. This round is **verification fallout, two
+data gaps that undermine specific claims, and a length problem.**
+
+**Read this first — the manuscript prose has already changed.** Pull before starting.
+The following were fixed outside this repo session and are already committed:
+
+- `abstract.tex` and `introduction.tex` still said *three-way* tie after round 1
+  updated `results.tex` and `conclusion.tex` to four-way. Both now name all four stacks.
+- `tab:recommend` overflowed (the predicted overfull `\hbox`); column widths narrowed.
+- The deployment table listed MPPI (0.078) above DATT-Noisy (0.077); reordered.
+
+**The build check you could not run has now been run.** With a stub class standing in
+for `spie.cls`: `pdflatex` + `bibtex` complete with **0 errors, 0 overfull boxes, 0
+undefined references or citations**. So the manuscript is structurally sound — the open
+issues below are about content, not LaTeX.
 
 ---
 
 ## Kickoff prompt (paste this)
 
-> Work on the crazy_track repo. Paper 1 (`publication1/`) is drafted; two things are
-> missing: benchmark cells and figures. Read `publication1/CLAUDE_CODE_REQUESTS.md` and
-> execute Part A then Part B. Run everything in the WSL venv
-> (`wsl -d Ubuntu-24.04`, `~/venvs/crazy_track`). Use a meaningful `--reason` on every
-> run, commit and push after each work unit, and record any cell that fails or looks
-> anomalous in a new report `reports/2026-08-XX_p1-figure-and-gap-runs.md` rather than
-> silently dropping it. When Part A finishes, update the tables in
-> `publication1/results.tex` — replace every red `\tbd` with the measured value and
-> delete the corresponding TODO comment. Do not change any number that is already there
-> without saying so in the report.
+> Continue paper 1 in the crazy_track repo. Read
+> `publication1/CLAUDE_CODE_REQUESTS.md` (round 2) and execute Parts A, B and C in that
+> order. Pull first — the .tex prose changed outside this session. Same discipline as
+> last time: meaningful `--reason`, commit and push per work unit, and append findings
+> to a new report `reports/2026-08-XX_p1-round2.md`. Where a request asks you to change
+> a number in the manuscript, state the old and new value in the report.
 
 ---
 
-# Part A — benchmark cells still missing
+# Part A — two claims resting on too little data
 
-The paper's tables currently render unmeasured cells in red (`\tbd`). **The target is
-zero red cells.** The controller pool is six stacks; the naming map is
-DATT-Asym = v5 = `results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip`.
+Both of these are load-bearing sentences that a reviewer can attack, and both are cheap
+to fix.
 
-Two constraints from `HANDOVER.md`, do not rediscover them: controller families cannot
-be mixed in one run (`attitude` / `force_torque` / `rotor_vel`), and single-seed
-conclusions on anything policy-level are worthless.
+### A.1 The variance lesson rests on three seeds for MPPI
 
-### A.1 ADRC bandwidth consistency (the row currently mixes $\omega_o = 7$ and $10$)
-
-`ADRCController` now defaults to $\omega_o = 7$, so plain `--controllers adrc` is correct.
-
-```bash
-python -m crazy_track.eval.lissajous_benchmark --controllers adrc \
-  --speeds slow normal fast --tag p1-adrc-w7-nominal \
-  --reason "paper1 Table 2: ADRC nominal row currently mixes w=10 (slow/fast) and w=7 (normal)"
-
-python -m crazy_track.eval.lissajous_benchmark --controllers adrc \
-  --speeds normal --disturbance payload --tag p1-adrc-w7-payload \
-  --reason "paper1 Table 3: ADRC payload cell predates the w=7 retune"
-
-python -m crazy_track.eval.lissajous_benchmark --controllers adrc \
-  --speeds normal --disturbance ground --tag p1-adrc-w7-ground \
-  --reason "paper1 Table 3: ADRC ground cell predates the w=7 retune"
-
-python -m crazy_track.eval.lissajous_benchmark --controllers adrc \
-  --speeds slow fast --sensor lighthouse --tag p1-adrc-w7-lh \
-  --reason "paper1 Table 4: ADRC lighthouse slow/fast cells missing at w=7"
-```
-
-### A.2 THE IMPORTANT ONE — is the deployment tie three-way or four-way?
-
-The paper claims a three-way statistical tie at LH\,+\,wind
-(offset-free MPC $0.057\pm0.014$, DATT-Asym $0.059\pm0.002$, ADRC+xadapt
-$0.060\pm0.009$). Plain ADRC posted **0.053** in that cell — better than all three —
-but from a **single** evaluation seed, which the paper's own Lesson 3 says we may not
-read. Until this runs, the headline claim has a hole in it.
+Lesson 3 ("mean-only tables mislead") leans hardest on MPPI's Lighthouse-fast cell,
+quoted as $0.228\pm0.178$ with range $0.091$--$0.480$. **That is $n = 3$**, while every
+other stack in Figure 5 is $n = 10$ — the figure itself prints `(n = 3)` under the
+controller whose spread carries the argument. A reviewer will notice that a claim about
+the unreliability of small samples is itself made from a small sample.
 
 ```bash
-for S in 0 1 2 3 4 5 6 7 8 9; do
-  python -m crazy_track.eval.lissajous_benchmark --controllers adrc --speeds normal \
-    --sensor lighthouse --disturbance wind_const --seed $S --tag ms-adrc-lhwind-s$S \
-    --reason "paper1 headline: 10-seed ADRC w=7 at LH+wind; single-seed 0.053 would make the deployment tie four-way"
+for S in 3 4 5 6 7 8 9; do
+  python -m crazy_track.eval.lissajous_benchmark --controllers mppi_l1 --speeds fast \
+    --sensor lighthouse --seed $S --tag ms-mppi-lhfast-s$S \
+    --reason "paper1 Lesson 3: extend tuned MPPI LH-fast from 3 to 10 eval seeds; the variance claim currently rests on n=3"
 done
-python -m crazy_track.eval.aggregate_seeds --prefix ms-adrc-lhwind
+python -m crazy_track.eval.aggregate_seeds --prefix ms-mppi-lhfast
 ```
 
-**Report the result explicitly**, whichever way it goes. If the 10-seed mean lands
-inside the tie band, the paper gains a fourth tied stack and the estimator-limited
-argument gets *stronger* (four unrelated mechanisms, not three). If it lands below,
-the headline must be rewritten. Either outcome is publishable; a missing run is not.
+Seeds 0--2 already exist under `ms-lhfix-s*`; reuse them rather than re-running, but
+**check they are the same controller configuration** before pooling — if they are not,
+run all ten fresh and say so. Update Table 4, Lesson 3 and Figure 5. If the ten-seed
+spread turns out narrower than the three-seed one, say so plainly: it weakens the
+example but the lesson survives on DATT-L1, which is already $n = 10$.
 
-### A.3 Remaining `\tbd` cells
+### A.2 The learned-policy row mixes seed counts silently
+
+In Table 3, DATT-Asym's wind cell is a three-training-seed mean while its gust
+($0.091$) and payload ($0.102$) cells are single evaluations of the seed-0 model. The
+row reads as homogeneous and is not.
 
 ```bash
-# MPPI+L1 at the tuned config, force disturbances
-for D in wind_const payload ground; do
-  python -m crazy_track.eval.lissajous_benchmark --controllers mppi_l1 --speeds normal \
-    --disturbance $D --tag p1-mppi-$D \
-    --reason "paper1 Table 3: tuned MPPI $D cell; existing values predate the N=512/AR(1) tuning"
+for S in 0 1 2; do
+  M=results/<v5-seed-$S-train-run>/datt_ppo_final.zip
+  python -m crazy_track.eval.lissajous_benchmark --controllers datt:$M --speeds normal \
+    --disturbance wind_gust --tag mst-v5-gust-s$S \
+    --reason "paper1 Table 3: DATT-Asym gust cell is single-seed while the rest of the row is 3-seed"
+  python -m crazy_track.eval.lissajous_benchmark --controllers datt:$M --speeds normal \
+    --disturbance payload --tag mst-v5-payload-s$S \
+    --reason "paper1 Table 3: DATT-Asym payload cell is single-seed while the rest of the row is 3-seed"
 done
-
-# Offset-free MPC, force disturbances + lighthouse slow
-for D in wind_gust payload ground; do
-  python -m crazy_track.eval.lissajous_benchmark --controllers mpc_offsetfree --speeds normal \
-    --disturbance $D --tag p1-ofmpc-$D \
-    --reason "paper1 Table 3: offset-free MPC (soft-start) $D cell never measured"
-done
-python -m crazy_track.eval.lissajous_benchmark --controllers mpc_offsetfree --speeds slow \
-  --sensor lighthouse --tag p1-ofmpc-lh-slow \
-  --reason "paper1 Table 4: offset-free MPC lighthouse slow cell missing"
-
-# Ground effect for the two remaining stacks (separate sim modes -> separate runs)
-python -m crazy_track.eval.lissajous_benchmark --controllers xadapt_adrc --speeds normal \
-  --disturbance ground --tag p1-xadrc-ground \
-  --reason "paper1 Table 3: ground-effect cell missing for the hybrid adaptive stack"
-python -m crazy_track.eval.lissajous_benchmark \
-  --controllers datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip \
-  --speeds normal --disturbance ground --tag p1-datt-asym-ground \
-  --reason "paper1 Table 3: ground-effect cell missing for DATT-Asym"
-
-# LH+wind rows for PID and MPPI (10 seeds each, same protocol as A.2)
-for C in pid mppi_l1; do for S in 0 1 2 3 4 5 6 7 8 9; do
-  python -m crazy_track.eval.lissajous_benchmark --controllers $C --speeds normal \
-    --sensor lighthouse --disturbance wind_const --seed $S --tag ms-$C-lhwind-s$S \
-    --reason "paper1 Table 4: $C deployment-cell row, 10 eval seeds"
-done; done
-python -m crazy_track.eval.aggregate_seeds --prefix ms-
+python -m crazy_track.eval.aggregate_seeds --prefix mst-v5
 ```
 
-### A.4 Deliverable for Part A
+The three v5 training runs are listed in `papers/paper1-benchmark/README.md`. If a
+three-seed run is not worth the time, the acceptable alternative is to **mark the two
+cells as single-seed in the table** — but do not leave them unmarked.
 
-A single markdown table in the new report mapping **every** cell of
-`publication1/results.tex` Tables 2, 3 and 4 to its run directory, then the edits to
-`results.tex` replacing each `\tbd`. Flag any value that contradicts what the paper
-currently states.
+### A.3 The context rows you flagged yourself
+
+Your report notes that the plain-MPC and DATT-L1 context rows were not re-measured, and
+the xadapt row moved substantially once it was. Two of those context values are quoted
+in the running text and carry arguments: plain MPC under wind (0.196, the "most
+sophisticated controller is also the worst" point) and DATT-L1 under gust (0.061, the
+gust champion). Re-run at least those two; if they move, the surrounding sentences move
+with them.
 
 ---
 
-# Part B — figures
+# Part B — figure fixes
 
-Write **one script**, `scripts/make_paper1_figures.py`, that regenerates every figure
-from the run directories and writes vector PDFs into `publication1/figures/`. It must be
-re-runnable and must not modify anything under `results/`.
+The figures are good. Three fixes, one of which matters a lot.
 
-## Shared style
+### B.1 (important) Figure 3's deployment row prints the number the paper says not to read
 
-- Vector PDF, no rasterization. `matplotlib.rcParams` with a serif font, font size 8
-  (labels 8, tick labels 7, panel titles 8).
-- Widths: \SI{17}{\cm} for a full-width figure (SPIE is single-column with a
-  \textasciitilde\SI{17.5}{\cm} text block); never exceed it.
-- Colour per controller, fixed across **all** figures, colour-blind safe:
-  PID `#4C72B0`, ADRC `#DD8452`, MPPI+L1 `#55A868`, offset-free MPC `#C44E52`,
-  ADRC+xadapt `#8172B3`, DATT-Asym `#937860`.
-- The reference is always thin black, dashed, drawn **under** the flown path.
-- No chartjunk: no grid boxes, no panel frames except left/bottom spines, no legends
-  repeated per panel — one shared legend per figure.
+The LH\,+\,wind row labels each panel with that panel's own single-seed RMSE. For ADRC
+this prints **0.053 m** — which is precisely the lucky-minimum draw that
+Sec.~4.3 spends a paragraph explaining we must not read, against a ten-seed mean of
+0.063. The figure currently contradicts the text on the exact point the text is making.
 
-## B.1 Figure 2 — nominal tracking (the "Figure 5" figure)
+Fix: in the LH\,+\,wind row (and any other row where the table value is a seed
+aggregate), print the **aggregate** in the panel corner —
+`0.063 ± 0.006 m` — and let the drawn trace remain one representative seed, identified
+in the caption (as Figure 2's caption already does for the learned policy). If the
+aggregate does not fit, print the mean alone and put the spread in the caption.
 
-This is the figure the reader looks at first; get it right.
+Check every other panel label in Figures 2, 3 and 4 for the same mismatch and make the
+rule uniform: **a printed number matches its table cell, or the caption says which
+single realization it is.**
 
-- Layout: **6 columns (controllers) × 3 rows (speeds)**, `sharex`/`sharey`, equal aspect.
-  Controller name as a column title on the top row only; speed label
-  (`slow, T = 15.0 s`) rotated on the left of each row only.
-- Each panel: reference figure-eight in dashed black, flown $xy$ path in the
-  controller's colour, and the RMSE printed in the panel corner
-  (`0.022 m`, 7 pt, same colour as the path).
-- Source: one run per sim mode so all cells are from the same code state —
-  `pid adrc mppi_l1 mpc_offsetfree datt:<v5>` in one attitude-mode invocation,
-  `xadapt_adrc` in a second (`rotor_vel`), both at `--speeds slow normal fast`.
-  Tag them `p1-fig-nominal-att` and `p1-fig-nominal-xadapt`.
-- Read `pos` and `ref_pos` from the per-rollout `.npz`; drop the first \SI{1}{\second}
-  so the plotted path matches the reported metric.
+### B.2 Figure 4: the `n = 3 train` annotation collides with the DATT-Asym marker
 
-## B.2 Figure 3 — tracking under disturbance (the new one)
+Visible overlap in the rendered PDF. Offset the annotation or right-align the whole
+column of `n = ...` labels.
 
-Same geometry, but now the disturbance must be **visible in the plot**, which is the
-point the reviewer will look for.
+### B.3 Figure 6: annotate that 0.217 m is one seed
 
-- Layout: **6 columns (controllers) × 5 rows (conditions)**: nominal, constant wind,
-  gust, payload, LH\,+\,wind. Normal tier throughout.
-- **Colour the flown path by instantaneous error magnitude** (`viridis`, shared
-  normalization across the whole figure, one horizontal colourbar underneath labelled
-  `position error [m]`). This is what makes the figure earn its space: the reader sees
-  *where on the lobe* the error concentrates, not just how much there is.
-- **Disturbance glyphs**, drawn identically in every panel of a row:
-  - *constant wind*: three light grey arrows across the panel background pointing
-    $+x$, annotated once per row `2.5 m/s² (+x)`;
-  - *gust*: the same arrows drawn with a sinusoidal shaft, annotated
-    `0.7 Hz + turbulence`;
-  - *payload*: a downward arrow glyph in the corner annotated `+10 g (23 % weight)`,
-    **plus** a \SI{1}{\cm} strip below each payload panel showing $z(t)$ against
-    $z_{\mathrm{ref}}$ — the payload error is vertical and is invisible in an $xy$ plot,
-    which is exactly the trap to avoid;
-  - *LH + wind*: wind arrows as above, and overlay the raw Lighthouse position samples
-    as small grey dots so the \SI{34}{\hertz} staircase and the bias offset are visible.
-- Print RMSE in each panel corner as in Fig. 2.
+The panel quotes a full-window RMSE of 0.217 m; Table 4 gives $0.141\pm0.058$ for the
+same controller and cell. Both are right — the figure is seed 4 — but a reader
+cross-checking will think one is wrong. Add `(seed 4; 10-seed mean 0.141 m)` to the
+annotation.
 
-## B.3 Figure 4 — the deployment cell
+### B.4 Minor, only if quick
 
-Horizontal dot-and-error-bar plot, one row per controller, sorted best to worst.
-Filled dot = mean, bar = $\pm$ one standard deviation across seeds, hollow dot = the
-same controller's clean-sensing value at the same tier (so the reader sees each stack is
-further from itself than from the others — that is the argument). Shade the tie band
-spanning the tied stacks' error bars. Annotate each row with its seed count and type
-(`n = 10 eval` / `n = 3 train`).
-
-## B.4 Figure 5 — variance, not means
-
-Strip plot: x = controller, y = RMSE at the LH-fast cell, one marker per seed, with the
-mean drawn as a horizontal tick. Include MPPI+L1, DATT-L1 and DATT-Asym at minimum. The
-figure must make one thing obvious at a glance: two controllers scatter over a factor of
-five while the third collapses onto its mean.
-
-## B.5 Figure 6 — the launch transient
-
-$\lVert \mathbf{p}(t) - \mathbf{r}(t)\rVert$ against time for three traces on the *same*
-unlucky seed (4 or 8): offset-free MPC before soft start, after soft start, and plain
-MPC. Shade $t < \SI{1}{\second}$ (the excluded warm-up) in light grey and
-$t > \SI{2.5}{\second}$ (the steady-state window) in a lighter tint; annotate the two
-RMSE values for the after-soft-start trace — full-window and steady-state — to show that
-the metric and the mechanism disagree.
-
-## B.6 Deliverable for Part B
-
-`publication1/figures/*.pdf` plus the script, and in `results.tex` replace each
-`\figplaceholder{...}` with the corresponding
-`\includegraphics[width=\linewidth]{figN}`. Rebuild the document and confirm it
-compiles with no overfull boxes. Note that `spie.cls` and `spiebib.bst` are gitignored —
-they must be downloaded from the SPIE author kit for a real build.
+The Lighthouse sample dots in Figure 3's bottom row are hard to see at print size, and
+they are the visual evidence for the 34 Hz staircase. Slightly larger, or a lighter path
+alpha underneath.
 
 ---
 
-# Part C — nice to have, only if A and B are done
+# Part C — length
 
-1. **Wall-clock / compute column.** The recommendation table claims the optimizer costs
-   \SIrange{20}{70}{\second} per episode against a single forward pass for the policy.
-   `summary.csv` already carries `wall_time_s`; extract the median per controller across
-   the nominal runs so the claim is sourced rather than remembered.
-2. **A `\tbd` audit hook**: a one-line grep in the report confirming
-   `grep -c '\\tbd' publication1/*.tex` returns 0.
+**This is now the largest open problem.** The manuscript is **8,330 words** of body text
+plus five figures and five tables. Compiled against a stub class it is 19 pages;
+allowing for SPIE's denser layout, expect roughly **14--15 pages against a 10-page
+target.**
+
+Do not start cutting unilaterally — propose first. Produce a trim plan in the report
+that reaches ~10 pages, showing estimated words saved per cut, working down this
+priority order:
+
+1. **Methodology (2,617 + 708 words) is the biggest block and the most compressible.**
+   The controller pool subsection restates parameters that Table 1 already carries; the
+   equations for PID and the observer are standard and could be cited rather than
+   written. Target: 600--800 words.
+2. **Lessons 2 and 6** carry full numeric evidence inline. Each could keep its claim and
+   mechanism and drop half its numbers to the tables. Target: 300 words.
+3. **The hardware subsection (708 words)** is long for a campaign whose results are not
+   yet in the paper. The falsification-targets paragraph is worth keeping — it is what
+   makes the campaign pre-registered — but the specification detail could halve.
+   Target: 300 words.
+4. **Related work** — four paragraphs could become three by merging the predictive and
+   sampling threads. Target: 150 words.
+5. **Figures 5 and 6** could merge into one two-panel figure, or Figure 5 could become a
+   two-column inset. Saves roughly half a page.
+
+Report the plan with numbers; the author decides which cuts to take before any are made.
+
+---
+
+# Part D — bookkeeping
+
+1. The report's own note that `tab:recommend` was the layout risk was correct, and it
+   has been fixed; nothing further needed there.
+2. `rollout()` gaining `meas_pos` is a good change — please confirm the existing test
+   suite still passes (`python -m pytest tests/`) and note it in the report, since it
+   touched shared harness code.
+3. `papers/paper1-benchmark/README.md` still describes the eight-stack pool and the
+   three-way tie. Update it to the six-stack pool and the four-way result so the repo
+   index does not contradict the manuscript.
