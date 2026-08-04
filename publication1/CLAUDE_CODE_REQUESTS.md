@@ -1,142 +1,121 @@
-# Requests for a Claude Code session — paper 1, round 4 (restore, then hand over)
+# Requests for a Claude Code session — paper 1, round 5 (two experiments)
 
-Round 3 was the best report of the four. Three things in particular:
+Round 4 executed cleanly, and two judgement calls in it were better than the request
+that prompted them: splicing Lesson 4 out of `2ed7ff3^` rather than reverting (which
+would have taken cuts 7–9 with it), and **measuring the four context-row cells the table
+merge required rather than asserting them.** The merged table is clearer than the two it
+replaced.
 
-- **Reporting that the cuts delivered 1.6 pages instead of 5, and why**, rather than
-  padding the number — the diagnosis (cuts 1, 2, 3 and 7 were costed on the assumption
-  that their words were restatement, and they were not) is exactly right.
-- **Refusing cut 3's second half after trying it**: removing Lesson 2's bandwidth numbers
-  turned the lesson into an assertion, so they went back. That is the correct instinct.
-- **The "claims the trim weakened" list.** That list is what this round acts on.
+The fresh-eyes list in E.3 is the most useful thing produced in this project. This round
+acts on it. Two of the four items need runs; the other two are writing fixes and will be
+handled in the writing pass, not here.
 
-## The premise has changed
+## Build, confirmed here
 
-The author has since said: **length is not a strict requirement, provided the scientific
-contributions are clearly stated.** Several of round 3's cuts were made only to buy
-pages. Those should come back. This round is mostly `git revert` plus a few restorations
-— then the manuscript goes to a writing pass and this workflow ends.
+`pdflatex` + `bibtex` against a stub class: **0 errors, 0 overfull boxes, 0 undefined
+references, 19 pages** (≈14–15 real SPIE pages).
 
-Current state, built here against a stub class: **0 errors, 0 undefined references,
-2 minor overfull boxes, 18 pages** (≈14 real SPIE pages, matching round 3's arithmetic).
+The two overfull boxes were **not** fixed by the round-4 rewording — both survived at
+byte-identical widths, because in each case the culprit was `parameterization` welded to
+a `\cite` at a line end, and splitting the sentence did not give TeX a break opportunity
+inside that unit. Both are now reworded to avoid the word entirely, plus
+`\emergencystretch=1em` in the preamble. Already committed; do not redo.
 
 ---
 
 ## Kickoff prompt (paste this)
 
 > Continue paper 1 in the crazy_track repo. Pull first. Read
-> `publication1/CLAUDE_CODE_REQUESTS.md` (round 4). The page limit has been relaxed, so
-> this round restores content that round 3 cut only for length, takes one structural
-> improvement worth having regardless, and closes the last two data cells. Record
-> everything in `reports/2026-08-XX_p1-round4.md`. After this round the manuscript goes
-> to a writing pass elsewhere — so leave prose style alone and change only what is
-> listed.
+> `publication1/CLAUDE_CODE_REQUESTS.md` (round 5). Two experiments, both from your own
+> E.3 list: a sensor-bias sweep that tests whether the deployment cell is actually
+> estimator-limited, and an evaluation-seed run for the learned policy so the four-way
+> tie compares like with like. Report in `reports/2026-08-XX_p1-round5.md`. **Report
+> what the data says even if it contradicts the paper's central claim** — especially
+> then.
 
 ---
 
-# Part A — restore what was cut only for length
+# Part A — test the estimator-limited claim (your E.3 item 3)
 
-### A.1 Bring back Lesson 4 and Figure 6
+This is the most valuable experiment left in the project. You wrote:
 
-`git revert 2ed7ff3`, then re-apply the bookkeeping in reverse: lessons renumber back to
-seven, "six lessons" → "seven" in the abstract and the lessons preamble,
-`fig6_transient` returns to the figure script's default set, and the three loose-end
-patches from round 3 are reconciled rather than duplicated —
+> "Estimator-limited, not architecture-limited" is an interpretation presented as a
+> finding. […] That is consistent with an estimator bound, but also with four stacks all
+> being limited by the same actuator envelope, or by the reference itself at that tier.
 
-- the sentence added under Table 4 explaining the $0.141\pm0.058$ outlier now overlaps
-  Lesson 4. **Keep the table sentence** (a reader meeting that number should not have to
-  wait for the lessons section) and shorten Lesson 4's opening so it does not repeat it;
-- the soft-start justification clause in §3.3 should stay as well — it is the right
-  place for *why the mechanism exists*, while Lesson 4 is the right place for *how we
-  misdiagnosed it*. Make sure the two do not use the same sentence twice.
+That is correct, and it is the paper's headline claim. The proposed discriminating test
+is right and cheap: **if the binding constraint is the estimator, scaling the sensor
+model's error should move all four tied stacks together; if it is the actuator envelope
+or the reference, it should not.**
 
-Lesson 4 is the paper's most transferable procedure — "check when the maximum error
-occurs before attributing an error level to steady-state noise" — and it is the only
-lesson a reader can apply to a paper that is not this one.
+`LighthouseSensor` already takes `bias_std` (default \SI{0.015}{\meter} per axis) and the
+noise parameters. Add a scalar multiplier — a `--sensor-scale` flag on the benchmark
+that multiplies `bias_std`, `vel_std`, `att_std_deg` and `jitter_std` together, so a
+single knob moves the whole measurement quality. Then sweep it over the deployment cell:
 
-### A.2 Restore three of the six claims deleted whole
+```
+scales:      0.25, 0.5, 1.0, 2.0
+controllers: mpc_offsetfree, xadapt_adrc, adrc, datt:<v5 seed 0>
+condition:   --speeds normal --sensor lighthouse --disturbance wind_const
+seeds:       5 evaluation seeds per cell   (4 x 4 x 5 = 80 runs)
+```
 
-From round 3's own list, restore:
+**What each outcome means, decided in advance so the analysis cannot drift:**
 
-1. **MPPI's AR(1) exploration noise as the single largest tuning gain measured**
-   (methodology). It is a concrete empirical result about a method the paper includes,
-   and it is the only place the sampling stack's tuning is justified at all.
-2. **Lesson 5's next step** — recurrence or explicit innovation-variance features. A
-   negative result without a stated remedy is half a result.
-3. **The conclusion's state-pre-filtering next step**, which follows Lesson 4 back in.
+- *All four improve monotonically and stay within each other's spread as the scale
+  falls* → the claim is demonstrated, not inferred. It becomes the paper's strongest
+  result and earns a figure: RMSE against sensor-error scale, four curves converging at
+  every point.
+- *They improve but separate as the scale falls* → the tie is a property of this sensor
+  quality specifically, which is a **more precise** and still publishable claim. The
+  scale at which they separate is then a number worth reporting.
+- *They do not improve* → the claim is wrong, and something else binds. Say so plainly;
+  a benchmark paper that falsifies its own interpretation is worth more than one that
+  asserts it.
 
-Leave deleted: the hybrid stack's layer-complementarity sentence in the methodology (it
-does duplicate Lesson 6 verbatim — that call was right), and the conclusion's
-"several cells remain to be completed", which is now simply false.
+Do not adjust the claim's wording yourself — report the curves and let the writing pass
+rewrite §4.3 to match whichever outcome occurred.
 
-### A.3 Reconcile the abstract's self-corrections
+# Part B — make the tie compare like with like (your E.3 item 2)
 
-With Lesson 4 back, the paper records **three** occasions on which our own earlier
-reading of the data was wrong: a launch transient misdiagnosed as noise fragility, a
-single evaluation seed that proved to be the minimum of ten draws, and a three-seed
-variance figure that overstated both its mean and its spread. The abstract currently
-promises two, both seed-related.
+You noted that three tied members are ten *evaluation* seeds while the policy is three
+*training* seeds, and that these are not commensurable. The cheap fix is to measure the
+missing object rather than caveat it:
 
-Rather than pick two, consider stating it as what it is — that the study corrected
-itself three times, and that this is an argument for the protocol rather than an
-embarrassment. One sentence. The introduction's contribution bullet should match, and
-the introduction's motivation paragraph (which round 3 flagged as over-promising on
-transients) becomes accurate again automatically.
+```
+python -m crazy_track.eval.lissajous_benchmark \
+  --controllers datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip \
+  --speeds normal --sensor lighthouse --disturbance wind_const --seed $S \
+  --tag ms-datt-asym-lhwind-s$S --reason "paper1: evaluation-seed spread for the policy so the four-way tie compares like with like"
+```
 
----
+for `S` in 0..9, on the **seed-0 training run** so the result is a pure evaluation-seed
+spread. The paper can then report both for the policy — an evaluation-seed spread
+directly comparable to the other three members, and the training-seed spread as a
+separate statement about initialization robustness. Two numbers, two meanings, neither
+doing the other's job.
 
-# Part B — one structural improvement worth taking anyway
+If the evaluation-seed spread turns out much wider than $\pm0.002$, that is itself
+important: the variance-collapse claim in Lesson 3 would then be about training
+initialization only, not about the policy's run-to-run behaviour, and Lesson 3 needs
+rewording.
 
-**Merge Tables 2 and 3.** Round 3 identified this and it is not a length cut: Table 3's
-`nominal` column *is* Table 2's `normal` column, printed twice, which is a place where a
-reader can find two numbers that must agree and has to check that they do. One table
-with slow / normal / fast plus the four disturbance columns removes a caption, a header
-and six duplicated cells, and makes the speed axis and the disturbance axis visible in
-one place.
+# Part C — not for this round
 
-Watch two things: the merged table is eight columns wide, so it needs `\small` and
-compact headers (it is the shape that overflowed twice before); and the learned-policy
-row carries its spreads in a footnote — keep that convention.
+Your items 1 and 4 are writing problems and will be fixed in the writing pass:
 
-If on inspection the merge makes the table unreadable rather than clearer, do not force
-it: say so in the report and leave both tables. This is a judgement about legibility,
-not a mandate.
+- **Item 1** ("each the best member of its own family") will be replaced by a per-stack
+  statement of how each configuration was chosen — sweeps where sweeps exist, and plainly
+  "standard gains, not swept" where they do not. Your observation that the claim is
+  strongest where the paper spent effort and weakest where it did not, which is the exact
+  asymmetry the paper criticises in others, is the right reason to fix it.
+- **Item 4** (the recommendation table's "Cost" column) will be relabelled to name what
+  it measures. If a per-control-step solver time is cheap to instrument, report it in
+  your round-5 notes and it will be used instead; if not, the relabel stands.
 
----
+Do not edit prose for either — just flag anything you notice in passing.
 
-# Part C — the last two cells, and two typographic defects
+# Part D — after this
 
-1. **DATT-L1 nominal (0.048) and wind (0.050)** were not on round 3's list and remain at
-   their original measurement. Its other three cells reproduced to the fourth decimal,
-   so this is almost certainly a formality — but "every cell of Table 3 is current"
-   should be literally true.
-2. **Two overfull boxes** appeared in the round-3 edits, both small and both in text
-   that the writing pass will touch anyway: `introduction.tex` lines 50–66 (0.3 pt, the
-   merged disturbance-rejection/predictive paragraph) and `methodology.tex` lines 94–101
-   (12.7 pt, the observer paragraph). Fix by rewording, not by `\sloppy`.
-
----
-
-# Part D — the hardware bring-up flights: DECLINED
-
-The author has confirmed these were initial tests of the Lighthouse setup and are
-**not to appear in the paper in any form**. No change to \S3.7. The analysis stays in
-`reports/` as lab record only.
-
-Do not reintroduce the \SI{\pm15}{\degree} command-clip finding, the saturation
-statistics, or any reference to pre-campaign flights, in the methodology, the results,
-or the limitations.
-
----
-
-# Part E — handover
-
-After this round the manuscript goes to a writing pass. To prepare:
-
-1. Confirm the stub-class build: errors, overfull boxes, undefined references, pages.
-2. Update `publication1/OUTLINE.md`, which is still rev. 2 and now describes a paper that
-   no longer exists — wrong title, eight-stack pool language, "three-way tie",
-   seven-then-six-then-seven lessons, and a figure plan that predates the figures. Either
-   bring it current or mark it clearly as a historical planning document.
-3. List anything you believe is still weakly evidenced or over-claimed. You have found
-   three such things unprompted across three rounds; a fourth pass with fresh eyes on
-   the finished draft is worth more than another round of cuts.
+The manuscript goes to the writing pass. Nothing further will be asked of this workflow
+unless Part A overturns something.

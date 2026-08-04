@@ -48,8 +48,8 @@ with per-cell seed statistics, neither of which the source protocols include.
 
 \paragraph{Disturbance rejection and predictive tracking.}
 Active disturbance rejection control\cite{han2009adrc} lumps unmodeled dynamics and
-external forces into a single state estimated by an extended observer, tuned through a
-bandwidth parameterization\cite{gao2003scaling}. $\mathcal{L}_1$ adaptive
+external forces into a single state estimated by an extended observer, whose gains are
+set by a single bandwidth parameter\cite{gao2003scaling}. $\mathcal{L}_1$ adaptive
 control\cite{hovakimyan2010l1} separates fast estimation from filtered actuation to
 retain robustness guarantees, and incremental nonlinear dynamic
 inversion\cite{smeur2016indi} achieves related ends through measured accelerations. In

@@ -92,8 +92,8 @@ it under sustained loads.
 
 \paragraph{Active disturbance rejection control.}
 A reduced-order extended state observer on measured velocity estimates a lumped
-disturbance acceleration $\boldsymbol{\sigma}$, in the standard bandwidth
-parameterization\cite{gao2003scaling,han2009adrc}. That estimate is saturated at
+disturbance acceleration $\boldsymbol{\sigma}$, with its gains set by a single
+bandwidth parameter in the standard way\cite{gao2003scaling,han2009adrc}. That estimate is saturated at
 \SI{3}{\meter\per\second\squared} and subtracted from the control law in place of an
 integrator. The single tuning knob is the observer bandwidth $\omega_o$, set here to
 \SI{7}{\radian\per\second}; how that value was reached, and why no value is correct, is
