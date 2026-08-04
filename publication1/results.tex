@@ -310,11 +310,12 @@ obvious remedy fails for an instructive reason. An innovation-scheduled adaptive
 bandwidth --- raising $\omega_o$ when the observer innovation is biased rather than
 white --- did win its target gust cells (\SI{0.071}{\meter} against \SI{0.080}{\meter}
 for the best fixed value) while degrading every calm cell (\SI{0.060}{\meter} against
-\SI{0.023}{\meter}). The scheduling statistic cannot distinguish an external disturbance
-from the observer's \emph{own} attitude-loop lag residual during aggressive tracking, so
-it false-positives into high bandwidth exactly when it should not. This is a property of
-fixed-structure lumped-disturbance observers, not of our implementation, and we report
-it as a negative result with its mechanism.
+\SI{0.023}{\meter}). The
+scheduling statistic cannot distinguish an external
+disturbance from the observer's \emph{own} attitude-loop lag residual during aggressive
+tracking, so it false-positives into high bandwidth exactly when it should not. This is
+a property of fixed-structure lumped-disturbance observers, not of our implementation,
+and we report it as a negative result with its mechanism.
 
 \paragraph{Lesson 3: mean-only tables mislead, sometimes decisively.}
 Two stacks that look competitive on their means are not. The sampling-based controller
@@ -415,11 +416,9 @@ noise-level randomization recovers part of the disturbance rejection and produce
 deployment result, but does not recover clean-state agility, and the reason is
 structural: a memoryless network cannot infer the current episode's noise level from a
 single observation frame, so it averages over the randomization range instead of
-calibrating to the episode. Testing that diagnosis by stacking four observation frames
-did not help at this training budget --- an \SI{80}{\milli\second} window spans only two
-or three position updates, which is thin evidence for inferring a noise level, and the
-fourfold larger input came with no additional capacity. Recurrence, or explicit
-innovation-variance features, is the indicated next step. The general point:
+calibrating to the episode. Stacking four observation frames did not help at this
+training budget: an \SI{80}{\milli\second} window spans two or three position updates,
+thin evidence for inferring a noise level. The general point:
 \emph{domain randomization does not make a policy adaptive; it makes it average}, unless
 the architecture can observe the thing being randomized.
 
