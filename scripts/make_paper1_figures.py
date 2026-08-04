@@ -209,7 +209,9 @@ AGG = {
     ("LH + wind", "mppi_l1"): ("ms-mppi_l1-lhwind", "mppi_l1"),
     ("LH + wind", "mpc_offsetfree"): ("ms-mpcof-lhwind", "mpc_offsetfree"),
     ("LH + wind", "xadapt_adrc"): ("ms-lhwind-xa", "xadapt_adrc"),
-    ("LH + wind", "datt"): ("mst-v5-lhwind", "datt"),
+    # Table 3 reports this cell on evaluation seeds (the footnoted convention), so the
+    # panel must print that, not the training-seed summary
+    ("LH + wind", "datt"): ("ms-datt-asym-lhwind", "datt"),
     # the learned policy is a three-training-seed mean in every cell of its row
     ("nominal", "datt"): ("mst-v5-nom", "datt"),
     ("constant wind", "datt"): ("mst-v5-wind", "datt"),
@@ -378,7 +380,10 @@ def fig4_deployment() -> None:
     rows = []  # (label, mean, sd, n, kind, clean)
     specs = [
         ("Offset-free MPC", "ms-mpcof-lhwind", "mpc_offsetfree", "eval"),
-        ("DATT-Asym", "mst-v5-lhwind", "datt", "train"),
+        # evaluation seeds, not the three training seeds: every other member of the
+        # tie is an evaluation-seed spread, and mixing the two made the policy look
+        # second-best (0.059 +- 0.002) where the text now places it last (0.065 +- 0.010)
+        ("DATT-Asym", "ms-datt-asym-lhwind", "datt", "eval"),
         ("ADRC+xadapt", "ms-lhwind-xa", "xadapt_adrc", "eval"),
         ("ADRC", "ms-adrc-lhwind", "adrc", "eval"),
         ("PID", "ms-pid-lhwind", "pid", "eval"),

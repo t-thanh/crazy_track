@@ -198,19 +198,17 @@ beyond \SI{2.5}{\second} is \SI{0.046}{\meter}, on par with the best stacks in t
 cell. Adding wind on top produces the deployment condition and the central result of
 this paper, shown in Fig.~\ref{fig:deployment}:
 
-%% !!! REGENERATE: this figure still plots the learned policy at 0.059 +- 0.002
-%% (3 training seeds), where it appears second-best. The text now uses the
-%% evaluation-seed convention, 0.065 +- 0.010, in which it is last of the four tied
-%% stacks. Re-run the generator with the ms-datt-asym-lhwind-s* aggregate and update
-%% the row's n-label from "n = 3 train" to "n = 10 eval".
 \begin{figure}[t]
 \begin{center}
 \includegraphics[width=\linewidth]{figures/fig4_deployment.pdf}
 \end{center}
 \caption{The deployment condition (Lighthouse sensing with wind): per-controller mean
 with seed spread, the four-way tie band shaded, and the stacks without a disturbance
-estimate shown for scale. The clean-sensing value of each stack is marked as a hollow
-point: every tied stack is further from itself than from the others.}
+estimate shown for scale. Every filled point is a mean over ten evaluation seeds, so the
+four tied stacks are compared like with like. The clean-sensing value of each stack is
+marked as a hollow point: every tied stack is further from itself than from the others.
+Those hollow points come from Table~\ref{tab:nominal}, whose learned-policy entries are
+means over three training seeds.}
 \label{fig:deployment}
 \end{figure}
 
