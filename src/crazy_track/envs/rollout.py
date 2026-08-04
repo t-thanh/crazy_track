@@ -72,7 +72,8 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
     n_steps = int(traj.duration * control_freq)
     dt = 1.0 / control_freq
 
-    log = {k: [] for k in ("t", "pos", "vel", "quat", "ref_pos", "ref_vel", "action")}
+    log = {k: [] for k in ("t", "pos", "vel", "quat", "ref_pos", "ref_vel", "action",
+                           "meas_pos")}
     for i in range(n_steps):
         t = i * dt
         state = get_state(sim)
@@ -80,6 +81,9 @@ def rollout(controller: Controller, traj: Trajectory, control_freq: int = 100,
         action = np.asarray(controller.act(state_meas, t), dtype=np.float32)
         log["t"].append(t)
         log["pos"].append(state[:3])
+        # what the controller actually saw (== pos without a sensor model): lets a
+        # plot show the 34 Hz ZOH staircase and bias offset the estimator fights
+        log["meas_pos"].append(np.asarray(state_meas[:3]))
         log["vel"].append(state[3:6])
         log["quat"].append(state[6:10])
         log["ref_pos"].append(traj.pos(t))
