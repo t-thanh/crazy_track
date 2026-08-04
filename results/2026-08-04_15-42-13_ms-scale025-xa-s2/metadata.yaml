@@ -1,0 +1,20 @@
+datetime: 2026-08-04_15-42-13
+tag: ms-scale025-xa-s2
+reason: 'paper1 round 5 Part A: sensor-error scale 0.25 at the deployment cell (seed
+  2 of 5), hybrid adaptive stack - separate invocation because it runs in rotor_vel
+  mode'
+git_commit: 029dcdf
+config:
+  controllers:
+  - xadapt_adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  sensor_scale: 0.25
+  seed: 2
+  traj_z: 1.0

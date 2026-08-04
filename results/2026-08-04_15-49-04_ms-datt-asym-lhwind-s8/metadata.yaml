@@ -1,0 +1,20 @@
+datetime: 2026-08-04_15-49-04
+tag: ms-datt-asym-lhwind-s8
+reason: 'paper1 round 5 Part B: evaluation-seed spread for the policy (seed-0 training
+  run) so the four-way tie compares like with like - the other three members are 10
+  eval seeds, the policy was 3 training seeds'
+git_commit: a6b2ed6
+config:
+  controllers:
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  sensor_scale: 1.0
+  seed: 8
+  traj_z: 1.0
