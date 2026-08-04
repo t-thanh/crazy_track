@@ -1,0 +1,19 @@
+datetime: 2026-08-04_10-47-00
+tag: p1-fig-nominal-xadapt
+reason: 'paper1 Fig 2: nominal tracking geometry, rotor_vel stack (cannot mix sim
+  modes with the attitude pool)'
+git_commit: 50b28f8
+config:
+  controllers:
+  - xadapt_adrc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

@@ -1,0 +1,19 @@
+datetime: 2026-08-04_10-41-22
+tag: p1-adrc-w7-nominal
+reason: 'paper1 Table 2: ADRC nominal row currently mixes w=10 (slow/fast) and w=7
+  (normal)'
+git_commit: 50b28f8
+config:
+  controllers:
+  - adrc
+  speeds:
+  - slow
+  - normal
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: none
+  traj_z: 1.0

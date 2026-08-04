@@ -1,0 +1,2 @@
+controller,trajectory,rmse_3d,rmse_xy,max_err,warmup_excluded_s,wall_time_s
+mppi_l1,normal,0.07289934059702738,0.057306978017091406,0.14840886230533165,1.0,17.3

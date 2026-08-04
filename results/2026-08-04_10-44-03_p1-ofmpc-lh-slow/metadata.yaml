@@ -1,0 +1,16 @@
+datetime: 2026-08-04_10-44-03
+tag: p1-ofmpc-lh-slow
+reason: 'paper1 Table 4: offset-free MPC lighthouse slow cell missing'
+git_commit: 50b28f8
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - slow
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

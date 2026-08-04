@@ -1,0 +1,17 @@
+datetime: 2026-08-04_10-42-02
+tag: p1-adrc-w7-lh
+reason: 'paper1 Table 4: ADRC lighthouse slow/fast cells missing at w=7'
+git_commit: 50b28f8
+config:
+  controllers:
+  - adrc
+  speeds:
+  - slow
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

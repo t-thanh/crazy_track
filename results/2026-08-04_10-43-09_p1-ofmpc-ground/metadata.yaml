@@ -1,0 +1,16 @@
+datetime: 2026-08-04_10-43-09
+tag: p1-ofmpc-ground
+reason: 'paper1 Table 3: offset-free MPC (soft-start) ground cell never measured'
+git_commit: 50b28f8
+config:
+  controllers:
+  - mpc_offsetfree
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: ground
+  sensor: none
+  traj_z: 0.08

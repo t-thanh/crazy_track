@@ -1,0 +1,17 @@
+datetime: 2026-08-04_10-42-49
+tag: ms-adrc-lhwind-s2
+reason: 'paper1 headline: 10-seed ADRC w=7 at LH+wind; single-seed 0.053 would make
+  the deployment tie four-way'
+git_commit: 50b28f8
+config:
+  controllers:
+  - adrc
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0

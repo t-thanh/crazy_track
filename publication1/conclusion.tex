@@ -13,13 +13,13 @@ disturbance does so by estimating that disturbance, and the paradigms differ in 
 the estimate enters rather than in whether one is needed. The central result concerns
 the condition that matters most in deployment. With realistic onboard sensing and wind,
 an offset-free predictive controller, a reinforcement-learning policy trained with a
-privileged critic, and a classical observer stacked on a learned adaptive rate loop
-converge to within \SI{3}{\milli\meter} of one another at approximately
-\SI{0.06}{\meter} --- each further from its own clean-sensing performance than from the
-other two. When three unrelated mechanisms saturate at the same value, the binding
-constraint lies elsewhere; we read this regime as estimator-limited, which makes state
-estimation, not controller architecture, the higher-leverage investment at this sensor
-quality.
+privileged critic, a classical observer stacked on a learned adaptive rate loop, and that
+same observer driving the firmware attitude loop directly converge to within
+\SI{6}{\milli\meter} of one another at approximately \SI{0.06}{\meter} --- each further
+from its own clean-sensing performance than from the other three. When four unrelated
+mechanisms saturate at the same value, the binding constraint lies elsewhere; we read
+this regime as estimator-limited, which makes state estimation, not controller
+architecture, the higher-leverage investment at this sensor quality.
 
 The failures proved more instructive than the ranking. A single observer bandwidth
 cannot simultaneously filter noise and track gusts, and the obvious adaptive fix fails

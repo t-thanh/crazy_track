@@ -1,0 +1,16 @@
+datetime: 2026-08-04_10-46-04
+tag: ms-pid-lhwind-s5
+reason: 'paper1 Table 4: pid deployment-cell row, 10 eval seeds'
+git_commit: 50b28f8
+config:
+  controllers:
+  - pid
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  traj_z: 1.0
