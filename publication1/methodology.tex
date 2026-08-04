@@ -1,24 +1,158 @@
 \section{METHODOLOGY}
 \label{sec:method}
 
-% TODO (next work unit). Structure fixed in OUTLINE.md Sec. 3:
-\subsection{Platform and simulation}
+% Structure fixed in OUTLINE.md Sec. 3 (rev. 2, conference scope).
+% Sec. 3.7 is written; the remaining subsections are stubs carrying the agreed
+% structure and the facts each must contain.
+
+\subsection{Platform and simulator}
 \label{sec:method:platform}
+% TODO. crazyflow / cf21B_500: m = 43.38 g, J = diag(25, 28, 49)e-6 kg m^2,
+% collective thrust 0.085-0.8 N, TWR 1.88. Ground truth = first-principles rigid body
+% + firmware-replica Mellinger attitude loop at 500 Hz. Internal model for the
+% predictive controllers = the identified second-order closed-loop attitude model
+% (so_rpy) -- a deliberate, disclosed mismatch. State what the simulator omits (drag,
+% motor asymmetry, battery sag, estimator lag unless the sensor model is enabled) and
+% that absolute errors are therefore optimistic. That sentence is what licenses the
+% hardware campaign of Sec. 3.7.
 
-\subsection{Reference family and metrics}
+\subsection{Reference family, metrics, and fairness protocol}
 \label{sec:method:metrics}
-
-\subsection{Control interface and fairness protocol}
-\label{sec:method:interface}
+% TODO. p(t) = [A cos(wt), B sin(2wt), z], A = 1 m, B = 0.5 m, z = 1 m, two cycles,
+% T in {15.0, 5.5, 3.5} s. RMSE_3D / RMSE_xy / max error, 1 s warm-up excluded.
+% Common interface: [roll, pitch, yaw, collective thrust] at 100 Hz, yaw held at zero.
+% One disclosed deviation: the hybrid adaptive stack runs its pretrained rate loop at
+% 500 Hz with the outer loop decimated to 100 Hz, because that is the rate the
+% low-level controller was trained at.
 
 \subsection{Controller pool}
 \label{sec:method:pool}
+% TODO. One short paragraph and one key equation per stack, plus Table 1 (paradigm,
+% interface, rate, internal model, estimator, tuned parameters). Six stacks:
+% PID + acceleration feedforward; ADRC (reduced-order velocity ESO, w_o = 7);
+% MPPI + L1 (N = 512, H = 25 at 0.02 s, AR(1) exploration); offset-free MPC
+% (so_rpy model + velocity-ESO disturbance state + 1.5 s soft-start);
+% ADRC + xadapt; DATT-Asym. Tuning history is NOT narrated here -- where a tuning
+% outcome is itself a result it belongs in the lessons section.
 
-\subsection{Policy training}
-\label{sec:method:training}
+\subsection{The learned policy}
+\label{sec:method:policy}
+% TODO. Observation = position error, velocity, attitude quaternion, a 10-step /
+% 0.6 s relative reference window, and the L1 disturbance estimate. Actions map to
+% +-0.7 rad roll/pitch and collective thrust. PPO, 16 envs, MLP [64, 64], 50 Hz policy
+% rate, 6 s episodes. Training references are randomized-difficulty chained quintics;
+% domain randomization covers a per-episode constant force of +-3.5 m/s^2, initial
+% position, and a per-episode sensor-noise scale; the asymmetric critic additionally
+% sees true position error, velocity, attitude and the true perturbation. The policy is
+% evaluated ZERO-SHOT on the Lissajous -- it never sees the benchmark trajectory.
+% Footnote: repo naming DATT-L1 = v3, DATT-Noisy = v4, DATT-Asym = v5, DATT-Stack = v6a;
+% configs/datt.yaml is stale and unused.
 
-\subsection{Disturbance and sensing conditions}
-\label{sec:method:conditions}
+\subsection{Disturbance models}
+\label{sec:method:disturbance}
+% TODO. Constant wind 0.11 N (~2.5 m/s^2); gust = mean + 0.7 Hz sinusoid +
+% Ornstein-Uhlenbeck turbulence; Cheeseman-Bennett in-ground effect evaluated at
+% z = 0.08 m; payload 10 g (23 % of weight). Justify the magnitudes: they bracket the
+% perturbation range used in the learned-tracking literature AND are reproducible as
+% programmed set points in the wind tunnel of Sec. 3.7.
+
+\subsection{Realistic sensing: the Lighthouse measurement model}
+\label{sec:method:sensor}
+% TODO. Position zero-order hold at 34 +- 18 Hz, 0.7 mm jitter, per-episode
+% quasi-static bias of 1.5 cm per axis (~2.6 cm in 3D), velocity 3 cm/s, attitude
+% 0.5 deg, gyro 0.02 rad/s, and 10 ms of latency on the optical chain only (the rate
+% gyro is an onboard IMU and bypasses the delay). Grounded in the published LH2
+% characterization dataset \cite{taffanel2021lighthouse}; note that its
+% "2-4 cm accuracy" figure is itself motion-capture-referenced, which is precisely the
+% comparison the hardware campaign of Sec. 3.7 closes.
+
+\subsection{Hardware validation setup}
+\label{sec:method:hardware}
+
+The simulation study deliberately omits aerodynamic drag, motor asymmetry, battery sag
+and actuator wear, so its absolute errors are optimistic and only its \emph{relative}
+comparisons are claimed. To test whether the ranking survives contact with a real
+vehicle, the controller recommended by the benchmark is validated on hardware in a
+programmable wind tunnel with motion-capture ground truth. The setup is described here;
+the measurements are reported in Sec.~\ref{sec:results:hardware}.
+
+\paragraph{Vehicle.}
+A Crazyflie~2.1 Brushless --- the airframe the simulation is parameterized on
+(\SI{43.4}{\gram}, thrust-to-weight $1.88$) --- carrying a Lighthouse positioning deck,
+so that the onboard state estimate available in flight is the physical counterpart of
+the measurement model of Sec.~\ref{sec:method:sensor}.
+% TODO: state where each controller executes (onboard firmware vs. offboard at 100 Hz
+% over the radio) and the payload attachment method, once the bench is assembled.
+
+\paragraph{Programmable wind field.}
+Wind is generated by a WindShaper fan-array wind
+generator\cite{windshaper_datasheet,windshaper_dantec} installed at the Institute of
+Mechanics, Materials and Civil Engineering, UCLouvain\cite{uclouvain_windshaper}. Unlike
+a conventional closed-circuit tunnel, which produces one nominally uniform stream, the
+WindShaper is an array of independently driven \emph{wind pixels}: each module of
+approximately \SI{25x25}{\centi\meter} carries a $3\times3$ grid of counter-rotating fan
+pairs, and modules tile to the required test-section area. Each pixel is commanded
+separately, so the generated field is a programmable function of space and time,
+$u = f(x,y,t)$, with time steps of \SI{0.1}{\second} through a documented Python
+interface; the reported envelope is a mean speed from \SI{2}{\meter\per\second} up to
+approximately \SI{20}{\meter\per\second} in the open-jet configuration, ramp rates of
+about \SI{4}{\meter\per\second\squared}, and turbulence intensity programmable over
+roughly $5$--$30\,\%$.
+% TODO: replace the envelope figures above with the numbers measured on the UCLouvain
+% installation (module count, test-section dimensions, calibrated speed and turbulence
+% range at the flight volume) before submission.
+
+This capability is the reason the facility was chosen, and it is what makes the
+hardware campaign a validation rather than a loosely analogous experiment. The two wind
+scenarios used in simulation are defined by their \emph{structure}, not merely their
+magnitude: a spatially uniform steady field, and a steady field with a periodic
+component at \SI{0.7}{\hertz} plus broadband turbulence. Both are directly expressible
+as WindShaper set points --- the first as a constant pixel command, the second as a
+sinusoidal modulation superimposed on a turbulence-intensity setting --- so the physical
+and simulated conditions correspond one-to-one, and the sim-to-real gap we report is a
+property of the vehicle and controller rather than of a mismatched disturbance.
+
+\paragraph{Ground truth.}
+Vehicle pose is measured by an OptiTrack PrimeX~22 motion-capture
+system\cite{optitrack_primex22}: \num{2048x1088} pixels at \SI{360}{\hertz} (up to
+\SI{1000}{\hertz} at reduced vertical resolution), a $79^\circ\times49^\circ$ field of
+view with the standard \SI{6.8}{\milli\meter} lens, and a typical three-dimensional
+accuracy of \SI{\pm0.2}{\milli\meter} with hardware synchronization across cameras. At
+roughly two orders of magnitude below the tracking errors under study, and at more than
+three times the \SI{100}{\hertz} control rate, the system is an unambiguous reference
+for both roles it plays here. First, it supplies the true position used to evaluate
+exactly the same metric as in simulation --- $\mathrm{RMSE}_{\mathrm{3D}}$ over the same
+Lissajous references with the same \SI{1}{\second} warm-up exclusion --- so simulated
+and flown numbers are directly comparable. Second, it provides the reference against
+which the onboard Lighthouse estimate is differenced in flight, which turns the sensor
+model of Sec.~\ref{sec:method:sensor} into a testable object: the update rate, the
+quasi-static bias and the noise levels we simulate are all motion-capture-referenced
+quantities, and the flight data either reproduces them or does not.
+
+\paragraph{Conditions and protocol.}
+The flight matrix mirrors the simulated one within the constraints of the test volume:
+the same Lissajous reference at the speeds the physical envelope admits, a steady wind
+and a gust profile matched to the simulated force magnitudes, and a payload step of the
+same \SI{23}{\percent} of vehicle weight. Each cell is flown repeatedly so that hardware
+error bars are comparable in kind to the seed statistics of
+Sec.~\ref{sec:method:stats}, and the warm-up exclusion, metric definition and reference
+parameterization are unchanged from simulation.
+% TODO: fix the repetition count and the achievable speed tiers once the volume and the
+% tunnel calibration are known.
+
+\paragraph{What the campaign is designed to falsify.}
+Three simulation claims are stated in advance as the campaign's targets, so that a
+negative outcome is informative: \emph{(i)}~that under degraded onboard sensing with
+wind the three leading stacks are statistically indistinguishable
+(Sec.~\ref{sec:results:deployment}); \emph{(ii)}~that the hybrid adaptive stack absorbs
+a payload step so completely that its tracking error is unchanged from its own nominal
+value; and \emph{(iii)}~that the variance behaviour predicted under the simulated
+Lighthouse model --- occasional near-failures on unlucky bias draws rather than a
+uniform degradation --- appears with a real positioning deck.
 
 \subsection{Statistical protocol}
 \label{sec:method:stats}
+% TODO. Ten evaluation seeds (sensor bias, gust realization, sampling noise) and three
+% training seeds (policy initialization, evaluation seed held fixed so the two sources
+% do not mix). Cells reported as mean +- std, with [min-max] where the spread is the
+% point. Every run directory records a mandatory reason, the git commit and the config.

@@ -1,27 +1,80 @@
-\section{RESULTS AND DISCUSSION}
+\section{RESULTS AND LESSONS LEARNT}
 \label{sec:results}
 
-% TODO (next work unit). Structure fixed in OUTLINE.md Sec. 4:
-\subsection{Nominal tracking across three speeds}
-\label{sec:results:nominal}
+% Structure fixed in OUTLINE.md Sec. 4 (rev. 2, conference scope).
 
-\subsection{Force disturbances: wind, gusts, payload, ground effect}
+\subsection{Nominal tracking}
+\label{sec:results:nominal}
+% TODO. Table 2 + Fig. 2. Compact: offset-free MPC sets the records
+% (0.004 / 0.036 / 0.052 m at slow / normal / fast), the hybrid adaptive stack is best
+% at normal (0.018), MPPI takes fast (0.068). One qualitative point: the Fig.-5
+% signature (clean at slow, corner cutting at normal, lobe overshoot at fast)
+% reproduces, so the benchmark behaves like the published one before we perturb it.
+
+\subsection{Wind, gusts, payload, and ground effect}
 \label{sec:results:disturbance}
+% TODO. Table 3 + Fig. 3. Constant wind separates the pool fourfold (ADRC 0.025 vs
+% PID 0.109); the learned family wins gusts through its disturbance channel
+% (0.061 +- 0.002); payload is invisible to the hybrid adaptive stack
+% (0.018 = its own nominal); PID wins ground effect because the thrust-gain
+% disturbance is nearly collinear with its feedforward.
+% ORGANISING CLAIM: every stack that beats the baseline does so through some form of
+% disturbance estimation -- the paradigms differ in WHERE the estimate enters (control
+% law, prediction model, policy observation, or low-level adaptation), not in whether
+% one is needed.
 
 \subsection{Realistic sensing and the deployment condition}
 \label{sec:results:deployment}
+% TODO. Table 3 + Fig. 4. The headline. Three-way statistical tie at
+% 0.057 +- 0.014 (offset-free MPC, 10 eval seeds), 0.059 +- 0.002 (DATT-Asym,
+% 3 training seeds) and 0.060 +- 0.009 m (ADRC + xadapt, 10 eval seeds), with plain MPC
+% an order of magnitude behind at 0.199 +- 0.017.
+% ARGUMENT FOR ESTIMATOR-LIMITED: three mechanisms with nothing in common converge, and
+% each sits further from its own clean-sensing number than from the other two.
 
-\subsection{Variance as a first-class result}
-\label{sec:results:variance}
+\subsection{Hardware validation in the wind tunnel}
+\label{sec:results:hardware}
 
-\subsection{Launch transients versus steady-state noise}
-\label{sec:results:transient}
+% RESERVED. To be written after the campaign described in Sec. 3.7 completes.
+% Planned content (~0.6 page):
+%   - Table 5: per-controller RMSE_3D flown under (a) still air, (b) programmed steady
+%     wind, (c) programmed gust field, (d) payload step -- each against its simulated
+%     counterpart, with a sim-to-real gap column.
+%   - Fig. 7: the setup (vehicle in the test section, tunnel and mocap volume).
+%   - Verdict on each of the three pre-registered targets from Sec. 3.7:
+%     (i) does the deployment-cell tie survive on hardware?
+%     (ii) is the payload still invisible to the hybrid adaptive stack?
+%     (iii) does the predicted variance signature (occasional near-failures on bad bias
+%          draws, rather than uniform degradation) appear with a real Lighthouse deck?
+%   - Measured Lighthouse-vs-mocap residual statistics, compared against the modelled
+%     update rate, bias and noise levels of Sec. 3.6.
 
-\subsection{Learned-policy ablation and the single-seed retraction}
-\label{sec:results:policies}
+\subsection{Lessons learnt}
+\label{sec:results:lessons}
+% TODO. Table 4. Seven lessons, each as claim / mechanism / evidence:
+%  L1 Disturbance estimation is the price of entry.
+%  L2 One observer bandwidth knob cannot do two jobs (and innovation scheduling fails
+%     because the statistic cannot separate an external disturbance from the observer's
+%     own attitude-lag residual).
+%  L3 Mean-only tables mislead: 0.228 +- 0.178 [0.091-0.480] and 0.323 +- 0.106 are
+%     failures on unlucky bias draws; the learned policy's edge is a variance collapse
+%     (+- 0.007), not a mean shift.
+%  L4 Audit transients before blaming noise: a launch excursion outside the warm-up
+%     window, steady-state error a quarter of the full-window figure, fixed by a 1.5 s
+%     observer soft-start -- and the residual is generic to the predictive family.
+%  L5 Single-seed policy conclusions invert: a clean-state regression we reported
+%     reversed at three training seeds (best draw vs. worst draw).
+%  L6 Robustness is bought with agility, at a measurable exchange rate; a memoryless
+%     policy averages over the randomization range instead of calibrating, and frame
+%     stacking did not fix it at this budget.
+%  L7 Mechanisms compose when they address disjoint error sources -- an ESO cancelling
+%     external force over a learned rate loop that makes command realization
+%     airframe-independent yields payload invisibility; neither layer does it alone.
 
-\subsection{Estimator design studies}
-\label{sec:results:estimators}
-
-\subsection{Failure taxonomy and recommendations}
-\label{sec:results:taxonomy}
+\subsection{Recommendations}
+\label{sec:results:recommendations}
+% TODO. Condition-indexed table (second half of Table 4): clean sensing and precision
+% -> offset-free MPC; sustained wind with clean state -> ADRC; payload or airframe
+% change -> hybrid adaptive; realistic onboard sensing -> any of the three tied stacks,
+% selected on compute (20-70 s wall per episode for the optimizer vs. a single forward
+% pass for the policy) and on initialization robustness.

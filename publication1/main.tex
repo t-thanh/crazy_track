@@ -12,6 +12,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{siunitx}
+\sisetup{per-mode=symbol, range-units=single}
 \usepackage[table]{xcolor}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
@@ -27,12 +28,12 @@
 \newcommand{\dattasym}{DATT-Asym}      % repo tag v5
 \newcommand{\dattstack}{DATT-Stack}    % repo tag v6a
 \newcommand{\ofmpc}{offset-free MPC}
+\newcommand{\xadapt}{ADRC\,+\,xadapt}
 \newcommand{\unitm}{\,\mathrm{m}}
 
 %% ---- title and authors --------------------------------------------------
-\title{Benchmarking Trajectory-Tracking Controllers for a Nano-Quadrotor under
-Disturbances and Realistic Sensing: Convergence, Failure Modes, and the Cost of
-Single-Seed Reporting}
+\title{Quadrotor Trajectory Tracking under Varying Payloads and Wind: Benchmarking
+Reinforcement Learning against Classical, Robust, Predictive, and Adaptive Control}
 
 %% TODO: confirm author list, affiliations and contact before submission.
 \author[a]{Tien-Thanh Nguyen}
