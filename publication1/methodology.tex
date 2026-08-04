@@ -4,15 +4,16 @@
 \subsection{Platform and simulator}
 \label{sec:method:platform}
 
-All experiments use the Crazyflie~2.1 Brushless, a \SI{43.38}{\gram} nano-quadrotor with
-inertia $J = \operatorname{diag}(25, 28, 49)\times10^{-6}$~\si{\kilogram\meter\squared}
-and a per-motor thrust range of $0.0214$--\SI{0.2}{\newton}, giving a collective thrust
-of $0.085$--\SI{0.8}{\newton} and a thrust-to-weight ratio of $1.88$. The narrowness of
+All experiments use the Crazyflie~2.1 Brushless. It has a mass of
+\SI{43.38}{\gram} and an inertia of
+$\operatorname{diag}(25, 28, 49)\times10^{-6}$~\si{\kilogram\meter\squared}, and its
+four motors deliver $0.0214$--\SI{0.2}{\newton} each, giving a collective thrust of
+$0.085$--\SI{0.8}{\newton} and a thrust-to-weight ratio of $1.88$. The narrowness of
 that margin is the defining property of the platform: a \SI{10}{\gram} payload is
 \SI{23}{\percent} of vehicle weight, and a \SI{2.5}{\meter\per\second\squared} wind
 consumes roughly a quarter of the available lateral acceleration.
 
-Simulation is performed in \texttt{crazyflow}\cite{crazyflow}. The ground-truth plant is
+Simulation is performed in \texttt{crazyflow}.\footnote{\url{https://github.com/utiasDSL/crazyflow}} The ground-truth plant is
 a first-principles rigid-body model integrated at \SI{500}{\hertz} with a
 firmware-replica Mellinger attitude loop, so that every controller in the pool acts
 through the same inner loop the physical vehicle uses. The two predictive controllers
@@ -157,17 +158,17 @@ PPO\cite{schulman2017ppo}, described in Sec.~\ref{sec:method:policy}.
 its own family in our data. Rate is the outer-loop rate; all stacks command
 $[\phi,\theta,\psi,f]$ at \SI{100}{\hertz} except where noted.}
 \label{tab:pool}
-\begin{center}
-\begin{tabular}{llll}
+\begin{center}\small
+\begin{tabular}{@{}l l p{0.22\linewidth} p{0.26\linewidth}@{}}
 \toprule
 Paradigm & Representative & Internal model & Disturbance handling \\
 \midrule
-Classical feedback   & PID + acc.\ feedforward & point mass & saturated integrator \\
-Robust               & ADRC                    & velocity integrator & extended state observer, $\omega_o = 7$ \\
-Sampling-based       & MPPI + $\mathcal{L}_1$  & identified attitude model & $\mathcal{L}_1$ estimate in the rollouts \\
-Predictive           & Offset-free MPC         & identified attitude model & disturbance state + soft start \\
-Hybrid adaptive      & ADRC + learned low level& point mass + learned rate loop & observer + online adaptation \\
-Reinforcement learning & DATT-Asym             & none (learned) & $\mathcal{L}_1$ estimate in the observation \\
+Classical feedback     & PID + acc.\ ff.          & point mass & saturated integrator \\
+Robust                 & ADRC                     & velocity integrator & extended state observer, $\omega_o = 7$ \\
+Sampling-based         & MPPI + $\mathcal{L}_1$   & identified attitude model & $\mathcal{L}_1$ estimate in the rollouts \\
+Predictive             & Offset-free MPC          & identified attitude model & disturbance state + soft start \\
+Hybrid adaptive        & ADRC + learned low level & point mass + learned rate loop & observer + online adaptation \\
+Reinf.\ learning       & DATT-Asym                & none (learned) & $\mathcal{L}_1$ estimate in the observation \\
 \bottomrule
 \end{tabular}
 \end{center}

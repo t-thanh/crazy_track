@@ -30,17 +30,18 @@ feedback, no disturbance. Best per column in bold. The learned policy is reporte
 mean $\pm$ standard deviation over three training seeds; the classical stacks are
 deterministic in this condition.}
 \label{tab:nominal}
-\begin{center}
+\begin{center}\small
 \begin{tabular}{lccc}
 \toprule
-Controller & slow ($T=\SI{15.0}{\second}$) & normal ($T=\SI{5.5}{\second}$) & fast ($T=\SI{3.5}{\second}$) \\
+Controller & slow & normal & fast \\
+           & $T=\SI{15.0}{\second}$ & $T=\SI{5.5}{\second}$ & $T=\SI{3.5}{\second}$ \\
 \midrule
-PID + feedforward      & 0.012 & 0.022 & 0.088 \\
-ADRC                   & 0.012 & 0.023\rlap{$^\dagger$} & 0.089 \\
-MPPI + $\mathcal{L}_1$ & 0.023 & 0.035 & 0.068 \\
-Offset-free MPC        & \textbf{0.004} & 0.036 & \textbf{0.052} \\
+PID + feedforward        & 0.012 & 0.022 & 0.088 \\
+ADRC                     & 0.012\rlap{$^\dagger$} & 0.023 & 0.089\rlap{$^\dagger$} \\
+MPPI + $\mathcal{L}_1$   & 0.023 & 0.035 & 0.068 \\
+Offset-free MPC          & \textbf{0.004} & 0.036 & \textbf{0.052} \\
 ADRC + learned low level & 0.020 & \textbf{0.018} & 0.084 \\
-DATT-Asym (RL)         & $0.038\pm0.014$ & $0.075\pm0.010$ & $0.157\pm0.007$ \\
+DATT-Asym (RL)           & $0.038\pm0.014$ & $0.075\pm0.010$ & $0.157\pm0.007$ \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -63,41 +64,69 @@ competent controllers.
 \subsection{Wind, gusts, payload, and ground effect}
 \label{sec:results:disturbance}
 
-Table~\ref{tab:matrix} adds the four disturbances and the realistic measurement model.
-The pool, which is nearly indistinguishable in Table~\ref{tab:nominal}, separates by more
-than a factor of four as soon as a sustained force is applied.
+Table~\ref{tab:matrix} adds the four disturbances of
+Sec.~\ref{sec:method:disturbance}. The pool, which is nearly indistinguishable in
+Table~\ref{tab:nominal}, separates by more than a factor of four as soon as a sustained
+force is applied.
 
 \begin{table}[t]
-\caption{Disturbance and sensing matrix at the normal tier,
-$\mathrm{RMSE}_{\mathrm{3D}}$ in meters. LH denotes the Lighthouse measurement model of
-Sec.~\ref{sec:method:sensor}; LH\,+\,wind is the deployment condition. Best per column
-in bold. Entries with a standard deviation are over ten evaluation seeds, except the
-DATT-Asym row, which is over three training seeds.}
+\caption{Force disturbances at the normal tier, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters,
+with clean state feedback. Best per column in bold; \tbd~marks a cell not yet measured
+for that configuration.}
 \label{tab:matrix}
-\begin{center}
-\begin{tabular}{lccccccc}
+\begin{center}\small
+\begin{tabular}{lccccc}
 \toprule
-Controller & nominal & wind & gust & payload & ground & LH & LH\,+\,wind \\
+Controller & nominal & wind & gust & payload & ground \\
 \midrule
-PID + feedforward        & 0.022 & 0.109 & 0.117 & 0.093 & \textbf{0.023} & $0.053\pm0.010$ & \tbd \\
-ADRC                     & 0.023 & \textbf{0.025} & 0.082 & 0.036\rlap{$^\ddagger$} & 0.066\rlap{$^\ddagger$} & 0.056 & 0.053\rlap{$^\S$} \\
-MPPI + $\mathcal{L}_1$   & 0.035 & \tbd & 0.076 & \tbd & \tbd & $0.079\pm0.018$ & \tbd \\
-Offset-free MPC          & 0.036 & 0.045 & \tbd & \tbd & \tbd & $0.141\pm0.058$ & $\mathbf{0.057\pm0.014}$ \\
-ADRC + learned low level & \textbf{0.018} & 0.037 & \textbf{0.063} & \textbf{0.018} & \tbd & \textbf{0.046} & $0.060\pm0.009$ \\
-DATT-Asym (RL)           & $0.075$ & $0.073$ & 0.091 & 0.102 & \tbd & $0.056\pm0.005$ & $0.059\pm0.002$ \\
+PID + feedforward        & 0.022 & 0.109 & 0.117 & 0.093 & \textbf{0.023} \\
+ADRC                     & 0.023 & \textbf{0.025} & 0.082 & 0.036\rlap{$^\ddagger$} & 0.066\rlap{$^\ddagger$} \\
+MPPI + $\mathcal{L}_1$   & 0.035 & \tbd & 0.076 & \tbd & \tbd \\
+Offset-free MPC          & 0.036 & 0.045 & \tbd & \tbd & \tbd \\
+ADRC + learned low level & \textbf{0.018} & 0.037 & \textbf{0.063} & \textbf{0.018} & \tbd \\
+DATT-Asym (RL)           & 0.075 & 0.073 & 0.091 & 0.102 & \tbd \\
 \midrule
-\multicolumn{8}{l}{\emph{context rows, not part of the pool}} \\
-Plain MPC (no disturbance state) & 0.063 & 0.196 & 0.142 & 0.137 & 0.055 & $0.122\pm0.021$ & $0.199\pm0.017$ \\
-DATT-L1 (RL, clean-trained)      & 0.048 & 0.050 & \textbf{0.061} & 0.053 & 0.049 & 0.073 & 0.067 \\
+\multicolumn{6}{l}{\emph{context rows, not part of the pool}} \\
+Plain MPC                & 0.063 & 0.196 & 0.142 & 0.137 & 0.055 \\
+DATT-L1 (RL)             & 0.048 & 0.050 & \textbf{0.061} & 0.053 & 0.049 \\
 \bottomrule
 \end{tabular}
 \end{center}
-\footnotesize \tbd~cell not yet measured for this controller configuration.
-$^\ddagger$ measured at $\omega_o = 10$, predating the bandwidth retune.
-$^\S$ single evaluation seed --- see the caveat in Sec.~\ref{sec:results:deployment}.
+{\footnotesize $^\ddagger$ measured at $\omega_o = 10$, predating the bandwidth
+retune.\par}
 % TODO before submission: complete the \tbd cells (MPPI and offset-free MPC under
-% wind/gust/payload/ground at the tuned settings; ground effect for the xadapt and RL
-% stacks; PID under LH+wind), and re-run the two daggered ADRC cells at omega_o = 7.
+% wind/payload/ground at the tuned settings; ground effect for the xadapt and RL stacks)
+% and re-run the two daggered ADRC cells at omega_o = 7.
+\end{table}
+
+\begin{table}[t]
+\caption{Realistic sensing, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters. LH is the
+Lighthouse measurement model of Sec.~\ref{sec:method:sensor}; LH\,+\,wind is the
+deployment condition. Entries with a spread are over ten evaluation seeds except the
+learned-policy rows, which are over three training seeds.}
+\label{tab:sensing}
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Controller & LH slow & LH normal & LH fast & LH\,+\,wind \\
+\midrule
+PID + feedforward        & 0.012 & $0.053\pm0.010$ & $0.155\pm0.007$ & \tbd \\
+ADRC                     & \tbd  & 0.056 & \tbd & 0.053\rlap{$^\S$} \\
+MPPI + $\mathcal{L}_1$   & $0.051\pm0.001$ & $0.079\pm0.018$ & $0.228\pm0.178$ & \tbd \\
+Offset-free MPC          & \tbd & $0.141\pm0.058$ & $0.070\pm0.010$ & $\mathbf{0.057\pm0.014}$ \\
+ADRC + learned low level & 0.025 & \textbf{0.046} & 0.145 & $0.060\pm0.009$ \\
+DATT-Asym (RL)           & $0.033\pm0.008$ & $0.056\pm0.005$ & $\mathbf{0.120\pm0.011}$ & $0.059\pm0.002$ \\
+\midrule
+\multicolumn{5}{l}{\emph{context rows, not part of the pool}} \\
+Plain MPC                & $0.014\pm0.003$ & $0.122\pm0.021$ & $0.067\pm0.001$ & $0.199\pm0.017$ \\
+DATT-L1 (RL)             & 0.034 & 0.073 & $0.323\pm0.106$ & 0.067 \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize $^\S$ single evaluation seed --- see the caveat in
+Sec.~\ref{sec:results:deployment}.\par}
+% TODO before submission: complete the \tbd cells (ADRC slow/fast under LH; offset-free
+% MPC slow; PID and MPPI under LH+wind) and add the 10-seed ADRC LH+wind run.
 \end{table}
 
 The mechanisms behind each column are distinct, and the winners follow the mechanisms
@@ -128,7 +157,7 @@ every force disturbance.
 \subsection{Realistic sensing and the deployment condition}
 \label{sec:results:deployment}
 
-The two rightmost columns of Table~\ref{tab:matrix} are the ones that matter for a
+Table~\ref{tab:sensing} reports the conditions that matter for a
 vehicle that must fly on its own sensors. Under the Lighthouse model alone, absolute
 errors rise for every stack, and the ordering shifts: the observer-based controllers,
 which differentiate a \SI{34}{\hertz} zero-order-hold position signal, give up much of
@@ -148,17 +177,17 @@ is further from itself than from the others.}
 \label{fig:deployment}
 \end{figure}
 
-\begin{center}
-\begin{tabular}{llll}
+\begin{center}\small
+\begin{tabular}{lllp{0.36\linewidth}}
 \toprule
 Controller & $\mathrm{RMSE}_{\mathrm{3D}}$ (m) & evidence & mechanism \\
 \midrule
-Offset-free MPC          & $0.057\pm0.014$ & 10 evaluation seeds & disturbance-augmented prediction model \\
-DATT-Asym (RL)           & $0.059\pm0.002$ & 3 training seeds    & privileged-critic policy \\
-ADRC + learned low level & $0.060\pm0.009$ & 10 evaluation seeds & observer over an adaptive rate loop \\
+Offset-free MPC          & $0.057\pm0.014$ & 10 eval.\ seeds & disturbance-augmented prediction model \\
+DATT-Asym (RL)           & $0.059\pm0.002$ & 3 train.\ seeds & privileged-critic policy \\
+ADRC + learned low level & $0.060\pm0.009$ & 10 eval.\ seeds & observer over an adaptive rate loop \\
 \midrule
-DATT-Noisy (RL, earlier) & $0.077\pm0.006$ & 3 training seeds    & noisy-observation training only \\
-Plain MPC                & $0.199\pm0.017$ & 10 evaluation seeds & no disturbance state \\
+DATT-Noisy (RL, earlier) & $0.077\pm0.006$ & 3 train.\ seeds & noisy-observation training only \\
+Plain MPC                & $0.199\pm0.017$ & 10 eval.\ seeds & no disturbance state \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -178,7 +207,7 @@ relative to effort spent on state estimation.
 
 Two caveats are stated rather than buried. The tied value is specific to this sensing
 quality; with motion-capture-grade state the same three stacks are clearly separated
-(Table~\ref{tab:nominal}). And the plain ADRC entry in Table~\ref{tab:matrix}, at
+(Table~\ref{tab:nominal}). And the plain ADRC entry in Table~\ref{tab:sensing}, at
 \SI{0.053}{\meter}, is nominally \emph{better} than all three --- but it comes from a
 single evaluation seed, and this paper's own Lesson~3 forbids us from reading it. A
 ten-seed re-run is required before the tie can be called three-way rather than four-way.
@@ -341,8 +370,8 @@ implementation, while the policy is a single forward pass through a two-layer ne
 \caption{Condition-indexed recommendations. Values are
 $\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted.}
 \label{tab:recommend}
-\begin{center}
-\begin{tabular}{lll}
+\begin{center}\small
+\begin{tabular}{@{}p{0.26\linewidth} p{0.26\linewidth} p{0.42\linewidth}@{}}
 \toprule
 Operating condition & Recommended stack & Reason, and what it costs \\
 \midrule
