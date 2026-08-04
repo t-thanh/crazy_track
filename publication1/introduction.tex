@@ -46,7 +46,7 @@ adopt the reference family and the metric of the former verbatim so that our num
 comparable in kind, and extend both with a shared disturbance and sensing matrix and
 with per-cell seed statistics, neither of which the source protocols include.
 
-\paragraph{Disturbance rejection.}
+\paragraph{Disturbance rejection and predictive tracking.}
 Active disturbance rejection control\cite{han2009adrc} lumps unmodeled dynamics and
 external forces into a single state estimated by an extended observer, tuned through a
 bandwidth parameterization\cite{gao2003scaling}. $\mathcal{L}_1$ adaptive
@@ -55,17 +55,14 @@ retain robustness guarantees, and incremental nonlinear dynamic
 inversion\cite{smeur2016indi} achieves related ends through measured accelerations. In
 predictive control the analogous device is the offset-free
 construction\cite{maeder2009offsetfree}, which augments the prediction model with a
-disturbance state driven by an observer. These mechanisms are usually compared
-theoretically or in isolation; the bandwidth-versus-noise trade-off they share is
-frequently asserted and rarely measured across conditions on one platform.
-
-\paragraph{Predictive and sampling-based tracking.}
-Model-predictive path-integral control\cite{williams2018mppi} replaces gradient-based
-optimization with weighted sampling, which tolerates non-smooth costs and models at the
-price of a sampling noise floor and a dependence on exploration design. Nonlinear MPC on
-identified closed-loop attitude models is the standard high-accuracy option for small
-quadrotors. Both inherit the validity limits of their internal model, an effect visible
-whenever the vehicle leaves the envelope in which that model was identified.
+disturbance state driven by an observer. Predictive tracking itself divides between
+nonlinear MPC on identified closed-loop attitude models, the standard high-accuracy
+option for small quadrotors, and path-integral sampling\cite{williams2018mppi}, which
+tolerates non-smooth costs and models at the price of a sampling noise floor and a
+dependence on exploration design; both inherit the validity limits of their internal
+model. These mechanisms are usually compared theoretically or in isolation, and the
+bandwidth-versus-noise trade-off they share is frequently asserted and rarely measured
+across conditions on one platform.
 
 \paragraph{Learned tracking.}
 Policies that consume a preview window of the reference and an online disturbance
