@@ -561,8 +561,10 @@ while the observer and the policy cost a handful of arithmetic operations and a 
 forward pass through a two-layer network respectively (Table~\ref{tab:recommend}).
 
 \begin{table}[t]
-\caption{Condition-indexed recommendations. Values are
-$\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted.}
+\caption{Condition-indexed recommendations. Tracking errors quoted in the last column
+are $\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted;
+$t_{\mathrm{step}}$ is per-call controller time in milliseconds, defined below the
+table.}
 \label{tab:recommend}
 \begin{center}\small
 \begin{tabular}{@{}p{0.20\linewidth} p{0.20\linewidth} r p{0.36\linewidth}@{}}
