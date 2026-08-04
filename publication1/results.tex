@@ -20,9 +20,10 @@ behaves like the published one before we perturb it.
 flown $xy$ path for all six stacks, with $\mathrm{RMSE}_{\mathrm{3D}}$ per panel. The
 first second is excluded, as it is in the metric. The published error signature is
 reproduced --- near-exact at slow, mild corner cutting at normal, outward lobe overshoot
-at fast, where centripetal demand peaks. The learned policy is shown for its
-seed-0 model, so its panel labels are one realization rather than the three-seed mean of
-Table~\ref{tab:nominal}.}
+at fast, where centripetal demand peaks. The learned policy is drawn for its seed-0
+model; its printed numbers are that single realization, not the three-seed mean of
+Table~\ref{tab:nominal} ($0.038\pm0.014$, $0.075\pm0.010$, $0.157\pm0.007$). Every other
+panel number is the table cell exactly.}
 \label{fig:tracking}
 \end{figure}
 
@@ -75,7 +76,10 @@ force is applied.
 
 \begin{table}[t]
 \caption{Force disturbances at the normal tier, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters,
-with clean state feedback. Best per column among the pool in bold.}
+with clean state feedback. Best per column among the pool in bold. The classical stacks
+are deterministic in these conditions and are reported as single runs; every cell of the
+learned-policy row is a mean $\pm$ standard deviation over the same three training
+seeds.}
 \label{tab:matrix}
 \begin{center}\small
 \begin{tabular}{lccccc}
@@ -87,11 +91,11 @@ ADRC                     & 0.023 & \textbf{0.025} & 0.082 & 0.024 & 0.024 \\
 MPPI + $\mathcal{L}_1$   & 0.035 & 0.042 & 0.076 & 0.031 & 0.032 \\
 Offset-free MPC          & 0.036 & 0.045 & 0.097 & 0.098 & 0.023 \\
 ADRC + learned low level & \textbf{0.015} & 0.040 & \textbf{0.054} & \textbf{0.019} & \textbf{0.016} \\
-DATT-Asym (RL)           & 0.075 & 0.073 & 0.091 & 0.102 & 0.089 \\
+DATT-Asym (RL)           & $0.075\pm0.010$ & $0.073\pm0.007$ & $0.087\pm0.005$ & $0.093\pm0.006$ & $0.074\pm0.011$ \\
 \midrule
 \multicolumn{6}{l}{\emph{context rows, not part of the pool}} \\
 Plain MPC                & 0.063 & 0.196 & 0.142 & 0.137 & 0.055 \\
-DATT-L1 (RL)             & 0.048 & 0.050 & 0.061 & 0.053 & 0.049 \\
+DATT-L1 (RL)             & 0.048 & 0.050 & 0.066 & 0.053 & 0.049 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -110,7 +114,7 @@ Controller & LH slow & LH normal & LH fast & LH\,+\,wind \\
 \midrule
 PID + feedforward        & \textbf{0.012} & $0.053\pm0.010$ & $0.155\pm0.007$ & $0.116\pm0.013$ \\
 ADRC                     & 0.021 & 0.056 & 0.181 & $0.063\pm0.006$ \\
-MPPI + $\mathcal{L}_1$   & $0.051\pm0.001$ & $0.079\pm0.018$ & $0.228\pm0.178$ & $0.078\pm0.014$ \\
+MPPI + $\mathcal{L}_1$   & $0.051\pm0.001$ & $0.079\pm0.018$ & $0.157\pm0.113$ & $0.078\pm0.014$ \\
 Offset-free MPC          & 0.021 & $0.141\pm0.058$ & $0.070\pm0.010$ & $\mathbf{0.057\pm0.014}$ \\
 ADRC + learned low level & 0.025 & \textbf{0.046} & 0.145 & $0.060\pm0.009$ \\
 DATT-Asym (RL)           & $0.033\pm0.008$ & $0.056\pm0.005$ & $\mathbf{0.120\pm0.011}$ & $0.059\pm0.002$ \\
@@ -139,7 +143,11 @@ in an $xy$ projection, a strip below that row shows $z(t)$ against $z_{\mathrm{r
 a common scale: the baseline holds roughly \SI{8}{\centi\meter} low for the whole
 episode, the disturbance-estimating stacks return to the reference altitude, and the
 optimizer holds altitude apart from a single launch excursion (marked by a caret where it
-leaves the strip).}
+leaves the strip). Panel numbers are the corresponding cell of
+Table~\ref{tab:matrix} or~\ref{tab:sensing}: where that cell is a seed aggregate --- the
+whole learned-policy column and the entire LH\,+\,wind row --- the panel prints the
+aggregate and the drawn trace is one representative seed (the seed-0 policy, evaluation
+seed 0). No panel prints a number the tables do not contain.}
 \label{fig:disturbance}
 \end{figure}
 
@@ -150,9 +158,12 @@ from $0.022$ to \SI{0.109}{\meter}, because its integrator saturates at
 \SI{2.5}{\meter\per\second\squared} standing load; the extended state observer, which
 has no such limit, holds \SI{0.025}{\meter} --- essentially its undisturbed value. Under
 \emph{gusts} the ranking changes: what matters is no longer whether a disturbance can be
-cancelled but how fast the estimate tracks, and the learned policies, which receive an
-$\mathcal{L}_1$ estimate directly in their observation and can act on it without waiting
-for position error to accumulate, take the column. Under \emph{payload} the hybrid
+cancelled but how fast the estimate tracks. The column goes to the hybrid adaptive stack
+at \SI{0.054}{\meter}, whose inner loop adapts within the gust period, with the
+$\mathcal{L}_1$-observation policy next at \SI{0.066}{\meter}; both act on a disturbance
+estimate rather than waiting for position error to accumulate, and both beat the plain
+observer (\SI{0.082}{\meter}) whose single bandwidth cannot follow a
+\SI{0.7}{\hertz} excitation --- Lesson~2. Under \emph{payload} the hybrid
 adaptive stack is the outlier: at \SI{0.019}{\meter} it is within a fifth of its own
 undisturbed value, so a \SI{23}{\percent} mass increase costs it almost nothing, against
 a factor of four for the baseline --- Lesson~7. \emph{Ground effect} is the mildest
@@ -163,7 +174,7 @@ bandwidth is set for noise rather than for gusts --- match or beat it rather tha
 spending bandwidth chasing it (\SI{0.016}{\meter} for the hybrid adaptive stack,
 \SI{0.023}{\meter} for the optimizer, \SI{0.024}{\meter} for the observer). Only the
 learned policy, which never saw a thrust-gain disturbance in training, is clearly worse
-at \SI{0.089}{\meter}.
+at \SI{0.074}{\meter}.
 
 The organising claim of this table is not who wins but why anyone does: \textbf{every
 stack that beats the baseline under a sustained disturbance does so through some form of
@@ -293,15 +304,26 @@ it as a negative result with its mechanism.
 \paragraph{Lesson 3: mean-only tables mislead, sometimes decisively.}
 Two stacks that look competitive on their means are not. The sampling-based controller
 owns the fast tier with clean sensing at \SI{0.068}{\meter}, but under the Lighthouse
-model the same cell measures $0.228\pm0.178$~\si{\meter} across seeds, ranging from
-$0.091$ to \SI{0.480}{\meter}: on an unlucky bias draw, the temporally correlated
-exploration that helps it nominally steers the whole sample distribution wrong for many
-consecutive steps. The clean-trained policy shows the same shape,
+model the same cell measures $0.157\pm0.113$~\si{\meter} over ten evaluation seeds,
+ranging from $0.091$ to \SI{0.480}{\meter} --- a factor of $5.3$ between its best and
+worst draw, with eight of the ten seeds below \SI{0.13}{\meter} and one at
+\SI{0.480}{\meter}: on an unlucky bias draw, the temporally correlated exploration that
+helps it nominally steers the whole sample distribution wrong for many consecutive steps.
+The distribution is therefore not merely wide but skewed, which is why its mean is a poor
+summary of it. The clean-trained policy shows the same shape,
 $0.323\pm0.106$~\si{\meter}, some seeds fine and some near-crashing. Against this, the
 benchmark policy's advantage is best described not as a lower mean but as a
 \emph{variance collapse}: $0.126\pm0.007$~\si{\meter} in the same cell. A table of means
 would have shown a difference; it would not have shown that one controller occasionally
-fails and the other never does, which is the difference that matters for deployment
+fails and the other never does, which is the difference that matters for deployment.
+The lesson applies to itself, which is worth recording: we first estimated the
+sampling controller's cell from three seeds and obtained $0.228\pm0.178$~\si{\meter},
+overstating both the mean and the spread because one of the three draws happened to be
+the \SI{0.480}{\meter} outlier. Extending the same cell to ten seeds moved it to
+$0.157\pm0.113$~\si{\meter}. The qualitative claim survives untouched --- the worst draw
+is still five times the best, and the failure mode is still real --- but the specific
+numbers we would have published were wrong by a third, from a sample we had ourselves
+described as adequate
 (Fig.~\ref{fig:variance}).
 
 \begin{figure}[t]

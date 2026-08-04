@@ -1,0 +1,17 @@
+datetime: 2026-08-04_12-38-06
+tag: ms-mppi-lhfast-s8
+reason: 'paper1 Lesson 3: extend tuned MPPI LH-fast from 3 to 10 eval seeds; the variance
+  claim currently rests on n=3'
+git_commit: '2074505'
+config:
+  controllers:
+  - mppi_l1
+  speeds:
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

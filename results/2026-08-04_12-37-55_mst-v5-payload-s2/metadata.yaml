@@ -1,0 +1,17 @@
+datetime: 2026-08-04_12-37-55
+tag: mst-v5-payload-s2
+reason: 'paper1 Table 3: DATT-Asym payload cell is single-seed while the rest of the
+  row is 3-seed (train seed 2 of 3)'
+git_commit: '2074505'
+config:
+  controllers:
+  - datt:results/2026-07-23_07-30-13_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: payload
+  sensor: none
+  traj_z: 1.0

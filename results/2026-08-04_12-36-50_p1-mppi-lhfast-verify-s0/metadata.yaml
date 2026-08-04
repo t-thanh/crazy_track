@@ -1,0 +1,18 @@
+datetime: 2026-08-04_12-36-50
+tag: p1-mppi-lhfast-verify-s0
+reason: 'paper1 Lesson 3: poolability check - re-run of seed 0 at the current code
+  state must reproduce ms-lhfix-s0 (0.480) before seeds 0-2 are pooled with the new
+  3-9'
+git_commit: '2074505'
+config:
+  controllers:
+  - mppi_l1
+  speeds:
+  - fast
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: none
+  sensor: lighthouse
+  traj_z: 1.0

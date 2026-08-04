@@ -1,0 +1,18 @@
+datetime: 2026-08-04_12-36-50
+tag: mst-v5-gust-s0
+reason: 'paper1 Table 3: DATT-Asym gust cell is a single evaluation of the seed-0
+  model while the wind cell in the same row is a 3-training-seed mean (train seed
+  0 of 3)'
+git_commit: '2074505'
+config:
+  controllers:
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_gust
+  sensor: none
+  traj_z: 1.0

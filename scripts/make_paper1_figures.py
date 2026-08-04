@@ -195,6 +195,28 @@ def fig2_nominal() -> None:
 # ------------------------------------------------------------------- figure 3
 
 WIND_NOTE = r"2.5 m/s$^2$ ($+x$)"
+
+# A printed panel number must match its table cell. Where the table cell is a
+# seed aggregate, the panel prints the aggregate (the drawn trace is then one
+# representative seed, named in the caption) -- printing the panel's own single
+# seed would contradict the text, which for ADRC at LH+wind is exactly the
+# lucky 0.053 minimum that Sec. 4.3 argues must not be read.
+# (row label, controller key) -> (results tag prefix, controller name in summary.csv)
+# for every cell whose table entry is a seed aggregate rather than one run.
+AGG = {
+    ("LH + wind", "pid"): ("ms-pid-lhwind", "pid"),
+    ("LH + wind", "adrc"): ("ms-adrc-lhwind", "adrc"),
+    ("LH + wind", "mppi_l1"): ("ms-mppi_l1-lhwind", "mppi_l1"),
+    ("LH + wind", "mpc_offsetfree"): ("ms-mpcof-lhwind", "mpc_offsetfree"),
+    ("LH + wind", "xadapt_adrc"): ("ms-lhwind-xa", "xadapt_adrc"),
+    ("LH + wind", "datt"): ("mst-v5-lhwind", "datt"),
+    # the learned policy is a three-training-seed mean in every cell of its row
+    ("nominal", "datt"): ("mst-v5-nom", "datt"),
+    ("constant wind", "datt"): ("mst-v5-wind", "datt"),
+    ("gust", "datt"): ("mst-v5-gust", "datt"),
+    ("payload", "datt"): ("mst-v5-payload", "datt"),
+}
+
 COND = [  # (row label, tag suffix per sim mode, note, glyph kind)
     ("nominal", ("p1-fig-nominal-att", "p1-fig-nominal-xadapt"), "", "none"),
     ("constant wind", ("p1-fig-dist-wind-att", "p1-fig-dist-wind-xa"), WIND_NOTE, "wind"),
@@ -270,21 +292,28 @@ def fig3_disturbance() -> None:
                 _wind_arrows(ax, wavy=True)
             elif glyph == "payload":
                 _payload_glyph(ax)
-            if glyph == "lhwind" and "meas_pos" in d:
+            lh_dots = glyph == "lhwind" and "meas_pos" in d
+            if lh_dots:  # the 34 Hz staircase is the visual evidence: keep it legible
                 mp = d["meas_pos"][d["t"] >= WARMUP]
-                ax.scatter(mp[:, 0], mp[:, 1], s=0.8, color="0.6", alpha=0.5,
+                ax.scatter(mp[:, 0], mp[:, 1], s=1.8, color="0.55", alpha=0.75,
                            linewidths=0, zorder=1)
 
             ax.plot(ref[:, 0], ref[:, 1], "k--", lw=0.5, dashes=(4, 3), zorder=2)
             seg = np.concatenate([pos[:-1, None, :2], pos[1:, None, :2]], axis=1)
-            lc = LineCollection(seg, cmap="viridis", norm=norm, lw=1.0, zorder=3)
+            lc = LineCollection(seg, cmap="viridis", norm=norm, lw=1.0,
+                                alpha=0.75 if lh_dots else 1.0, zorder=3)
             lc.set_array(err[:-1])
             ax.add_collection(lc)
             ax.autoscale_view()
             ax.set_aspect("equal")
-            ax.text(0.02, 0.97, f"{rmse_of(entry['tag'], key, 'normal'):.3f} m",
-                    transform=ax.transAxes, ha="left", va="top", fontsize=7,
-                    color="0.15", bbox=BOX)
+            agg = AGG.get((lbl, key))
+            sv = np.asarray(seed_values(*agg, "normal")) if agg else np.array([])
+            if sv.size:  # table cell is a seed aggregate: print that, not this seed
+                txt, small = f"{sv.mean():.3f} $\\pm$ {sv.std():.3f} m", True
+            else:
+                txt, small = f"{rmse_of(entry['tag'], key, 'normal'):.3f} m", False
+            ax.text(0.02, 0.97, txt, transform=ax.transAxes, ha="left", va="top",
+                    fontsize=6.2 if small else 7, color="0.15", bbox=BOX)
             bare(ax)
             if row_of_axes == 0:
                 ax.set_title(HEAD[label], fontsize=8, pad=4, linespacing=1.15)
@@ -362,16 +391,24 @@ def fig4_deployment() -> None:
         if v.size == 0:
             print(f"  [fig4] skipping {label}: no runs for prefix {prefix}")
             continue
-        try:
-            clean = rmse_of(clean_tag.get(key, "p1-fig-nominal-att"),
-                            "mpc" if key == "mpc" else key, "normal")
-        except (KeyError, FileNotFoundError):
-            clean = np.nan
+        # clean-sensing marker must sit where Table 2 puts that stack, so use the
+        # training-seed mean for the policy rather than its seed-0 run
+        cagg = np.asarray(seed_values(*AGG[("nominal", key)], "normal")) \
+            if ("nominal", key) in AGG else np.array([])
+        if cagg.size:
+            clean = float(cagg.mean())
+        else:
+            try:
+                clean = rmse_of(clean_tag.get(key, "p1-fig-nominal-att"),
+                                "mpc" if key == "mpc" else key, "normal")
+            except (KeyError, FileNotFoundError):
+                clean = np.nan
         rows.append((label, v.mean(), v.std(), v.size, kind, clean))
     rows.sort(key=lambda r: r[1])
 
     fig, ax = plt.subplots(figsize=(FULL_W, 0.38 * FULL_W))
     ypos = np.arange(len(rows))[::-1]
+    nlabels: list[tuple[float, str]] = []  # right-aligned in one column, see below
     # Tie band: a stack is tied with the best when the gap between their means is
     # no larger than the larger of the two seed spreads. (Overlap of the raw
     # +-1 s.d. intervals is far too permissive here -- it would sweep in a stack
@@ -392,12 +429,16 @@ def fig4_deployment() -> None:
             ax.plot(clean, y, "o", ms=4.5, mfc="white", mec=col, mew=1.0, zorder=3)
             ax.plot([clean, mu - sd], [y, y], color=col, lw=0.5, alpha=0.35, zorder=2)
         ax.text(-0.010, y, label, ha="right", va="center", fontsize=8)
-        ax.text(mu + max(sd, 0.004) + 0.006, y, f"$n$ = {n} {kind}", ha="left",
-                va="center", fontsize=6.5, color="0.5")
+        nlabels.append((y, f"$n$ = {n} {kind}"))
 
     ax.set_yticks([])
     ax.set_ylim(-1.35, len(rows) - 0.10)
     ax.set_xlim(0.0, max(r[1] + r[2] for r in rows) * 1.30)
+    # One aligned column of seed-count labels: per-row placement collided with the
+    # DATT-Asym marker, whose spread (+-0.002) is narrower than the text offset.
+    xn = max(r[1] + r[2] for r in rows) * 1.30 * 0.985
+    for y, s in nlabels:
+        ax.text(xn, y, s, ha="right", va="center", fontsize=6.5, color="0.5")
     ax.set_xlabel(r"RMSE$_\mathrm{3D}$ at Lighthouse + wind, normal tier [m]")
     ax.spines["left"].set_visible(False)
     handles = [Line2D([], [], marker="o", ls="", ms=4.5, color="0.35",
@@ -413,16 +454,19 @@ def fig4_deployment() -> None:
 
 def fig5_variance() -> None:
     """Per-seed scatter at the Lighthouse fast cell: spread, not means."""
+    # MPPI's ten LH-fast seeds live under two tags: 0-2 predate the extension
+    # (ms-lhfix-*) and 3-9 were added for it. A re-run of seed 0 reproduced the
+    # stored value bit-for-bit, so the two sets pool.
     specs = [
-        ("MPPI+L1", "ms-lhfix", "mppi_l1"),
-        ("DATT-L1", "ms-lh", "datt"),
-        ("DATT-Asym", "ms-lh", "datt2"),
-        ("PID", "ms-lh", "pid"),
-        ("Offset-free MPC", "ms-lh", "mpc_offsetfree"),
+        ("MPPI+L1", ["ms-lhfix", "ms-mppi-lhfast"], "mppi_l1"),
+        ("DATT-L1", ["ms-lh"], "datt"),
+        ("DATT-Asym", ["ms-lh"], "datt2"),
+        ("PID", ["ms-lh"], "pid"),
+        ("Offset-free MPC", ["ms-lh"], "mpc_offsetfree"),
     ]
     series = []
-    for label, prefix, key in specs:
-        v = np.asarray(seed_values(prefix, key, "fast"))
+    for label, prefixes, key in specs:
+        v = np.asarray([x for p in prefixes for x in seed_values(p, key, "fast")])
         if v.size:
             series.append((label, v))
         else:
@@ -486,10 +530,15 @@ def fig6_transient(seed: int = 4) -> None:
     ax.text(2.6, ymax * 0.30, "steady-state window ($t$ > 2.5 s)",
             ha="left", va="top", fontsize=6, color="0.55")
     if full_rmse is not None:
+        # name the seed: Table 4 gives the 10-seed mean for this same cell, and a
+        # reader cross-checking the two numbers must not think one is wrong
+        agg = np.asarray(seed_values("ms-mpcofss-lh", "mpc_offsetfree", "normal"))
+        tail = (f"\n(this seed; {agg.size}-seed mean {agg.mean():.3f} m)"
+                if agg.size else "")
         ax.annotate(f"soft start: full-window RMSE {full_rmse:.3f} m,\n"
                     f"steady-state RMSE {ss_rmse:.3f} m "
-                    f"({full_rmse / ss_rmse:.1f}$\\times$ apart)",
-                    xy=(0.98, 0.46), xycoords="axes fraction", ha="right", va="top",
+                    f"({full_rmse / ss_rmse:.1f}$\\times$ apart){tail}",
+                    xy=(0.98, 0.50), xycoords="axes fraction", ha="right", va="top",
                     fontsize=6.5, color=COLORS["Offset-free MPC"])
     ax.set_xlabel(f"time [s]  (Lighthouse bias seed {seed}, normal tier)")
     ax.set_ylabel(r"$\|\mathbf{p}(t)-\mathbf{r}(t)\|$ [m]")

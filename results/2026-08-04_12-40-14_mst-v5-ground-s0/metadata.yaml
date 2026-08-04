@@ -1,0 +1,18 @@
+datetime: 2026-08-04_12-40-14
+tag: mst-v5-ground-s0
+reason: 'paper1 Table 3: complete the DATT-Asym row at 3 training seeds - after A.2
+  fixed gust and payload, ground was the last single-seed cell left in an otherwise
+  3-seed row (train seed 0 of 3)'
+git_commit: '2074505'
+config:
+  controllers:
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: ground
+  sensor: none
+  traj_z: 0.08
