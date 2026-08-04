@@ -1,0 +1,17 @@
+datetime: 2026-08-04_13-29-32
+tag: p1-dattl1-verify-ground
+reason: 'paper1 provenance: last un-re-measured context cells at the current code
+  state (DATT-L1 ground)'
+git_commit: f6a63de
+config:
+  controllers:
+  - datt:results/2026-07-22_16-35-10_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: ground
+  sensor: none
+  traj_z: 0.08
