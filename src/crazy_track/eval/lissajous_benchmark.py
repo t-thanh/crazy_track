@@ -71,6 +71,11 @@ def main() -> None:
     parser.add_argument("--disturbance", default="none",
                         choices=["none", "wind_const", "wind_gust", "ground", "payload"])
     parser.add_argument("--sensor", default="none", choices=["none", "lighthouse"])
+    parser.add_argument("--sensor-scale", type=float, default=1.0,
+                        help="scale every Lighthouse error term together (bias, jitter, "
+                             "velocity and attitude noise). 1.0 = the literature-grounded "
+                             "model; <1 = better sensing, >1 = worse. The gyro is an "
+                             "onboard IMU and is deliberately left unscaled.")
     parser.add_argument("--vertical", action="store_true",
                         help="figure-8 in the x-z plane (acro benchmark)")
     parser.add_argument("--seed", type=int, default=0,
@@ -94,7 +99,8 @@ def main() -> None:
         config={"controllers": args.controllers, "speeds": args.speeds,
                 "n_cycles": N_CYCLES, "control_freq": CONTROL_FREQ,
                 "drone": "cf21B_500", "dynamics": "first_principles",
-                "disturbance": args.disturbance, "sensor": args.sensor, "traj_z": traj_z},
+                "disturbance": args.disturbance, "sensor": args.sensor,
+                "sensor_scale": args.sensor_scale, "seed": args.seed, "traj_z": traj_z},
     )
     print(f"Logging to {log.dir}")
     acro = [c.startswith("datt_acro") for c in args.controllers]
@@ -108,8 +114,11 @@ def main() -> None:
     if args.sensor == "lighthouse":
         from crazy_track.sensors import LighthouseSensor
         # keep latency time-consistent (~10 ms) across control rates
+        s = args.sensor_scale  # one knob on overall measurement quality
         sensor = LighthouseSensor(control_freq=ctrl_freq,
                                   latency_steps=max(1, ctrl_freq // 100),
+                                  jitter_std=0.0007 * s, bias_std=0.015 * s,
+                                  vel_std=0.03 * s, att_std_deg=0.5 * s,
                                   seed=args.seed)
     sim = make_sim(control=mode)
 
