@@ -1,128 +1,155 @@
-# Requests for a Claude Code session — paper 1, round 3 (the trim)
+# Requests for a Claude Code session — paper 1, round 4 (restore, then hand over)
 
-Round 2 was thorough and the two self-corrections it surfaced are exactly right: the
-ten-seed MPPI cell being *narrower* than the three-seed one, reported plainly instead of
-buried, is what makes Lesson 3 credible. Nothing in Part A or B needs redoing.
+Round 3 was the best report of the four. Three things in particular:
 
-**The author has now made the two decisions that were blocking.** This round executes
-them. It is mostly deletion, which is harder to do well than addition — the instruction
-throughout is *cut whole ideas, not adjectives*.
+- **Reporting that the cuts delivered 1.6 pages instead of 5, and why**, rather than
+  padding the number — the diagnosis (cuts 1, 2, 3 and 7 were costed on the assumption
+  that their words were restatement, and they were not) is exactly right.
+- **Refusing cut 3's second half after trying it**: removing Lesson 2's bandwidth numbers
+  turned the lesson into an assertion, so they went back. That is the correct instinct.
+- **The "claims the trim weakened" list.** That list is what this round acts on.
 
-## What changed outside this session (pull first)
+## The premise has changed
 
-Committed already; do not redo:
+The author has since said: **length is not a strict requirement, provided the scientific
+contributions are clearly stated.** Several of round 3's cuts were made only to buy
+pages. Those should come back. This round is mostly `git revert` plus a few restorations
+— then the manuscript goes to a writing pass and this workflow ends.
 
-- **Retitled**, away from reinforcement learning: *"Quadrotor Trajectory Tracking under
-  Varying Payloads, Wind and Degraded Sensing: A Cross-Paradigm Controller Benchmark and
-  Lessons Learnt."*
-- **Table 3 overflowed** once the learned-policy row gained $\pm$ spreads. The spreads
-  moved to a footnote under the table; the row is plain means again.
-- **"the policy is the only one that barely moves" was wrong.** It moves the *other
-  way*: 0.075 m with clean state, 0.059 m under degraded sensing. Rewritten to say so.
-- **Two paragraphs added**: one in §4.2 explaining why the sampling stack is retained
-  although it wins no column, one in the conclusion stating the learned policy's
-  position plainly.
-- **Build verified** at each step: 0 errors, 0 overfull boxes, 0 undefined references.
-  Current length **20 pages** against the stub class, which I estimate at **15--16 real
-  SPIE pages**.
-
-One correction to round 2's page arithmetic: the references line assumed *88 bib
-entries, ~25 cited*. `refs.bib` has **14 entries, all cited** — so the back matter is
-about 0.35 pages cheaper than the plan assumed. Good news for the budget.
+Current state, built here against a stub class: **0 errors, 0 undefined references,
+2 minor overfull boxes, 18 pages** (≈14 real SPIE pages, matching round 3's arithmetic).
 
 ---
 
 ## Kickoff prompt (paste this)
 
-> Continue paper 1 in the crazy_track repo. Pull first — the title and several
-> paragraphs changed outside this session. Read
-> `publication1/CLAUDE_CODE_REQUESTS.md` (round 3) and execute Part A, then Part B.
-> This round is almost entirely cutting: the target is 10 SPIE pages, from ~15.
-> Work in one commit per numbered cut so anything can be reverted individually, and
-> record the before/after word count of each in
-> `reports/2026-08-XX_p1-round3-trim.md`. Do not cut anything not on this list, and do
-> not paraphrase a claim into vagueness to save words — if a claim cannot survive at
-> full strength, delete it whole and say so in the report.
+> Continue paper 1 in the crazy_track repo. Pull first. Read
+> `publication1/CLAUDE_CODE_REQUESTS.md` (round 4). The page limit has been relaxed, so
+> this round restores content that round 3 cut only for length, takes one structural
+> improvement worth having regardless, and closes the last two data cells. Record
+> everything in `reports/2026-08-XX_p1-round4.md`. After this round the manuscript goes
+> to a writing pass elsewhere — so leave prose style alone and change only what is
+> listed.
 
 ---
 
-# Part A — the trim (author-approved)
+# Part A — restore what was cut only for length
 
-Execute cuts 1--9 from your round-2 plan **as written** — they were well costed and all
-are low risk. Then the two decisions:
+### A.1 Bring back Lesson 4 and Figure 6
 
-### A.1 Drop Lesson 4 (launch transient) and Figure 6 — but not silently
+`git revert 2ed7ff3`, then re-apply the bookkeeping in reverse: lessons renumber back to
+seven, "six lessons" → "seven" in the abstract and the lessons preamble,
+`fig6_transient` returns to the figure script's default set, and the three loose-end
+patches from round 3 are reconciled rather than duplicated —
 
-The author chose to keep the hardware section and pay for it here. Removing Lesson 4
-leaves three loose ends that must be tied, or the paper acquires an unexplained number:
+- the sentence added under Table 4 explaining the $0.141\pm0.058$ outlier now overlaps
+  Lesson 4. **Keep the table sentence** (a reader meeting that number should not have to
+  wait for the lessons section) and shorten Lesson 4's opening so it does not repeat it;
+- the soft-start justification clause in §3.3 should stay as well — it is the right
+  place for *why the mechanism exists*, while Lesson 4 is the right place for *how we
+  misdiagnosed it*. Make sure the two do not use the same sentence twice.
 
-1. **Table 4's offset-free MPC entry at $0.141\pm0.058$ under Lighthouse-normal is an
-   outlier** — roughly triple its neighbours — and Lesson 4 was the only place that
-   explained it. Add **one sentence** where that table is discussed: the elevated cell
-   is a launch excursion whose tail extends past the one-second warm-up exclusion; the
-   steady-state error beyond \SI{2.5}{\second} is \SI{0.046}{\meter}. Without it the
-   table looks like an unexplained failure of the paper's best stack.
-2. **The soft-start, Eq.~(\ref{eq:softstart}), loses its justification.** It currently
-   reads as an unmotivated implementation detail. Add a clause in
-   Sec.~\ref{sec:method:pool}: it was introduced because a cold observer's first
-   innovations are noise-dominated at full gain, and ramping the estimate in also
-   improved every nominal cell.
-3. **The abstract cites the transient** as one of two self-corrections. Replace that
-   clause with the seed corrections, which are stronger and now better evidenced: a
-   single-seed reading that turned out to be the minimum of ten draws, and a three-seed
-   variance figure that overstated both mean and spread. Check the introduction's
-   contribution bullet for the same phrase.
+Lesson 4 is the paper's most transferable procedure — "check when the maximum error
+occurs before attributing an error level to steady-state noise" — and it is the only
+lesson a reader can apply to a paper that is not this one.
 
-Delete `fig6_transient` from `results.tex` and from the figure script's default set —
-keep the generating code, marked as unused, since the campaign may want it later.
+### A.2 Restore three of the six claims deleted whole
 
-### A.2 Keep the sampling-based stack in the pool
+From round 3's own list, restore:
 
-Your plan offered demoting it to a context row for ~0.3 pages. **Do not.** It is the
-only representative of its paradigm, and Lesson 3 — the strongest methodological result
-in the paper — is built on its variance. A pool that silently drops every stack that
-fails to win a column stops being a benchmark. The justifying paragraph is already
-written; the 0.3 pages come from A.1 instead.
+1. **MPPI's AR(1) exploration noise as the single largest tuning gain measured**
+   (methodology). It is a concrete empirical result about a method the paper includes,
+   and it is the only place the sampling stack's tuning is justified at all.
+2. **Lesson 5's next step** — recurrence or explicit innovation-variance features. A
+   negative result without a stated remedy is half a result.
+3. **The conclusion's state-pre-filtering next step**, which follows Lesson 4 back in.
 
-### A.3 Reframing follow-through
+Leave deleted: the hybrid stack's layer-complementarity sentence in the methodology (it
+does duplicate Lesson 6 verbatim — that call was right), and the conclusion's
+"several cells remain to be completed", which is now simply false.
 
-The title no longer names reinforcement learning, so sweep for places that still frame
-the paper as an RL study: the introduction's related-work ordering (the learned-tracking
-paragraph currently reads as the climax), the contribution bullets, and any phrasing
-that positions the policy as the subject rather than one of six stacks. The finding that
-the policy is worst under clean sensing and joins the lead only under degraded sensing
-must **stay** — it is now a result among results, not the headline, and it should read
-as neither a defence nor an attack.
+### A.3 Reconcile the abstract's self-corrections
 
----
+With Lesson 4 back, the paper records **three** occasions on which our own earlier
+reading of the data was wrong: a launch transient misdiagnosed as noise fragility, a
+single evaluation seed that proved to be the minimum of ten draws, and a three-seed
+variance figure that overstated both its mean and its spread. The abstract currently
+promises two, both seed-related.
 
-# Part B — the last provenance gap
-
-Four plain-MPC cells and three DATT-L1 cells in Table 3 were never re-measured at the
-current code state. Both are context rows, so the exposure is low, but you flagged it
-yourself as the last place a reviewer could press. If the trim leaves time:
-
-```bash
-python -m crazy_track.eval.lissajous_benchmark --controllers mpc --speeds normal \
-  --disturbance wind_gust --tag p1-mpc-verify-gust \
-  --reason "paper1 provenance: last un-re-measured context cells at current code state"
-# and likewise payload, ground, plus nominal; then datt:<v3 model> for gust/payload/ground
-```
-
-If any value moves by more than \SI{0.005}{\meter}, say so in the report and update the
-table; if none does, one line recording that the context rows are current closes the gap
-permanently.
+Rather than pick two, consider stating it as what it is — that the study corrected
+itself three times, and that this is an argument for the protocol rather than an
+embarrassment. One sentence. The introduction's contribution bullet should match, and
+the introduction's motivation paragraph (which round 3 flagged as over-promising on
+transients) becomes accurate again automatically.
 
 ---
 
-# Part C — what happens after this round
+# Part B — one structural improvement worth taking anyway
 
-The manuscript then goes into a **writing pass** in the Cowork session — voice,
-transitions, precision of claims, caption quality — so please leave the prose as it is
-apart from the cuts listed above. Structural work that would help that pass:
+**Merge Tables 2 and 3.** Round 3 identified this and it is not a length cut: Table 3's
+`nominal` column *is* Table 2's `normal` column, printed twice, which is a place where a
+reader can find two numbers that must agree and has to check that they do. One table
+with slow / normal / fast plus the four disturbance columns removes a caption, a header
+and six duplicated cells, and makes the speed axis and the disturbance axis visible in
+one place.
 
-1. Confirm the final page count against the stub class and report it.
-2. List any place where a cut left a dangling reference, an orphaned figure mention, or
-   a paragraph that now begins with "Second," having lost its "First".
-3. Flag any claim that the trim weakened, so the writing pass can decide whether to
-   restore it in fewer words or drop it outright.
+Watch two things: the merged table is eight columns wide, so it needs `\small` and
+compact headers (it is the shape that overflowed twice before); and the learned-policy
+row carries its spreads in a footnote — keep that convention.
+
+If on inspection the merge makes the table unreadable rather than clearer, do not force
+it: say so in the report and leave both tables. This is a judgement about legibility,
+not a mandate.
+
+---
+
+# Part C — the last two cells, and two typographic defects
+
+1. **DATT-L1 nominal (0.048) and wind (0.050)** were not on round 3's list and remain at
+   their original measurement. Its other three cells reproduced to the fourth decimal,
+   so this is almost certainly a formality — but "every cell of Table 3 is current"
+   should be literally true.
+2. **Two overfull boxes** appeared in the round-3 edits, both small and both in text
+   that the writing pass will touch anyway: `introduction.tex` lines 50–66 (0.3 pt, the
+   merged disturbance-rejection/predictive paragraph) and `methodology.tex` lines 94–101
+   (12.7 pt, the observer paragraph). Fix by rewording, not by `\sloppy`.
+
+---
+
+# Part D — the hardware bring-up flights (author's call, not a default)
+
+The first hardware flights are logged and analysed, and the round-3 report is right that
+they do not belong in the results — they are bring-up, and their limiting factor is a
+command clip rather than a controller property.
+
+But one finding is a **precondition for the campaign the paper pre-registers**, and the
+paper currently promises a protocol that these flights show cannot yet measure what it
+claims: the deployed attitude command is clipped at $\pm15^\circ$ while the policy was
+trained against roughly $\pm40^\circ$, and the reference starts far from the vehicle, so
+the policy rails immediately and the actuator saturates for 84--97 % of samples. A
+campaign run under those conditions would measure the clip, not the controller.
+
+My recommendation, for the author to accept or decline: **two sentences in §3.7's
+protocol paragraph** stating that the command envelope must be aligned with the training
+envelope and the reference initialized at the vehicle's position, and that both were
+identified in bring-up flights. That makes the pre-registration stronger, not weaker —
+it shows the protocol is informed by contact with the hardware rather than designed on
+paper. The counter-argument, which is legitimate: a paper with no hardware results yet
+may not want to introduce a hardware problem it has not solved.
+
+Do not make this change unless the author confirms it.
+
+---
+
+# Part E — handover
+
+After this round the manuscript goes to a writing pass. To prepare:
+
+1. Confirm the stub-class build: errors, overfull boxes, undefined references, pages.
+2. Update `publication1/OUTLINE.md`, which is still rev. 2 and now describes a paper that
+   no longer exists — wrong title, eight-stack pool language, "three-way tie",
+   seven-then-six-then-seven lessons, and a figure plan that predates the figures. Either
+   bring it current or mark it clearly as a historical planning document.
+3. List anything you believe is still weakly evidenced or over-claimed. You have found
+   three such things unprompted across three rounds; a fourth pass with fresh eyes on
+   the finished draft is worth more than another round of cuts.
