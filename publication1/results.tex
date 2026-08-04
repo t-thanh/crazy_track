@@ -223,23 +223,14 @@ point: every tied stack is further from itself than from the others.}
 \label{fig:deployment}
 \end{figure}
 
-\begin{center}\small
-\begin{tabular}{lllp{0.34\linewidth}}
-\toprule
-Controller & $\mathrm{RMSE}_{\mathrm{3D}}$ (m) & evidence & mechanism \\
-\midrule
-Offset-free MPC          & $0.057\pm0.014$ & 10 eval.\ seeds & disturbance-augmented prediction model \\
-DATT-Asym (RL)           & $0.059\pm0.002$ & 3 train.\ seeds & privileged-critic policy \\
-ADRC + learned low level & $0.060\pm0.009$ & 10 eval.\ seeds & observer over an adaptive rate loop \\
-ADRC                     & $0.063\pm0.006$ & 10 eval.\ seeds & observer in the control law \\
-\midrule
-DATT-Noisy (RL, earlier) & $0.077\pm0.006$ & 3 train.\ seeds & noisy-observation training only \\
-MPPI + $\mathcal{L}_1$   & $0.078\pm0.014$ & 10 eval.\ seeds & sampling with an $\mathcal{L}_1$ estimate \\
-PID + feedforward        & $0.116\pm0.013$ & 10 eval.\ seeds & no disturbance estimate \\
-Plain MPC                & $0.199\pm0.017$ & 10 eval.\ seeds & no disturbance state \\
-\bottomrule
-\end{tabular}
-\end{center}
+The last column of Table~\ref{tab:sensing} carries the result: a disturbance-augmented
+prediction model at $0.057\pm0.014$~\si{\meter}, a privileged-critic policy at
+$0.059\pm0.002$, an observer over an adaptive rate loop at $0.060\pm0.009$, and that
+observer driving the firmware attitude loop at $0.063\pm0.006$. The stacks that miss the
+band do so by mechanism as well: sampling with an $\mathcal{L}_1$ estimate reaches
+$0.078\pm0.014$, an earlier policy trained on noisy observations without the privileged
+critic $0.077\pm0.006$, and the two stacks with no disturbance estimate at all $0.116$
+and \SI{0.199}{\meter}.
 
 \noindent Four architectures with nothing in common --- an optimizer carrying a
 disturbance state, a neural policy trained with a privileged critic, a classical observer
