@@ -557,23 +557,21 @@ def save(fig, name: str, tight: bool = True) -> None:
     print(f"  wrote {out.relative_to(REPO)}  ({w_cm:.1f} cm wide)")
 
 
-# fig6_transient is UNUSED by the manuscript: Lesson 4 (the launch transient) was cut
-# for length in round 3. The generator is kept because the hardware campaign may want
-# the same plot against flown data; build it explicitly with --only fig6.
 FIGURES = {
     "fig2": fig2_nominal,
     "fig3": fig3_disturbance,
     "fig4": fig4_deployment,
     "fig5": fig5_variance,
+    "fig6": fig6_transient,
 }
-OPTIONAL = {"fig6": fig6_transient}
+OPTIONAL: dict = {}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", nargs="+", choices=sorted(FIGURES | OPTIONAL),
                     default=sorted(FIGURES),
-                    help="fig6 is not used by the manuscript; build it on request")
+                    help="default: every figure the manuscript uses")
     args = ap.parse_args()
     style()
     failed = []

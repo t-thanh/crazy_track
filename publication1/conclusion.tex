@@ -38,10 +38,14 @@ disjoint error sources, rendering a \SI{23}{\percent} payload invisible, but the
 structure masks external forces from the observer above it. Two further lessons are
 methodological, and we state them as corrections to our own earlier reporting: mean-only
 tables concealed that two leading stacks fail only on unlucky sensor-bias draws while a
-third never does, and two conclusions drawn from too few seeds --- a single-seed reading
-that proved to be the minimum of ten draws, and a three-seed variance estimate that
-overstated both mean and spread --- did not survive the seeds that should have been run
-first.
+third never does; an apparent noise fragility proved on inspection to be a launch
+transient extending past the conventional warm-up window, generic to optimizing
+controllers and not a property of the disturbance observer we had blamed; and two
+conclusions drawn from too few seeds --- a single-seed reading that proved to be the
+minimum of ten draws, and a three-seed variance estimate that overstated both mean and
+spread --- did not survive the seeds that should have been run first. Checking when the
+maximum error occurs, and running more than one seed before claiming a policy-level
+effect, are cheap procedures that would have prevented all three.
 
 The study has clear limits. The simulator omits aerodynamic drag, motor asymmetry and
 battery sag, so absolute errors are optimistic and only relative comparisons are
@@ -51,6 +55,7 @@ pre-registered predictions in a programmable fan-array wind tunnel with motion-c
 ground truth, where the simulated disturbance classes are reproducible as physical set
 points rather than merely approximated. Beyond it, the mechanisms identified here point
 to specific next steps: recurrent or innovation-variance-aware policies so that a
-randomized noise level becomes observable rather than averaged, and reference-aware
+randomized noise level becomes observable rather than averaged, state pre-filtering ahead
+of the optimizer to remove the launch transient at its source, and reference-aware
 residual whitening so that an adaptive observer bandwidth can distinguish a disturbance
 from its own lag.

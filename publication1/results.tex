@@ -64,7 +64,7 @@ for the hybrid stack) --- with clean state feedback and a demanding reference, a
 accurate optimizer is very hard to beat. Second, the reinforcement-learning policy is the \emph{worst}
 stack in this table by a wide margin, roughly three times the baseline at the normal
 tier. That is not a training failure; it is the price of the domain randomization that
-buys its later results, and quantifying that price is Lesson~5. Third, the spread
+buys its later results, and quantifying that price is Lesson~6. Third, the spread
 between the three best stacks at any single speed is smaller than the spread induced by
 changing the speed, which is a warning that nominal tables discriminate poorly between
 competent controllers.
@@ -169,7 +169,7 @@ observer (\SI{0.082}{\meter}) whose single bandwidth cannot follow a
 \SI{0.7}{\hertz} excitation --- Lesson~2. Under \emph{payload} the hybrid
 adaptive stack is the outlier: at \SI{0.019}{\meter} it is within a fifth of its own
 undisturbed value, so a \SI{23}{\percent} mass increase costs it almost nothing, against
-a factor of four for the baseline --- Lesson~6. \emph{Ground effect} is the mildest
+a factor of four for the baseline --- Lesson~7. \emph{Ground effect} is the mildest
 column in the table: the multiplicative thrust gain is nearly collinear with the
 feedforward the baseline already applies, so the baseline holds \SI{0.023}{\meter}
 without any disturbance estimate at all, and the observer-based stacks --- once their
@@ -280,7 +280,7 @@ a new best stack. The correction adds a fourth member to the tie rather than a w
 The value of a benchmark of this kind lies less in the ranking than in what the failures
 teach. Every failure we observed falls into one of three classes --- missing model
 structure, estimator bandwidth-versus-noise trade-offs, and information bottlenecks in
-learned policies --- and the six lessons below are organised around them. Two of these
+learned policies --- and the seven lessons below are organised around them. Two of these
 lessons correct conclusions we had ourselves drawn and reported from earlier, weaker
 evidence.
 
@@ -348,7 +348,44 @@ these three stacks; only the spread shows which of them can fail.}
 \end{figure}
 
 
-\paragraph{Lesson 4: single-seed conclusions about learned policies invert.}
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.72\linewidth]{figures/fig6_transient.pdf}
+\end{center}
+\caption{The launch transient, and why it is not a steady-state noise effect. Position
+error against time on one unlucky sensor-bias seed: the offset-free optimizer before and
+after the observer soft start, and plain MPC on the same seed. The excluded warm-up
+window and the steady-state window are shaded; the excursion tail extends past the
+warm-up exclusion, which is what inflates the reported metric while the steady-state
+error stays at \SI{0.048}{\meter}.}
+\label{fig:transient}
+\end{figure}
+
+\paragraph{Lesson 4: audit transients before blaming steady-state noise.}
+The elevated Lighthouse cell noted in Sec.~\ref{sec:results:deployment} is the subject
+of this lesson. At $0.178\pm0.076$~\si{\meter} before it was diagnosed, it invited the
+natural reading --- that the observer was ingesting zero-order-hold position noise ---
+and that is what we first reported. A bandwidth sweep appeared to confirm it. Inspecting
+the error time series falsified it: the entire excess was a single
+$0.7$--\SI{1.5}{\meter} excursion between $t = 0.5$ and \SI{1.6}{\second}, whose tail
+extends past the \SI{1}{\second} warm-up exclusion (Fig.~\ref{fig:transient}). The cause
+was a cold observer whose first
+
+innovations are noise-dominated at full gain, against a reference that begins at
+\SI{1.14}{\meter\per\second} while the vehicle is at rest; planning against that phantom
+disturbance during launch amplified the excursion. Ramping the estimate in over
+\SI{1.5}{\second}, Eq.~\eqref{eq:softstart}, reduced the cell to
+$0.141\pm0.058$~\si{\meter} and, unexpectedly, set new records in every nominal cell
+(Table~\ref{tab:nominal}) --- the cold-start jitter had been costing performance even
+with perfect sensing. A discriminating test then showed the residual is not the
+observer's fault at all: on the same bad seeds, plain MPC without any disturbance state
+spikes identically, to $0.215$ and \SI{0.230}{\meter}. The transient is generic to
+optimizing controllers meeting a reference-velocity step through a noisy state estimate.
+The transferable procedure is simple: \emph{check when the maximum error occurs before
+attributing an error level to steady-state noise}, and report whether a warm-up window
+actually covers the transient it was chosen to remove.
+
+\paragraph{Lesson 5: single-seed conclusions about learned policies invert.}
 From one training seed per configuration we concluded --- and wrote --- that the
 asymmetric-critic recipe improved the noisy cells at the cost of clean-state
 performance. At three training seeds the comparison reverses: the earlier policy had
@@ -361,7 +398,7 @@ variance in this setting is comparable to the effect sizes being claimed --- in 
 slow-tier nominal cell it is $\pm\SI{0.015}{\meter}$ against effects of a similar size
 --- so single-seed policy comparisons in that regime carry no information at all.
 
-\paragraph{Lesson 5: robustness is bought with agility at a measurable exchange rate.}
+\paragraph{Lesson 6: robustness is bought with agility at a measurable exchange rate.}
 The three policy variants form a clean ladder. Training with an $\mathcal{L}_1$ channel
 and force randomization gives the best clean-sensing tracking and the best gust
 rejection, and fails under noisy sensing at high agility (\SI{0.323}{\meter}). Adding
@@ -375,11 +412,12 @@ structural: a memoryless network cannot infer the current episode's noise level 
 single observation frame, so it averages over the randomization range instead of
 calibrating to the episode. Stacking four observation frames did not help at this
 training budget: an \SI{80}{\milli\second} window spans two or three position updates,
-thin evidence for inferring a noise level. The general point:
+thin evidence for inferring a noise level. Recurrence, or explicit innovation-variance
+features, is the indicated next step. The general point:
 \emph{domain randomization does not make a policy adaptive; it makes it average}, unless
 the architecture can observe the thing being randomized.
 
-\paragraph{Lesson 6: mechanisms compose when they address disjoint error sources.}
+\paragraph{Lesson 7: mechanisms compose when they address disjoint error sources.}
 Stacking an extended state observer on a learned low-level rate controller produced the
 broadest stack in the pool --- it wins four of the five columns of
 Table~\ref{tab:matrix} --- and payload tracking within a fifth of its own undisturbed
