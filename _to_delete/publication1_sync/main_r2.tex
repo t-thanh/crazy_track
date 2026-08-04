@@ -1,0 +1,67 @@
+%% Paper 1 --- Benchmarking trajectory-tracking controllers for a nano-quadrotor
+%% under disturbances and realistic sensing.
+%%
+%% Build:  pdflatex main && bibtex main && pdflatex main && pdflatex main
+%% Class:  spie.cls from the SPIE Proceedings author kit (place next to main.tex)
+
+\documentclass[nocompress]{spie}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{siunitx}
+\sisetup{per-mode=symbol, range-units=single}
+\usepackage[table]{xcolor}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\graphicspath{{figures/}}
+
+\renewcommand{\baselinestretch}{1.0}
+
+%% ---- convenience macros -------------------------------------------------
+\newcommand{\rmsethree}{\ensuremath{\mathrm{RMSE}_{\mathrm{3D}}}}
+\newcommand{\rmsexy}{\ensuremath{\mathrm{RMSE}_{xy}}}
+\newcommand{\datttl}{DATT-L1}          % repo tag v3
+\newcommand{\dattnoisy}{DATT-Noisy}    % repo tag v4
+\newcommand{\dattasym}{DATT-Asym}      % repo tag v5
+\newcommand{\dattstack}{DATT-Stack}    % repo tag v6a
+\newcommand{\ofmpc}{offset-free MPC}
+\newcommand{\xadapt}{ADRC\,+\,xadapt}
+%% cell not yet measured -- must be zero at submission time
+\newcommand{\tbd}{\textcolor{red}{\textendash}}
+%% figure placeholder: \figplaceholder{height}{caption of what goes here}
+\newcommand{\figplaceholder}[2]{%
+  \fbox{\parbox[c][#1][c]{0.97\linewidth}{\centering\footnotesize\itshape #2}}}
+\newcommand{\unitm}{\,\mathrm{m}}
+
+%% ---- title and authors --------------------------------------------------
+\title{Quadrotor Trajectory Tracking under Varying Payloads and Wind: Benchmarking
+Reinforcement Learning against Classical, Robust, Predictive, and Adaptive Control}
+
+%% TODO: confirm author list, affiliations and contact before submission.
+\author{Tien-Thanh Nguyen\supit{a}}
+\affiliation{\supit{a}Affiliation, Street, City, Country}
+
+\authorinfo{Further author information: (Send correspondence to T.-T. Nguyen)\\
+T.-T. Nguyen: E-mail: nttputus@gmail.com}
+
+\begin{document}
+\maketitle
+
+\input{abstract}
+
+\input{introduction}
+\input{methodology}
+\input{results}
+\input{conclusion}
+
+\acknowledgments
+% TODO
+
+\bibliographystyle{spiebib}
+\bibliography{refs}
+
+\end{document}

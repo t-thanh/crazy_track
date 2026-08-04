@@ -1,0 +1,433 @@
+\section{RESULTS AND LESSONS LEARNT}
+\label{sec:results}
+
+\subsection{Nominal tracking}
+\label{sec:results:nominal}
+
+Table~\ref{tab:nominal} reports tracking accuracy with clean state feedback and no
+external disturbance. Before interpreting it, one qualitative check: the spatial error
+signature reproduces the one reported for this benchmark in the
+literature\cite{eschmann2024learning} --- near-exact tracking at the slow tier, mild
+corner cutting at normal, and systematic outward overshoot at the lobes at fast, where
+centripetal acceleration peaks (Fig.~\ref{fig:tracking}). The benchmark therefore
+behaves like the published one before we perturb it.
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=\linewidth]{figures/fig2_nominal.pdf}
+\end{center}
+\caption{Nominal tracking geometry at the three cycle times: reference (dashed) versus
+flown $xy$ path for all six stacks, with $\mathrm{RMSE}_{\mathrm{3D}}$ per panel. The
+first second is excluded, as it is in the metric. The published error signature is
+reproduced --- near-exact at slow, mild corner cutting at normal, outward lobe overshoot
+at fast, where centripetal demand peaks. The learned policy is drawn for its seed-0
+model; its printed numbers are that single realization, not the three-seed mean of
+Table~\ref{tab:nominal} ($0.038\pm0.014$, $0.075\pm0.010$, $0.157\pm0.007$). Every other
+panel number is the table cell exactly.}
+\label{fig:tracking}
+\end{figure}
+
+\begin{table}[t]
+\caption{Nominal tracking, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters, clean state
+feedback, no disturbance. Best per column in bold. The learned policy is reported as
+mean $\pm$ standard deviation over three training seeds; the classical stacks are
+deterministic in this condition.}
+\label{tab:nominal}
+\begin{center}\small
+\begin{tabular}{lccc}
+\toprule
+Controller & slow & normal & fast \\
+           & $T=\SI{15.0}{\second}$ & $T=\SI{5.5}{\second}$ & $T=\SI{3.5}{\second}$ \\
+\midrule
+PID + feedforward        & 0.012 & 0.022 & 0.088 \\
+ADRC                     & 0.005 & 0.023 & 0.098 \\
+MPPI + $\mathcal{L}_1$   & 0.023 & 0.035 & 0.068 \\
+Offset-free MPC          & \textbf{0.004} & 0.036 & \textbf{0.052} \\
+ADRC + learned low level & 0.010 & \textbf{0.015} & 0.124 \\
+DATT-Asym (RL)           & $0.038\pm0.014$ & $0.075\pm0.010$ & $0.157\pm0.007$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize $^{\ast}$ mean over three training seeds; standard deviations are
+$0.010$, $0.007$, $0.005$, $0.006$ and $0.011$~m respectively. All other rows are
+deterministic in these conditions.\par}
+\end{table}
+
+Three observations set up everything that follows. First, the predictive controller with
+a disturbance state sets records at both ends of the speed range, but it is not alone at
+the millimetre level: at the slow tier the extended state observer reaches
+\SI{0.005}{\meter} and the hybrid adaptive stack \SI{0.010}{\meter}, so three unrelated
+stacks are all within a centimetre of a reference they have fifteen seconds to follow.
+The ordering at the fast tier is the informative one, and there the optimizer is alone
+(\SI{0.052}{\meter} against \SI{0.098}{\meter} for the observer and \SI{0.124}{\meter}
+for the hybrid stack) --- with clean state feedback and a demanding reference, an
+accurate optimizer is very hard to beat. Second, the reinforcement-learning policy is the \emph{worst}
+stack in this table by a wide margin, roughly three times the baseline at the normal
+tier. That is not a training failure; it is the price of the domain randomization that
+buys its later results, and quantifying that price is Lesson~5. Third, the spread
+between the three best stacks at any single speed is smaller than the spread induced by
+changing the speed, which is a warning that nominal tables discriminate poorly between
+competent controllers.
+
+\subsection{Wind, gusts, payload, and ground effect}
+\label{sec:results:disturbance}
+
+Table~\ref{tab:matrix} adds the four disturbances of
+Sec.~\ref{sec:method:disturbance}. The pool, which is nearly indistinguishable in
+Table~\ref{tab:nominal}, separates by more than a factor of four as soon as a sustained
+force is applied.
+
+\begin{table}[t]
+\caption{Force disturbances at the normal tier, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters,
+with clean state feedback. Best per column among the pool in bold. The classical stacks
+are deterministic in these conditions and are reported as single runs; every cell of the
+learned-policy row is a mean $\pm$ standard deviation over the same three training
+seeds.}
+\label{tab:matrix}
+\begin{center}\small
+\begin{tabular}{lccccc}
+\toprule
+Controller & nominal & wind & gust & payload & ground \\
+\midrule
+PID + feedforward        & 0.022 & 0.109 & 0.117 & 0.093 & 0.023 \\
+ADRC                     & 0.023 & \textbf{0.025} & 0.082 & 0.024 & 0.024 \\
+MPPI + $\mathcal{L}_1$   & 0.035 & 0.042 & 0.076 & 0.031 & 0.032 \\
+Offset-free MPC          & 0.036 & 0.045 & 0.097 & 0.098 & 0.023 \\
+ADRC + learned low level & \textbf{0.015} & 0.040 & \textbf{0.054} & \textbf{0.019} & \textbf{0.016} \\
+DATT-Asym (RL)$^{\ast}$  & 0.075 & 0.073 & 0.087 & 0.093 & 0.074 \\
+\midrule
+\multicolumn{6}{l}{\emph{context rows, not part of the pool}} \\
+Plain MPC                & 0.063 & 0.196 & 0.142 & 0.137 & 0.055 \\
+DATT-L1 (RL)             & 0.048 & 0.050 & 0.066 & 0.053 & 0.049 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[t]
+\caption{Realistic sensing, $\mathrm{RMSE}_{\mathrm{3D}}$ in meters. LH is the
+Lighthouse measurement model of Sec.~\ref{sec:method:sensor}; LH\,+\,wind is the
+deployment condition. Entries with a spread are over ten evaluation seeds except the
+learned-policy rows, which are over three training seeds.}
+\label{tab:sensing}
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Controller & LH slow & LH normal & LH fast & LH\,+\,wind \\
+\midrule
+PID + feedforward        & \textbf{0.012} & $0.053\pm0.010$ & $0.155\pm0.007$ & $0.116\pm0.013$ \\
+ADRC                     & 0.021 & 0.056 & 0.181 & $0.063\pm0.006$ \\
+MPPI + $\mathcal{L}_1$   & $0.051\pm0.001$ & $0.079\pm0.018$ & $0.157\pm0.113$ & $0.078\pm0.014$ \\
+Offset-free MPC          & 0.021 & $0.141\pm0.058$ & $0.070\pm0.010$ & $\mathbf{0.057\pm0.014}$ \\
+ADRC + learned low level & 0.025 & \textbf{0.046} & 0.145 & $0.060\pm0.009$ \\
+DATT-Asym (RL)           & $0.033\pm0.008$ & $0.056\pm0.005$ & $\mathbf{0.120\pm0.011}$ & $0.059\pm0.002$ \\
+\midrule
+\multicolumn{5}{l}{\emph{context rows, not part of the pool}} \\
+Plain MPC                & $0.014\pm0.003$ & $0.122\pm0.021$ & $0.067\pm0.001$ & $0.199\pm0.017$ \\
+DATT-L1 (RL)             & 0.034 & 0.073 & $0.323\pm0.106$ & 0.067 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[p]
+\begin{center}
+\includegraphics[width=0.8\linewidth]{figures/fig3_disturbance.pdf}
+\end{center}
+\caption{Tracking under each disturbance at the normal tier, all six stacks. The flown
+path is coloured by instantaneous position error on a shared scale, so the reader sees
+\emph{where on the lobe} the error concentrates rather than only how much of it there is;
+the colour map saturates at the 97th percentile of the pooled error. Grey glyphs mark the
+disturbance acting in each row (arrows for the standing load, wavy arrows for the gust,
+a weight symbol for the payload) and the raw Lighthouse position samples are overlaid as
+grey dots in the deployment row, where the \SI{34}{\hertz} update rate and the
+quasi-static bias are visible. Because payload error is vertical and therefore invisible
+in an $xy$ projection, a strip below that row shows $z(t)$ against $z_{\mathrm{ref}}$ on
+a common scale: the baseline holds roughly \SI{8}{\centi\meter} low for the whole
+episode, the disturbance-estimating stacks return to the reference altitude, and the
+optimizer holds altitude apart from a single launch excursion (marked by a caret where it
+leaves the strip). Panel numbers are the corresponding cell of
+Table~\ref{tab:matrix} or~\ref{tab:sensing}: where that cell is a seed aggregate --- the
+whole learned-policy column and the entire LH\,+\,wind row --- the panel prints the
+aggregate and the drawn trace is one representative seed (the seed-0 policy, evaluation
+seed 0). No panel prints a number the tables do not contain.}
+\label{fig:disturbance}
+\end{figure}
+
+The mechanisms behind each column are distinct, and the winners follow the mechanisms
+rather than the paradigms (Fig.~\ref{fig:disturbance}). Under \emph{constant wind}, the baseline degrades fivefold,
+from $0.022$ to \SI{0.109}{\meter}, because its integrator saturates at
+\SI{1}{\meter\per\second\squared} and simply cannot lift a
+\SI{2.5}{\meter\per\second\squared} standing load; the extended state observer, which
+has no such limit, holds \SI{0.025}{\meter} --- essentially its undisturbed value. Under
+\emph{gusts} the ranking changes: what matters is no longer whether a disturbance can be
+cancelled but how fast the estimate tracks. The column goes to the hybrid adaptive stack
+at \SI{0.054}{\meter}, whose inner loop adapts within the gust period, with the
+$\mathcal{L}_1$-observation policy next at \SI{0.066}{\meter}; both act on a disturbance
+estimate rather than waiting for position error to accumulate, and both beat the plain
+observer (\SI{0.082}{\meter}) whose single bandwidth cannot follow a
+\SI{0.7}{\hertz} excitation --- Lesson~2. Under \emph{payload} the hybrid
+adaptive stack is the outlier: at \SI{0.019}{\meter} it is within a fifth of its own
+undisturbed value, so a \SI{23}{\percent} mass increase costs it almost nothing, against
+a factor of four for the baseline --- Lesson~6. \emph{Ground effect} is the mildest
+column in the table: the multiplicative thrust gain is nearly collinear with the
+feedforward the baseline already applies, so the baseline holds \SI{0.023}{\meter}
+without any disturbance estimate at all, and the observer-based stacks --- once their
+bandwidth is set for noise rather than for gusts --- match or beat it rather than
+spending bandwidth chasing it (\SI{0.016}{\meter} for the hybrid adaptive stack,
+\SI{0.023}{\meter} for the optimizer, \SI{0.024}{\meter} for the observer). Only the
+learned policy, which never saw a thrust-gain disturbance in training, is clearly worse
+at \SI{0.074}{\meter}.
+
+Two entries deserve comment because they win nothing. The sampling-based controller
+takes no column here and none in Table~\ref{tab:nominal}; we retain it as the
+representative of its paradigm because its behaviour under degraded sensing
+(Sec.~\ref{sec:results:lessons}) is among the clearest findings in the study, and a
+pool that dropped every stack that fails to win a column would have nothing left to
+learn from. The learned policy is worse than every classical stack in all five columns
+--- a result we return to in Sec.~\ref{sec:results:deployment}, where the same policy
+joins the lead.
+
+The organising claim of this table is not who wins but why anyone does: \textbf{every
+stack that beats the baseline under a sustained disturbance does so through some form of
+lumped-disturbance estimation.} The paradigms differ in where the estimate is injected
+--- into the control law, into the prediction model, into the policy's observation, or
+into a low-level adaptation loop --- not in whether one is required. The plain MPC
+context row makes the point negatively: it is the most sophisticated controller in the
+table by construction, and, lacking any disturbance state, it is also the worst under
+every force disturbance.
+
+\subsection{Realistic sensing and the deployment condition}
+\label{sec:results:deployment}
+
+Table~\ref{tab:sensing} reports the conditions that matter for a
+vehicle that must fly on its own sensors. Under the Lighthouse model alone, absolute
+errors rise for every stack, and the ordering shifts: the observer-based controllers,
+which differentiate a \SI{34}{\hertz} zero-order-hold position signal, give up much of
+their advantage, while the policy trained with that noise in the loop barely moves. One
+entry needs its own explanation: the optimizer's \SI{0.141}{\meter} at the normal tier
+is roughly triple its neighbours because it is dominated by a launch excursion whose
+tail extends past the \SI{1}{\second} warm-up exclusion --- its steady-state error
+beyond \SI{2.5}{\second} is \SI{0.046}{\meter}, on par with the best stacks in that
+cell. Adding wind on top produces the deployment condition and the central result of
+this paper, shown in Fig.~\ref{fig:deployment}:
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=\linewidth]{figures/fig4_deployment.pdf}
+\end{center}
+\caption{The deployment condition (Lighthouse sensing with wind): per-controller mean
+with seed spread, the four-way tie band shaded, and the stacks without a disturbance
+estimate shown for scale. The clean-sensing value of each stack is marked as a hollow
+point: every tied stack is further from itself than from the others.}
+\label{fig:deployment}
+\end{figure}
+
+The last column of Table~\ref{tab:sensing} carries the result: a disturbance-augmented
+prediction model at $0.057\pm0.014$~\si{\meter}, a privileged-critic policy at
+$0.059\pm0.002$, an observer over an adaptive rate loop at $0.060\pm0.009$, and that
+observer driving the firmware attitude loop at $0.063\pm0.006$. Just outside the band
+sit sampling with an $\mathcal{L}_1$ estimate ($0.078\pm0.014$) and an earlier policy
+trained on noisy observations without the privileged critic ($0.077\pm0.006$).
+
+\noindent Four architectures with nothing in common --- an optimizer carrying a
+disturbance state, a neural policy trained with a privileged critic, a classical observer
+stacked on a learned rate controller, and that same observer driving the firmware
+attitude loop directly --- arrive within \SI{6}{\milli\meter} of each other, inside their
+own seed spreads. The convergence is itself the finding. Each of these stacks sits
+considerably further from its own clean-sensing performance than from the other three:
+the optimizer gives up an order of magnitude relative to its \SI{0.036}{\meter} nominal,
+the hybrid stack quadruples its \SI{0.015}{\meter}, and the observer nearly triples its
+\SI{0.023}{\meter}. The learned policy moves in the opposite direction: it is
+\emph{better} under degraded sensing (\SI{0.059}{\meter}) than with perfect state
+feedback (\SI{0.075}{\meter}), because clean state is out of the distribution it was
+trained on. It reaches the lead not by being robust to the deployment condition but by
+having been built for it, and it pays for that everywhere else in this study. When four unrelated mechanisms saturate at the same value, the binding constraint
+is not any of them. \textbf{At this sensor quality the deployment condition is
+estimator-limited, not architecture-limited}, and effort spent on a better controller is
+effort misspent relative to effort spent on state estimation. The stacks that do
+\emph{not} reach the band are equally instructive: the two without any disturbance
+estimate sit at $0.116$ and \SI{0.199}{\meter}, so the price of entry (Lesson~1) is paid
+under realistic sensing exactly as it is under clean sensing.
+
+One caveat is stated rather than buried: the tied value is specific to this sensing
+quality; with motion-capture-grade state the same four stacks are clearly separated
+(Table~\ref{tab:nominal}). A second caveat has since been resolved, and how it resolved
+is worth recording. In an earlier draft of this table the plain observer appeared at
+\SI{0.053}{\meter} --- nominally better than every tied stack --- from a single
+evaluation seed, and we declined to read it on the authority of our own Lesson~3. The
+ten-seed re-run puts it at $0.063\pm0.006$~\si{\meter}, and \SI{0.053}{\meter} turns out
+to be the \emph{minimum} of the ten draws. The single seed was not merely noisy; it was
+the most favourable sample available, and reading it would have produced a false claim of
+a new best stack. The correction adds a fourth member to the tie rather than a winner.
+
+\subsection{Hardware validation in the wind tunnel}
+\label{sec:results:hardware}
+
+% RESERVED. To be written after the campaign described in Sec. 3.7 completes.
+% Planned content (~0.6 page):
+%   - Table 5: per-controller RMSE_3D flown under (a) still air, (b) programmed steady
+%     wind, (c) programmed gust field, (d) payload step -- each against its simulated
+%     counterpart, with a sim-to-real gap column.
+%   - Fig. 7: the setup (vehicle in the test section, tunnel and mocap volume).
+%   - Verdict on each of the three pre-registered targets from Sec. 3.7.
+%   - Measured Lighthouse-vs-mocap residual statistics, compared against the modelled
+%     update rate, bias and noise levels of Sec. 3.6.
+
+\subsection{Lessons learnt}
+\label{sec:results:lessons}
+
+The value of a benchmark of this kind lies less in the ranking than in what the failures
+teach. Every failure we observed falls into one of three classes --- missing model
+structure, estimator bandwidth-versus-noise trade-offs, and information bottlenecks in
+learned policies --- and the six lessons below are organised around them. Two of these
+lessons correct conclusions we had ourselves drawn and reported from earlier, weaker
+evidence.
+
+\paragraph{Lesson 1: disturbance estimation is the price of entry.}
+No controller in the pool beats the feedforward baseline under a sustained disturbance
+without estimating that disturbance in some form. The corollary is that the paradigm
+label is nearly irrelevant to robustness: what predicts performance is whether a lumped
+disturbance is estimated, at what bandwidth, and where the estimate enters the loop.
+This reframes a comparison usually posed as \emph{classical versus learned} into one
+about estimator placement.
+
+\paragraph{Lesson 2: one observer bandwidth cannot serve two purposes.}
+Sweeping the extended-state-observer bandwidth over
+$\omega_o \in \{3,5,7,10\}$~\si{\radian\per\second} across six conditions produced a
+clean crossing rather than an optimum: low bandwidth wins under sensor noise and
+constant loads (\SI{0.052}{\meter} at $\omega_o=3$ under Lighthouse, against
+\SI{0.096}{\meter} at $\omega_o=10$), high bandwidth wins under \SI{0.7}{\hertz} gusts
+(\SI{0.080}{\meter} against \SI{0.110}{\meter}), and no fixed value wins both. The
+obvious remedy fails for an instructive reason. An innovation-scheduled adaptive
+bandwidth --- raising $\omega_o$ when the observer innovation is biased rather than
+white --- did win its target gust cells (\SI{0.071}{\meter} against \SI{0.080}{\meter}
+for the best fixed value) while degrading every calm cell (\SI{0.060}{\meter} against
+\SI{0.023}{\meter}). The
+scheduling statistic cannot distinguish an external
+disturbance from the observer's \emph{own} attitude-loop lag residual during aggressive
+tracking, so it false-positives into high bandwidth exactly when it should not. This is
+a property of fixed-structure lumped-disturbance observers, not of our implementation,
+and we report it as a negative result with its mechanism.
+
+\paragraph{Lesson 3: mean-only tables mislead, sometimes decisively.}
+Two stacks that look competitive on their means are not. The sampling-based controller
+owns the fast tier with clean sensing at \SI{0.068}{\meter}, but under the Lighthouse
+model the same cell measures $0.157\pm0.113$~\si{\meter} over ten evaluation seeds,
+ranging from $0.091$ to \SI{0.480}{\meter} --- a factor of $5.3$ between its best and
+worst draw, with eight of the ten seeds below \SI{0.13}{\meter} and one at
+\SI{0.480}{\meter}: on an unlucky bias draw, the temporally correlated exploration that
+helps it nominally steers the whole sample distribution wrong for many consecutive steps.
+The distribution is therefore not merely wide but skewed, which is why its mean is a poor
+summary of it. The clean-trained policy shows the same shape,
+$0.323\pm0.106$~\si{\meter}, some seeds fine and some near-crashing. Against this, the
+benchmark policy's advantage is best described not as a lower mean but as a
+\emph{variance collapse}: $0.126\pm0.007$~\si{\meter} in the same cell. A table of means
+would have shown a difference; it would not have shown that one controller occasionally
+fails and the other never does, which is the difference that matters for deployment.
+The lesson applies to itself, which is worth recording: we first estimated the
+sampling controller's cell from three seeds and obtained $0.228\pm0.178$~\si{\meter},
+overstating both the mean and the spread because one of the three draws happened to be
+the \SI{0.480}{\meter} outlier. Extending the same cell to ten seeds moved it to
+$0.157\pm0.113$~\si{\meter}. The qualitative claim survives untouched --- the worst draw
+is still five times the best, and the failure mode is still real --- but the specific
+numbers we would have published were wrong by a third, from a sample we had ourselves
+described as adequate
+(Fig.~\ref{fig:variance}).
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.62\linewidth]{figures/fig5_variance.pdf}
+\end{center}
+\caption{Per-seed results at the Lighthouse fast cell, one marker per seed with the mean
+drawn as a tick, annotated with each stack's worst-to-best ratio. The sampling controller
+and the clean-trained policy scatter over factors of $5.3$ and $3.3$; the
+domain-randomized policy collapses onto its mean at $1.2$. The means alone would rank
+these three stacks; only the spread shows which of them can fail.}
+\label{fig:variance}
+\end{figure}
+
+
+\paragraph{Lesson 4: single-seed conclusions about learned policies invert.}
+From one training seed per configuration we concluded --- and wrote --- that the
+asymmetric-critic recipe improved the noisy cells at the cost of clean-state
+performance. At three training seeds the comparison reverses: the earlier policy had
+drawn its \emph{best} nominal initialization and the newer one its \emph{worst}, and on
+the mean the newer policy dominates or ties the older in all eight measured cells. The
+retracted claim was not marginal; it was a stated design trade-off that did not exist.
+Meanwhile the deployment-cell result survived the same test with the smallest spread we
+measured anywhere ($\pm\SI{0.002}{\meter}$), which is what makes it quotable. Training
+variance in this setting is comparable to the effect sizes being claimed --- in the
+slow-tier nominal cell it is $\pm\SI{0.015}{\meter}$ against effects of a similar size
+--- so single-seed policy comparisons in that regime carry no information at all.
+
+\paragraph{Lesson 5: robustness is bought with agility at a measurable exchange rate.}
+The three policy variants form a clean ladder. Training with an $\mathcal{L}_1$ channel
+and force randomization gives the best clean-sensing tracking and the best gust
+rejection, and fails under noisy sensing at high agility (\SI{0.323}{\meter}). Adding
+the sensor model to training fixes that failure ($\rightarrow\SI{0.126}{\meter}$) and
+costs both clean-state accuracy and disturbance rejection, because noise in the
+disturbance channel during training teaches the policy to discount that channel ---
+robustness purchased by lowering effective feedback gain. Adding a privileged critic and
+noise-level randomization recovers part of the disturbance rejection and produces the
+deployment result, but does not recover clean-state agility, and the reason is
+structural: a memoryless network cannot infer the current episode's noise level from a
+single observation frame, so it averages over the randomization range instead of
+calibrating to the episode. Stacking four observation frames did not help at this
+training budget: an \SI{80}{\milli\second} window spans two or three position updates,
+thin evidence for inferring a noise level. The general point:
+\emph{domain randomization does not make a policy adaptive; it makes it average}, unless
+the architecture can observe the thing being randomized.
+
+\paragraph{Lesson 6: mechanisms compose when they address disjoint error sources.}
+Stacking an extended state observer on a learned low-level rate controller produced the
+broadest stack in the pool --- it wins four of the five columns of
+Table~\ref{tab:matrix} --- and payload tracking within a fifth of its own undisturbed
+value ($0.019$ against \SI{0.015}{\meter}), where the baseline degrades by a factor of
+four. Neither layer achieves this alone: the observer cancels external \emph{forces} in
+the acceleration command, while the learned layer makes the \emph{realization} of a rate
+command airframe-independent underneath it. The composition also has two measurable costs
+that follow from the same structure. Under constant wind the stack loses to the plain
+observer ($0.040$ against \SI{0.025}{\meter}), because the observer now watches the plant
+through an adaptive inner loop that partially absorbs --- and therefore masks --- the very
+signal it is estimating. And at the fast tier it is the weakest of the classical stacks
+(\SI{0.124}{\meter} against \SI{0.052}{\meter} for the optimizer), because its outer loop
+runs decimated relative to the \SI{500}{\hertz} inner loop and that lag is exposed exactly
+where the reference is most demanding. Layered adaptation is not free; it is a trade of
+estimator observability and outer-loop bandwidth for actuation invariance.
+
+\subsection{Recommendations}
+\label{sec:results:recommendations}
+
+No controller in this pool dominates, so a recommendation must be indexed by the
+condition (Table~\ref{tab:recommend}). The most consequential entry is the last: once
+sensing is realistic, the choice among the four tied stacks should be made on
+engineering cost rather than accuracy, and their costs differ by orders of magnitude ---
+the optimizer requires tens of seconds of solver time per episode in our implementation,
+while the observer and the policy cost a handful of arithmetic operations and a single
+forward pass through a two-layer network respectively (Table~\ref{tab:recommend}).
+
+\begin{table}[t]
+\caption{Condition-indexed recommendations. Values are
+$\mathrm{RMSE}_{\mathrm{3D}}$ at the normal tier unless noted.}
+\label{tab:recommend}
+\begin{center}\small
+\begin{tabular}{@{}p{0.21\linewidth} p{0.21\linewidth} c p{0.36\linewidth}@{}}
+\toprule
+Operating condition & Recommended stack & Cost & Reason, and what it costs \\
+\midrule
+Clean state, maximum precision & Offset-free MPC & \SI{41}{\second} & records at slow and fast; heavy solver load \\
+Sustained wind, clean state    & ADRC & \SI{2.9}{\second} & \SI{0.025}{\meter}; loses under gusts (one bandwidth) \\
+Gusting wind                   & ADRC + learned low level & \SI{9.5}{\second} & \SI{0.054}{\meter}; acts on the estimate, not on accumulated error \\
+Payload or airframe change     & ADRC + learned low level & \SI{9.5}{\second} & payload nearly invisible; masks wind from the observer \\
+High agility, clean sensing    & Offset-free MPC & \SI{41}{\second} & fast-tier best; MPPI is competitive but has unsafe variance under noise \\
+Low altitude, ground effect    & ADRC + learned low level & \SI{9.5}{\second} & mildest column: the baseline is within \SI{7}{\milli\meter} at a twentieth of the cost \\
+\textbf{Realistic onboard sensing} & \textbf{any of the four tied stacks} & \SIrange{2.9}{41}{\second} & \textbf{indistinguishable in accuracy; choose on compute and initialization robustness} \\
+\bottomrule
+\end{tabular}
+\end{center}
+{\footnotesize Cost is the median wall-clock time for one two-cycle episode over the
+three nominal tiers, measured in our unoptimized CPU harness; roughly \SI{3}{\second} of
+it is simulation overhead common to every row, so the column separates the stacks by
+solver load rather than reporting a real-time budget.\par}
+\end{table}

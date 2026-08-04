@@ -1,0 +1,46 @@
+%% Abstract + keywords (SPIE style).
+%% Rev. 2 --- adapted from the pre-study draft to what the results actually show:
+%% the RL policy does NOT dominate; it ties two very different architectures in the
+%% realistic deployment condition. Every number is traceable to
+%% papers/paper1-benchmark/README.md and the reports/ notebook.
+
+\begin{abstract}
+Micro-unmanned aerial vehicles operating outside the laboratory face sustained and
+unsteady wind, payload changes that are a large fraction of their own weight, and
+onboard state estimation far poorer than motion capture --- all on a platform with
+little control authority to spare. Controllers for this regime are published on
+different vehicles, references, metrics and sensing stacks, so their relative merits,
+and especially their failure modes, cannot be compared across papers. We benchmark six
+trajectory-tracking controllers, one per control paradigm, on a single simulated
+brushless Crazyflie~2.1 ($43.4$~g, thrust-to-weight $1.88$), a single reference family
+(figure-eight Lissajous at three cycle times) and a single command interface: a PID with
+acceleration feedforward, active disturbance rejection control with an extended state
+observer, sampling-based MPPI with $\mathcal{L}_1$ adaptation, an offset-free nonlinear
+MPC, a hybrid stack pairing the observer with a pretrained learned adaptive rate
+controller, and a reinforcement-learning policy trained with a privileged critic and
+sensor-noise domain randomization. All six are evaluated under constant wind, gusts,
+in-ground effect, a $23\,\%$ payload step, and a Lighthouse measurement model grounded
+in published characterization data, using ten evaluation seeds and three training seeds
+so that every claim carries an error bar. No controller dominates: the per-condition
+champions differ, and each wins through a different disturbance-estimation mechanism.
+Under the realistic deployment condition --- degraded onboard sensing with wind --- four
+of them become statistically indistinguishable: the offset-free MPC at
+$0.057\pm0.014$~m, the learned policy at $0.059\pm0.002$~m, the hybrid adaptive stack at
+$0.060\pm0.009$~m and the extended state observer alone at $0.063\pm0.006$~m. Four
+unrelated mechanisms saturating at the same value argues that the regime is
+estimator-limited rather than architecture-limited. We
+distil the study into seven transferable lessons, two of which overturn conclusions we
+had drawn ourselves from single-seed, full-window data: mean-only tables hide leaders
+that fail on unlucky sensor-bias draws, and an apparent noise fragility proved to be a
+launch transient generic to the predictive family. Finally, we describe the hardware
+validation protocol for the recommended controller --- a programmable fan-array wind
+tunnel with motion-capture ground truth --- designed so that the physical disturbance
+conditions correspond one-to-one with the simulated ones.
+% TODO (after the wind-tunnel campaign): replace the last sentence with the measured
+% sim-to-real outcome, e.g. "...; in flight, the recommended stack tracked to XX m
+% under a YY m/s programmed gust field, an increase of ZZx over its simulated value."
+\end{abstract}
+
+\keywords{quadrotor control, trajectory tracking, benchmarking, disturbance rejection,
+active disturbance rejection control, model predictive control, reinforcement learning,
+domain randomization, wind tunnel, motion capture, nano-aerial vehicles}

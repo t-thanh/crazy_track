@@ -33,7 +33,7 @@ def main() -> None:
     ap.add_argument("--n", type=int, default=200, help="timed act() calls per stack")
     args = ap.parse_args()
 
-    traj = LissajousTrajectory(cycle_time=5.5, n_cycles=2, z=1.0)
+    traj = LissajousTrajectory(T=5.5, n_cycles=2, z=1.0)
     # a plausible mid-flight state: on the reference, moving along it
     state = np.concatenate([traj.pos(1.0), traj.vel(1.0),
                             np.array([0.0, 0.0, 0.0, 1.0]), np.zeros(3)])

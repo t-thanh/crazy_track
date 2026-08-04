@@ -101,6 +101,11 @@ def main() -> None:
         ax.set_xscale("log")
         ax.set_xticks(SCALES)
         ax.set_xticklabels([str(s) for s in SCALES])
+        # a log axis re-labels its own minor ticks on top of the explicit ones
+        ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FixedFormatter(
+            [str(s) for s in SCALES]))
+        ax.tick_params(axis="x", which="minor", length=0)
         ax.set_xlabel("sensor-error scale  (1.0 = literature-grounded model)")
         ax.set_ylabel(r"RMSE$_\mathrm{3D}$ [m]")
         ax.set_ylim(bottom=0)

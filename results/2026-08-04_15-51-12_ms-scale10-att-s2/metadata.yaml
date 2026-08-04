@@ -1,0 +1,23 @@
+datetime: 2026-08-04_15-51-12
+tag: ms-scale10-att-s2
+reason: 'paper1 round 5 Part A: sensor-error scale 1.0 at the deployment cell (seed
+  2 of 5). Discriminating test for the estimator-limited claim - if the estimator
+  binds, all four tied stacks move together as measurement quality changes; if the
+  actuator envelope or the reference binds, they do not.'
+git_commit: 57ca403
+config:
+  controllers:
+  - mpc_offsetfree
+  - adrc
+  - datt:results/2026-07-22_17-32-52_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  sensor_scale: 1.0
+  seed: 2
+  traj_z: 1.0
