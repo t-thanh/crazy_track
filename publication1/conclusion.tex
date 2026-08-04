@@ -7,8 +7,8 @@ single reference family and a single command interface, across constant wind, gu
 ground effect, a payload step and a measurement model of the optical positioning system
 the vehicle actually carries, with per-cell seed statistics throughout.
 
-No controller dominates. Champions differ by condition and follow mechanisms rather than
-paradigm labels: everything that beats a feedforward baseline under a sustained
+No controller dominates, and the ranking is not a ranking of paradigms. Champions differ
+by condition and follow mechanisms rather than labels: everything that beats a feedforward baseline under a sustained
 disturbance does so by estimating that disturbance, and the paradigms differ in where
 the estimate enters rather than in whether one is needed. The central result concerns
 the condition that matters most in deployment. With realistic onboard sensing and wind,
@@ -20,6 +20,13 @@ from its own clean-sensing performance than from the other three. When four unre
 mechanisms saturate at the same value, the binding constraint lies elsewhere; we read
 this regime as estimator-limited, which makes state estimation, not controller
 architecture, the higher-leverage investment at this sensor quality.
+
+One stack deserves separate comment. The reinforcement-learning policy is the weakest in
+the pool under every clean-sensing condition we measured, and it reaches the leading
+group only under degraded sensing --- the condition its training distribution was built
+around. Read together with the randomization lesson below, this is the study's most
+compact statement of what domain randomization buys and what it costs: not robustness
+across conditions, but specialization to the conditions that were randomized over.
 
 The failures proved more instructive than the ranking. A single observer bandwidth
 cannot simultaneously filter noise and track gusts, and the obvious adaptive fix fails
