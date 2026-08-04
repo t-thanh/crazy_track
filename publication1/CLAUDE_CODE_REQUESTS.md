@@ -116,28 +116,15 @@ not a mandate.
 
 ---
 
-# Part D — the hardware bring-up flights (author's call, not a default)
+# Part D — the hardware bring-up flights: DECLINED
 
-The first hardware flights are logged and analysed, and the round-3 report is right that
-they do not belong in the results — they are bring-up, and their limiting factor is a
-command clip rather than a controller property.
+The author has confirmed these were initial tests of the Lighthouse setup and are
+**not to appear in the paper in any form**. No change to \S3.7. The analysis stays in
+`reports/` as lab record only.
 
-But one finding is a **precondition for the campaign the paper pre-registers**, and the
-paper currently promises a protocol that these flights show cannot yet measure what it
-claims: the deployed attitude command is clipped at $\pm15^\circ$ while the policy was
-trained against roughly $\pm40^\circ$, and the reference starts far from the vehicle, so
-the policy rails immediately and the actuator saturates for 84--97 % of samples. A
-campaign run under those conditions would measure the clip, not the controller.
-
-My recommendation, for the author to accept or decline: **two sentences in §3.7's
-protocol paragraph** stating that the command envelope must be aligned with the training
-envelope and the reference initialized at the vehicle's position, and that both were
-identified in bring-up flights. That makes the pre-registration stronger, not weaker —
-it shows the protocol is informed by contact with the hardware rather than designed on
-paper. The counter-argument, which is legitimate: a paper with no hardware results yet
-may not want to introduce a hardware problem it has not solved.
-
-Do not make this change unless the author confirms it.
+Do not reintroduce the \SI{\pm15}{\degree} command-clip finding, the saturation
+statistics, or any reference to pre-campaign flights, in the methodology, the results,
+or the limitations.
 
 ---
 
