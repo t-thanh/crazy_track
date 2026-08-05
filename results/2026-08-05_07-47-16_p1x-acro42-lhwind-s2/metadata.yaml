@@ -1,0 +1,20 @@
+datetime: 2026-08-05_07-47-16
+tag: p1x-acro42-lhwind-s2
+reason: 'paper-1 crossover (ADDITIVE, paper-1 results untouched): acro CTBR policy
+  on the paper-1 benchmark cell ''p1x-acro42-lhwind-s2'' - does the acrobatic controller
+  hold up on the fig-8 benchmark it was not tuned for'
+git_commit: 0989242
+config:
+  controllers:
+  - datt_acro:results/2026-07-29_18-18-41_datt-train/datt_ppo_final.zip
+  speeds:
+  - normal
+  n_cycles: 2
+  control_freq: 100
+  drone: cf21B_500
+  dynamics: first_principles
+  disturbance: wind_const
+  sensor: lighthouse
+  sensor_scale: 1.0
+  seed: 0
+  traj_z: 1.0
