@@ -6,9 +6,11 @@
 > frozen. It adds no row to any paper-1 table, figure, or claim. Every run
 > here carries the tag prefix `p1x-`, which is disjoint from the `ms-` /
 > `mst-` prefixes the paper-1 reproduction path aggregates — verified after
-> the runs: `aggregate_seeds --prefix ms-` and `--prefix mst-` return zero
-> `p1x` rows and the same 58 `ms-` rows as before. Paper-1 numbers,
-> `publication1/`, and `scripts/make_paper1_figures.py` were not touched.
+> the runs: `aggregate_seeds --prefix ms-` and `--prefix mst-` each return
+> zero `p1x` rows (58 `ms-` rows, 19 `mst-` rows, all pre-existing cells).
+> `git status` showed **zero modified files** for this work — it is new
+> files only. Paper-1 numbers, `publication1/`, and
+> `scripts/make_paper1_figures.py` were not touched.
 
 ## Question
 
@@ -152,8 +154,9 @@ where findings 3 and 4 are the substance.
 
 `results/2026-08-05_07-4*_p1x-acro42-{nom,lh,lhwind,wind,gust,payload,ground}-s{0,1,2}`
 and `results/2026-08-05_07-*_p1x-acrov1-*-s0` (28 runs).
-Note for anyone reconciling dates: the WSL clock lagged earlier in this
-session, so the acro4.2 / freestyle runs these rows compare against carry
-`2026-07-29` stamps despite being same-week work.
+The acro4.2 models these rows exercise were trained on 2026-07-29
+(`results/2026-07-29_*_datt-train`); paper 1's round-4/5 revisions landed
+between then and this crossover, which is why the classical caveat below
+matters.
 Reproduce: `bash scripts/p1_acro_crossover.sh`, then
 `python -m crazy_track.eval.aggregate_seeds --prefix p1x-`.
